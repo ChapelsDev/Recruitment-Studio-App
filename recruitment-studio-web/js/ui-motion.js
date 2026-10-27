@@ -29,7 +29,8 @@ RS.ui = (() => {
     const pill = document.createElement('span');
     pill.className = 'glide-pill';
     pill.setAttribute('aria-hidden', 'true');
-    if (getComputedStyle(container).position === 'static') container.style.position = 'relative';
+    // Positioning belongs in CSS: an inline relative position would override
+    // the phone's fixed navigation after resizing a desktop editor.
     container.classList.add('has-glide');
     let placed = false;
     function update() {

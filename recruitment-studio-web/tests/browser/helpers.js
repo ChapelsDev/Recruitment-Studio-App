@@ -167,7 +167,9 @@ window.H = (() => {
     return out;
   }
   // Drives the app through its interface to each named screen and yields its name:
-  // 'home', 'gallery', 'editor:<section>' (the newest ad), 'export'.
+  // 'home', 'gallery', 'editor:<section>' or 'editor:<piece>/<section>' (the newest
+  // ad; pieces Imagem · Carrossel · Vídeo, sections Oferta · Contactos · Fotos ·
+  // Estilo · Sequência), 'export'.
   async function closeExport() {
     const x = $('.modal.export .modal-head .icon-btn');
     if (x) { x.click(); await waitFor(() => !$('.modal-back'), 'the export dialog to close', 4000); }
@@ -195,9 +197,15 @@ window.H = (() => {
           $('.proj-open').click();
           await waitFor(() => $('.editor') && idle(), 'the editor', 15000);
         }
-        const b = byText('.editor .rail button', new RegExp(`^\\s*${section}\\s*$`));
+        const [piece, sec] = section.includes('/') ? section.split('/') : [null, section];
+        if (piece) {
+          const p = byText('.editor .topbar [aria-label="Peça"] [role="radio"]', new RegExp(`^\\s*${piece}\\s*$`));
+          if (p.getAttribute('aria-checked') !== 'true') p.click();
+          await waitFor(() => (piece === 'Vídeo' ? $('.video-stage') : piece === 'Carrossel' ? $('.carousel-stage') : $('.workspace canvas.poster')), `the ${piece} piece`);
+        }
+        const b = byText('.editor .rail button', new RegExp(`^\\s*${sec}\\s*$`));
         if (b.getAttribute('aria-selected') !== 'true') b.click();
-        await waitFor(() => (section === 'Vídeo' ? $('.video-panel .video-tabs') : $(`.panel[aria-label="${section}"]`)), `the ${section} panel`);
+        await waitFor(() => $(`.panel[aria-label="${sec}"]`), `the ${sec} panel`);
       } else if (name === 'export') {
         if (!$('.editor')) throw new Error('export: open the editor first');
         if (!$('.modal.export')) $('.editor .topbar button[title^="Exportar"]').click();

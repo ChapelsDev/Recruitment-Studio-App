@@ -128,27 +128,40 @@
     const png = await new Promise((r) => marked().toBlob(r, 'image/png'));
     const S = RS.store;
     const before = await S.getMeta('library');
+    // run.html sits in tests/browser/, where «photos/library.js» does not resolve:
+    // one bundled photo, served by the library's own functions for this test
+    const realIndex = RS.library.index, realFull = RS.library.full;
+    const stockUrl = marked().toDataURL('image/png');
+    RS.library.index = async () => ({ items: [{ id: 'stock-1', cat: 'pedreiro', thumb: '' }] });
+    RS.library.full = (id) => (id === 'stock-1' ? Promise.resolve(stockUrl) : realFull(id));
     try {
       // «As minhas»: two photos on this device, one of them also the ad's photo
       for (const id of ['mine-ad', 'mine-2', 'file-ad']) await S.putAsset({ id, blob: png, w: 600, h: 900, kind: 'photo', type: 'image/png' });
       await S.setMeta('library', [{ asset: 'mine-ad', cat: 'geral', thumb: '' }, { asset: 'mine-2', cat: 'geral', thumb: '' }]);
       const round = async (p) => RS.assets.importProjectFile(new File([await RS.assets.exportProjectFile(p)], 'x.anuncio', { type: 'application/json' }));
       const p = colagem();
+      const stock = (await RS.library.index()).items[0].id;
       p.photo = { asset: 'mine-ad', zoom: 1, fx: 0.3, fy: 0.6, flip: false };
-      p.video.photos = { mode: 'chosen', ids: ['mine-ad', 'mine-2', 'pedreiro-1'], focus: { 'mine-ad': { x: 0.2, y: 0.8 }, 'mine-2': { x: 0.7, y: 0.1 }, 'pedreiro-1': { x: 0.4, y: 0.3 } } };
+      p.video.photos = { mode: 'chosen', ids: ['mine-ad', 'mine-2', stock], focus: { 'mine-ad': { x: 0.2, y: 0.8 }, 'mine-2': { x: 0.7, y: 0.1 }, [stock]: { x: 0.4, y: 0.3 } } };
       const q = await round(p);
       assert(q.photo && q.photo.asset && q.photo.asset !== 'mine-ad', 'the ad\'s photo kept its old id: nothing tested');
       assertEqual(M().videoPhotoFocus(q, q.photo.asset), { x: 0.2, y: 0.8 }, 'the ad\'s photo lost its framing');
-      // the chosen photos are the library's and «As minhas» on this device: as they were, with their points
-      assertEqual(q.video.photos.ids, ['mine-ad', 'mine-2', 'pedreiro-1']);
-      for (const id of ['mine-ad', 'mine-2', 'pedreiro-1']) assertEqual(q.video.photos.focus[id], p.video.photos.focus[id], `${id} lost its framing`);
+      // Every selected photo now travels in the file, including bundled photos.
+      assertEqual(q.video.photos.ids[0], q.photo.asset);
+      for (let i = 0; i < p.video.photos.ids.length; i++) {
+        const oldId = p.video.photos.ids[i], newId = q.video.photos.ids[i];
+        assert(newId !== oldId, 'photo kept its source-device id');
+        assert(await S.getAsset(newId), 'portable image missing');
+        assertEqual(M().videoPhotoFocus(q, newId), p.video.photos.focus[oldId], `${oldId} lost its framing`);
+      }
       // an ad's photo that came from a file (not in «As minhas»): its point moves to the new id
       const f = colagem();
       f.photo = { asset: 'file-ad', zoom: 1, fx: 0.5, fy: 0.5, flip: false };
       f.video.photos = { mode: 'trades', ids: [], focus: { 'file-ad': { x: 0.9, y: 0.15 } } };
       const g = await round(f);
-      assertEqual(g.video.photos.focus, { [g.photo.asset]: { x: 0.9, y: 0.15 } });
+      assertEqual(g.video.photos.focus[g.photo.asset], { x: 0.9, y: 0.15 });
     } finally {
+      RS.library.index = realIndex; RS.library.full = realFull;
       await S.setMeta('library', before || []);
     }
   });

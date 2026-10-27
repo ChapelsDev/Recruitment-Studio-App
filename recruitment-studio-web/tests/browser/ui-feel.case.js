@@ -34,7 +34,7 @@
     const seen = {};
     for (const theme of ['light', 'dark']) {
       RS.appearance.set({ theme }); await H.settleAnimations();
-      for await (const screen of H.visitScreens(['home', 'gallery', 'editor:Texto', 'editor:Contactos', 'editor:Aspeto', 'editor:Vídeo', 'export'])) {
+      for await (const screen of H.visitScreens(['home', 'gallery', 'editor:Imagem/Oferta', 'editor:Imagem/Contactos', 'editor:Imagem/Estilo', 'editor:Vídeo/Estilo', 'export'])) {
         const bad = H.contrastIssues(document.body);
         assert(!bad.length, `${theme} ${screen}: ${bad.slice(0, 5).map((b) => `«${b.text}» ${b.selector} ${b.ratio.toFixed(2)} < ${b.need}`).join('; ')}`);
         seen[`${theme} ${screen}`] = getComputedStyle(document.body).backgroundColor;
@@ -46,7 +46,7 @@
   });
 
   test('theme: the ad looks the same in both themes', async () => {
-    for await (const s of H.visitScreens(['editor:Texto'])) void s;
+    for await (const s of H.visitScreens(['editor:Imagem/Oferta'])) void s;
     const project = (await H.saved()) || null;
     assert(project, 'no saved ad');
     const look = () => {
@@ -67,17 +67,20 @@
     assertEqual(dark.bar, light.bar, 'the preview bar changed colour');
   });
 
-  // «Definições»: a sheet from the home top bar, a tab of the editor's section bar.
+  // «Definições»: a sheet from the home top bar, and the same sheet from the editor's ⋯.
   const openSettings = async (where = '.home-top') => {
     if (where === '.home-top') {
       await H.goHome();
-      const btn = await waitFor(() => $('.home-top .settings-btn'), 'the «Definições» button of the home');
-      if (!$('.modal.settings')) { btn.focus(); btn.click(); } // a real tap or click leaves the focus on the button
+      const btn = await waitFor(() => $('.home-top .home-more'), 'the home ⋯');
+      if (!$('.modal.settings')) {
+        btn.focus(); btn.click(); // a real tap or click leaves the focus on the button
+        (await waitFor(() => byText('.home-menu [role="menuitem"]', /Definições/), '«Definições» in the home ⋯')).click();
+      }
       return waitFor(() => !$('.modal-back.closing') && $('.modal.settings .settings'), '«Definições» on the home');
     }
-    const tab = await waitFor(() => byText('.editor .rail button', /Definições/), 'the «Definições» tab of the editor');
-    if (tab.getAttribute('aria-selected') !== 'true') tab.click();
-    return waitFor(() => $('.editor .panel[aria-label="Definições"] .settings'), '«Definições» in the editor');
+    if (!$('.editor .editor-menu')) $('.editor .topbar .editor-more').click();
+    (await waitFor(() => byText('.editor .editor-menu [role="menuitem"]', /Definições/), '«Definições» in ⋯')).click();
+    return waitFor(() => !$('.modal-back.closing') && $('.modal.settings .settings'), '«Definições» from the editor');
   };
   const closeSettings = async () => {
     const x = $('.modal.settings .modal-head .icon-btn');
@@ -89,8 +92,7 @@
   test('settings: the home opens «Definições» with the motion style, the theme and the vibration', async () => {
     RS.appearance.set({ theme: 'light', haptics: true, motion: 'sober' });
     await openSettings('.home-top');
-    const btn = $('.home-top .settings-btn');
-    assertEqual(btn.getAttribute('aria-label'), 'Definições');
+    assert(!$('.home-top .settings-btn'), '«Definições» is still a button of the home bar (it is in ⋯)');
     assertEqual($$('.settings [role="radiogroup"][aria-label="Movimento"] [role="radio"]').map((b) => b.querySelector('strong').textContent.trim()), ['Ilustrativo', 'Sóbrio', 'Calmo']);
     assertEqual(motionOption('Sóbrio').getAttribute('aria-checked'), 'true', '«Sóbrio» is not the style chosen');
     assert($$('.settings .ms-preview').length === 3, 'the styles have no live preview');
@@ -115,7 +117,7 @@
     await waitFor(() => RS.appearance.get().theme === 'auto', 'back to automatic');
     $('.modal.settings').dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     await waitFor(() => !$('.modal.settings'), '«Definições» to close on Escape', 4000);
-    assertEqual(document.activeElement, $('.home-top .settings-btn'), 'the focus goes back to the button');
+    assertEqual(document.activeElement, $('.home-top .home-more'), 'the focus goes back to ⋯');
   });
 
   test('settings: the theme change grows from the option', async () => {
@@ -144,20 +146,19 @@
     }
   });
 
-  test('settings: the editor has a «Definições» tab that keeps the stage as it is', async () => {
-    for await (const s of H.visitScreens(['editor:Vídeo'])) void s;
+  test('settings: the editor\'s ⋯ opens «Definições» over the stage as it is', async () => {
+    for await (const s of H.visitScreens(['editor:Vídeo/Estilo'])) void s;
     const panel = await openSettings('.editor');
     assert(motionOption('Ilustrativo') && themeOption('Claro') && panel.querySelector('#f-haptics'), 'the editor\'s «Definições» lack a group');
     assert($('.editor .video-stage'), 'opening «Definições» changed the stage from the video');
-    assertEqual(byText('.editor .rail button', /Definições/).getAttribute('aria-selected'), 'true');
-    assertEqual($$('.editor .rail [aria-selected="true"]').length, 1, 'two tabs look chosen');
+    assert(!byText('.editor .rail button', /Definições/), '«Definições» is still in the rail');
+    assertEqual(byText('.editor .rail button', /^\s*Estilo\s*$/).getAttribute('aria-selected'), 'true', 'the open section changed');
     motionOption('Calmo').click();
     await waitFor(() => document.documentElement.dataset.motion === 'calm', 'Calmo from the editor');
     motionOption('Sóbrio').click();
     await waitFor(() => document.documentElement.dataset.motion === 'sober', 'Sóbrio from the editor');
-    byText('.editor .rail button', /^\s*Texto\s*$/).click();
-    await waitFor(() => $('.editor .panel[aria-label="Texto"]'), 'back to «Texto»');
-    assert(!$('.editor .panel[aria-label="Definições"]'), '«Definições» stays open');
+    await closeSettings();
+    assert($('.editor .video-panel .video-section[data-section="estilo"]'), 'the panel under «Definições» changed');
   });
 
   // ---------------------------------------------------------------- motion foundation
@@ -181,17 +182,17 @@
   });
 
   test('motion: quick choices leave the pill under the last one', async () => {
-    for await (const s of H.visitScreens(['editor:Vídeo'])) void s;
-    const tabs = $('.video-panel .video-tabs');
-    const pill = await waitFor(() => pillOf(tabs), 'the tabs\' pill');
-    const tab = (name) => byText('.video-panel .video-tabs [role="tab"]', new RegExp(`^\\s*${name}\\s*$`));
-    for (const name of ['Textos', 'Aspeto', 'Som e fim', 'Modelo', 'Aspeto']) { tab(name).click(); await sleep(10); }
-    await waitFor(() => $('#vpanel-aspeto'), 'the «Aspeto» panel');
+    for await (const s of H.visitScreens(['editor:Vídeo/Estilo'])) void s;
+    const rail = $('.editor .rail');
+    const pill = await waitFor(() => pillOf(rail), 'the rail\'s pill');
+    const tab = (name) => byText('.editor .rail [role="tab"]', new RegExp(`^\\s*${name}\\s*$`));
+    for (const name of ['Sequência', 'Fotos', 'Oferta', 'Sequência', 'Fotos']) { tab(name).click(); await sleep(10); }
+    await waitFor(() => $('.editor .panel[aria-label="Fotos"]'), 'the «Fotos» panel');
     await H.settleAnimations();
-    const p = pill.getBoundingClientRect(), t = tab('Aspeto').getBoundingClientRect();
-    assert(p.left >= t.left - 1 && p.right <= t.right + 1 && p.width > t.width / 2, `the pill is not under «Aspeto» (${Math.round(p.left)}–${Math.round(p.right)} vs ${Math.round(t.left)}–${Math.round(t.right)})`);
-    tab('Modelo').click();
-    await waitFor(() => $('#vpanel-modelo'), 'the «Modelo» panel');
+    const p = pill.getBoundingClientRect(), t = tab('Fotos').getBoundingClientRect();
+    assert(p.top >= t.top - 1 && p.bottom <= t.bottom + 1 && p.height > t.height / 2, `the pill is not on «Fotos» (${Math.round(p.top)}–${Math.round(p.bottom)} vs ${Math.round(t.top)}–${Math.round(t.bottom)})`);
+    tab('Estilo').click();
+    await waitFor(() => $('.editor .panel[aria-label="Estilo"]'), 'the «Estilo» panel');
   });
 
   // A model whose «Automática» length differs from the current one by a few seconds.
@@ -208,16 +209,17 @@
     assert(other, 'no model with another automatic length');
     return other;
   }
-  const autoSeconds = () => Number((/(\d+)\s*s/.exec(byText('.video-panel .lengths button', /Automática/).textContent) || [])[1]);
+  // «Estilo» says the length in its head («Tijolo · 14 s»), counting as the model changes
+  const autoSeconds = () => Number((/·\s*(\d+)\s*s/.exec($('.video-panel .panel-head p').textContent) || [])[1]);
   async function chooseAuto() {
-    const b = byText('.video-panel .lengths button', /Automática/);
+    for await (const s of H.visitScreens(['editor:Vídeo/Sequência'])) void s;
+    const b = await waitFor(() => byText('.video-panel .lengths button', /Automática/), '«Automática»');
     if (b.getAttribute('aria-checked') !== 'true') b.click();
     await waitFor(() => byText('.video-panel .lengths button', /Automática/).getAttribute('aria-checked') === 'true', '«Automática»');
+    for await (const s of H.visitScreens(['editor:Vídeo/Estilo'])) void s;
   }
 
-  test('motion: «Automática · N s» counts up', async () => {
-    for await (const s of H.visitScreens(['editor:Vídeo'])) void s;
-    await waitFor(() => byText('.video-panel .lengths button', /Automática/), '«Automática»');
+  test('motion: the length of «Automática» counts up when the model changes', async () => {
     await chooseAuto();
     await H.settleAnimations();
     const before = autoSeconds();
@@ -233,7 +235,7 @@
   });
 
   test('motion: a counting number sits in the sentence like a word', async () => {
-    for await (const s of H.visitScreens(['editor:Vídeo'])) void s;
+    for await (const s of H.visitScreens(['editor:Vídeo/Estilo'])) void s;
     const note = await waitFor(() => $('.video-stage .ws-notes .note.info'), 'the stage note');
     await H.settleAnimations();
     assert(/^\S+ · \d+ s · /.test(note.textContent.trim()), `«${note.textContent.trim()}»`);
@@ -242,7 +244,7 @@
   });
 
   test('motion: calm mode shows the value at once and keeps no flights', async () => {
-    for await (const s of H.visitScreens(['editor:Vídeo'])) void s;
+    for await (const s of H.visitScreens(['editor:Vídeo/Estilo'])) void s;
     document.documentElement.dataset.motion = 'calm';
     try {
       await chooseAuto();
@@ -257,7 +259,7 @@
       const after = autoSeconds();
       assert(after !== before, `the length did not change (${before} s)`);
       assertEqual([...seen].filter((v) => v !== before && v !== after), [], 'the length still counted in calm mode');
-      const pill = pillOf($('.video-panel .video-tabs'));
+      const pill = pillOf($('.editor .rail'));
       assert(pill, 'no pill');
       assert(!/transform|all/.test(getComputedStyle(pill).transitionProperty), `the pill still flies: ${getComputedStyle(pill).transitionProperty}`);
     } finally {
@@ -267,7 +269,7 @@
 
   // ---------------------------------------------------------------- things that open and close
   test('motion: a menu grows from its button', async () => {
-    for await (const s of H.visitScreens(['editor:Texto'])) void s;
+    for await (const s of H.visitScreens(['editor:Imagem/Oferta'])) void s;
     const plus = await waitFor(() => $('.editor .locales .chip.add'), 'the «+» language chip');
     plus.click();
     const menu = await waitFor(() => $('.editor .locales .menu'), 'the language menu');
@@ -283,8 +285,7 @@
   });
 
   test('motion: a removed row leaves before it goes', async () => {
-    for await (const s of H.visitScreens(['editor:Vídeo'])) void s;
-    byText('.video-panel .video-tabs [role="tab"]', /^\s*Textos\s*$/).click();
+    for await (const s of H.visitScreens(['editor:Vídeo/Sequência'])) void s;
     await waitFor(() => $('#vt-block-benefits .vt-add'), 'the benefits list');
     const rows = () => $$('#vt-block-benefits .vt-row');
     const n = rows().length;
@@ -296,13 +297,13 @@
     assert(row.isConnected && row.classList.contains('leaving'), 'the row went at once');
     await sleep(300);
     assert(!row.isConnected && rows().length === n, 'the row is still there after 300 ms');
-    byText('.video-panel .video-tabs [role="tab"]', /^\s*Modelo\s*$/).click();
   });
 
   test('motion: a toast leaves with its own animation', async () => {
-    for await (const s of H.visitScreens(['editor:Texto'])) void s;
+    for await (const s of H.visitScreens(['editor:Imagem/Oferta'])) void s;
+    // Codex: Ctrl+S saves now and says so
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 's', ctrlKey: true, bubbles: true }));
-    const t = await waitFor(() => byText('.toast', /guardado automaticamente/), 'the message');
+    const t = await waitFor(() => byText('.toast', /Anúncio guardado neste aparelho/), 'the message');
     assert(t.getAnimations().some((a) => a.animationName === 'feel-toast-in'), 'the message does not spring in');
     await waitFor(() => t.classList.contains('leave'), 'the message to leave', 6000);
     assert(t.isConnected, 'the message went before leaving');
@@ -386,7 +387,7 @@
 
   // Applies a library photo with the import taking 1.2 s; `check` gets the stage's loader.
   async function slowPhoto(check) {
-    for await (const s of H.visitScreens(['editor:Imagens'])) void s;
+    for await (const s of H.visitScreens(['editor:Imagem/Fotos'])) void s;
     const item = await waitFor(() => $('.library .lib-item'), 'a library photo', 15000);
     const real = RS.assets.importFile;
     RS.assets.importFile = async (...a) => { await sleep(1200); return real.apply(RS.assets, a); };
@@ -429,7 +430,7 @@
   }
 
   test('haptics: a tap on a real action ticks once and typing never does', async () => {
-    for await (const s of H.visitScreens(['editor:Texto'])) void s;
+    for await (const s of H.visitScreens(['editor:Imagem/Oferta'])) void s;
     RS.appearance.set({ haptics: true });
     const off = RS.haptics.install(document, { mode: 'android' });
     try {
@@ -455,7 +456,7 @@
   const tabOrder = () => $$('a[href], button, input, select, textarea, [tabindex]').filter((e) => e.tabIndex >= 0 && !e.disabled && e.getClientRects().length);
 
   test('haptics: an iPhone tap runs the action once and the switches are hidden from assistive tech', async () => {
-    for await (const s of H.visitScreens(['editor:Texto'])) void s;
+    for await (const s of H.visitScreens(['editor:Imagem/Oferta'])) void s;
     const before = tabOrder();
     const off = RS.haptics.install(document, { mode: 'ios' });
     try {
@@ -508,10 +509,9 @@
   }
   async function openExport(kind) {
     await freshAd();
-    for await (const s of H.visitScreens([kind === 'video' ? 'editor:Vídeo' : 'editor:Texto', 'export'])) void s;
-    const b = byText('.modal.export .kind-switch button', kind === 'video' ? /Vídeo/ : /Imagem/);
-    if (b.getAttribute('aria-checked') !== 'true') b.click();
-    await waitFor(() => byText('.modal.export .kind-switch button', kind === 'video' ? /Vídeo/ : /Imagem/).getAttribute('aria-checked') === 'true', kind);
+    // the dialog exports the piece on screen (2026-10-27)
+    for await (const s of H.visitScreens([kind === 'video' ? 'editor:Vídeo/Estilo' : 'editor:Imagem/Oferta', 'export'])) void s;
+    await waitFor(() => (kind === 'video' ? /Exportar vídeo/ : /Exportar imagem/).test($('#exp-title').textContent), kind);
   }
   const crawlCount = () => { const c = $('.modal.export .crane .count-up'); return c ? Number(c.textContent) : null; };
 
@@ -595,7 +595,8 @@
   });
 
   // ---------------------------------------------------------------- install anywhere
-  const installBtn = () => $('.home-top .install-btn');
+  // «Instalar» lives in the home's ⋯ (2026-10-27): opens ⋯ (once) and gives the item
+  const installBtn = () => { if (!$('.home-menu')) { const m = $('.home-top .home-more'); if (!m) return null; m.click(); } return $('.home-menu .install-item'); };
   async function closeInstall() {
     const x = $('.modal.install .modal-head .icon-btn');
     if (x) { x.click(); await waitFor(() => !$('.modal.install'), 'the install sheet to close', 4000); }
@@ -619,7 +620,7 @@
     assertEqual(qr.dataset.link, 'https://x.tailfc994f.ts.net/');
     assert(/Tailscale/.test($('.modal.install').textContent), 'no word about Tailscale');
     await closeInstall();
-    installBtn().click();
+    (await waitFor(installBtn, 'the install item')).click();
     await waitFor(() => $('.modal.install .install-qr'), 'the QR again');
     assert(!$('.modal.install #f-app-url'), 'the address was asked again');
     await closeInstall();
@@ -650,7 +651,7 @@
     const realDetect = RS.install.detect;
     RS.install.detect = () => 'ios-safari';
     try {
-      installBtn().click();
+      (await waitFor(installBtn, 'the install item')).click();
       const steps = await waitFor(() => $$('.modal.install .install-step').length && $$('.modal.install .install-step'), 'the steps');
       assertEqual(steps.map((s) => s.textContent.trim()), RS.install.STEPS['ios-safari'].map((s) => s.text));
       await waitFor(() => $('.modal.install .install-step.now'), 'the step being shown');
@@ -802,7 +803,7 @@
   });
 
   test('motion: a row removed just before leaving the editor stays removed', async () => {
-    for await (const s of H.visitScreens(['editor:Texto'])) void s;
+    for await (const s of H.visitScreens(['editor:Imagem/Oferta'])) void s;
     const list = await waitFor(() => { const i = $('.editor input[id^="f-benefit-"]'); return i && i.closest('.list'); }, 'the benefits list');
     list.querySelector(':scope > .add-row').click();
     const field = await waitFor(() => { const all = list.querySelectorAll(':scope > .li input[type="text"]'); return all[all.length - 1] === document.activeElement && all[all.length - 1]; }, 'the new row');
@@ -815,9 +816,9 @@
   });
 
   test('motion: rows already in a list do not grow in again when its panel opens', async () => {
-    for await (const s of H.visitScreens(['editor:Aspeto'])) void s;
-    byText('.editor .rail button', /^\s*Texto\s*$/).click();
-    const rows = await waitFor(() => $$('.editor .panel[aria-label="Texto"] .li').length && $$('.editor .panel[aria-label="Texto"] .li'), 'the rows');
+    for await (const s of H.visitScreens(['editor:Imagem/Estilo'])) void s;
+    byText('.editor .rail button', /^\s*Oferta\s*$/).click();
+    const rows = await waitFor(() => $$('.editor .panel[aria-label="Oferta"] .li').length && $$('.editor .panel[aria-label="Oferta"] .li'), 'the rows');
     const growing = rows.filter((r) => r.getAnimations().some((a) => a.animationName === 'feel-row-in'));
     assertEqual(growing.length, 0, 'rows that were already there grow in');
     const list = $('.editor input[id^="f-benefit-"]').closest('.list');
@@ -836,7 +837,8 @@
     try {
       for await (const s of H.visitScreens(['gallery', 'home'])) void s; // the home bar drawn again
       const b = await waitFor(installBtn, 'the install button', 3000);
-      assert(/Instalar no telemóvel/.test(b.getAttribute('aria-label')), `the button says «${b.getAttribute('aria-label')}»`);
+      assert(/Instalar no telemóvel/.test(b.textContent), `the item says «${b.textContent.trim()}»`);
+      $('.home-top .home-more').click(); // ⋯ closed again
     } finally {
       RS.install.detect = realDetect;
       delete navigator.maxTouchPoints;
@@ -849,7 +851,7 @@
     const realDetect = RS.install.detect;
     RS.install.detect = () => 'ios-safari';
     try {
-      installBtn().click();
+      (await waitFor(installBtn, 'the install item')).click();
       const demo = await waitFor(() => $('.modal.install .install-demo'), 'the drawing of the browser');
       assertEqual(demo.getAttribute('aria-hidden'), 'true', 'the drawing is read aloud (the steps already say it)');
       const now = () => $$('.modal.install .install-step').findIndex((s) => s.classList.contains('now'));
@@ -877,7 +879,7 @@
     RS.install.detect = () => 'android';
     document.documentElement.dataset.motion = 'calm';
     try {
-      installBtn().click();
+      (await waitFor(installBtn, 'the install item')).click();
       const demo = await waitFor(() => $('.modal.install .install-demo .demo-hit') && $('.modal.install .install-demo'), 'the drawing');
       await sleep(100);
       const moving = demo.getAnimations({ subtree: true }).filter((a) => a.playState === 'running' && a.effect.getKeyframes().some((kf) => 'transform' in kf));
@@ -948,25 +950,24 @@
   }
 
   test('smooth: «Vídeo» shows its panel at once and the style cards fill in after', async () => {
-    for await (const s of H.visitScreens(['editor:Texto'])) void s;
+    for await (const s of H.visitScreens(['editor:Imagem/Estilo'])) void s;
     await slowPrepare(40, async (calls) => {
       // the first frame drawn with the panel (a task run before the frame would delay it)
       let shownAt = 0;
-      const watch = () => { if ($('.video-panel .video-tabs')) shownAt = performance.now(); else requestAnimationFrame(watch); };
+      const watch = () => { if ($('.video-panel .video-section')) shownAt = performance.now(); else requestAnimationFrame(watch); };
       const t0 = performance.now();
-      $('.editor .rail .rail-video').click();
+      byText('.editor .topbar [aria-label="Peça"] [role="radio"]', /^\s*Vídeo\s*$/).click();
       requestAnimationFrame(watch);
       await waitFor(() => shownAt, 'the «Vídeo» panel', 8000);
       const took = shownAt - t0;
       assert(took < 400, `the panel took ${Math.round(took)} ms to show (${calls.length} videos prepared before it)`);
       await waitFor(() => $$('.video-panel .motion-card').length > 3 && $$('.video-panel .motion-card').every((c) => c.querySelector('canvas')), 'every style card drawn', 20000);
     });
-    byText('.editor .rail button', /^\s*Texto\s*$/).click();
-    await waitFor(() => $('.editor .panel[aria-label="Texto"]'), 'back to «Texto»');
+    for await (const s of H.visitScreens(['editor:Imagem/Oferta'])) void s;
   });
 
   test('smooth: the export previews are drawn once the dialog has arrived', async () => {
-    for await (const s of H.visitScreens(['editor:Texto'])) void s;
+    for await (const s of H.visitScreens(['editor:Imagem/Oferta'])) void s;
     const real = RS.engine.render;
     const at = [];
     RS.engine.render = function (...a) { at.push(performance.now()); return real.apply(this, a); };
@@ -996,7 +997,7 @@
   };
 
   test('illustrative: a tap on a main button lays a brick, only in Ilustrativo', async () => {
-    for await (const s of H.visitScreens(['editor:Texto'])) void s;
+    for await (const s of H.visitScreens(['editor:Imagem/Oferta'])) void s;
     const btn = $('.editor .topbar button[title^="Exportar"]');
     await inStyle('sober', async () => { press(btn); await sleep(60); assertEqual($$('.fx-brick').length, 0, 'a brick in Sóbrio'); });
     await inStyle('illustrative', async () => {
@@ -1037,21 +1038,20 @@
   });
 
   test('illustrative: the chosen pill swings when it stops and the panel arrives like bricks', async () => {
-    for await (const s of H.visitScreens(['editor:Texto'])) void s;
+    for await (const s of H.visitScreens(['editor:Imagem/Oferta'])) void s;
     await inStyle('illustrative', async () => {
       const rail = $('.editor .rail');
       const pill = await waitFor(() => rail.querySelector(':scope > .glide-pill'), 'the pill');
-      byText('.editor .rail button', /^\s*Aspeto\s*$/).click();
-      await waitFor(() => $('.editor .panel[aria-label="Aspeto"]'), 'the Aspeto panel');
+      byText('.editor .rail button', /^\s*Estilo\s*$/).click();
+      await waitFor(() => $('.editor .panel[aria-label="Estilo"]'), 'the Estilo panel');
       assert(named('feel-brick-drop').length > 0, 'the panel does not arrive like bricks');
       await waitFor(() => pill.getAnimations().some((a) => a.effect.getKeyframes().some((k) => 'rotate' in k || 'translate' in k)), 'the pill to swing or bounce when it stops', 1500);
     });
-    byText('.editor .rail button', /^\s*Texto\s*$/).click();
-    await waitFor(() => $('.editor .panel[aria-label="Texto"]'), 'back to «Texto»');
+    for await (const s of H.visitScreens(['editor:Imagem/Oferta'])) void s;
   });
 
   test('illustrative: a new row is laid with mortar and a removed one tips over and falls', async () => {
-    for await (const s of H.visitScreens(['editor:Texto'])) void s;
+    for await (const s of H.visitScreens(['editor:Imagem/Oferta'])) void s;
     await inStyle('illustrative', async () => {
       const list = $('.editor input[id^="f-benefit-"]').closest('.list');
       const n = list.querySelectorAll(':scope > .li').length;
@@ -1106,10 +1106,10 @@
   });
 
   test('illustrative: messages hang from the hook and errors come as a sign behind the site tape', async () => {
-    for await (const s of H.visitScreens(['editor:Texto'])) void s;
+    for await (const s of H.visitScreens(['editor:Imagem/Oferta'])) void s;
     await inStyle('illustrative', async () => {
       window.dispatchEvent(new KeyboardEvent('keydown', { key: 's', ctrlKey: true, bubbles: true }));
-      const t = await waitFor(() => byText('.toast', /guardado automaticamente/), 'the message');
+      const t = await waitFor(() => byText('.toast', /Anúncio guardado neste aparelho/), 'the message');
       assert(named('feel-hang-in', t.getAnimations()).length, 'the message does not come down on the hook');
       await waitFor(() => t.classList.contains('leave'), 'the message to leave', 6000);
       assert(named('feel-hoist-out', t.getAnimations()).length, 'the crane does not take the message away');
@@ -1120,7 +1120,7 @@
   });
 
   test('illustrative: «Guardado» draws a check with the trowel', async () => {
-    for await (const s of H.visitScreens(['editor:Texto'])) void s;
+    for await (const s of H.visitScreens(['editor:Imagem/Oferta'])) void s;
     await inStyle('illustrative', async () => {
       H.type($('#f-kicker'), `Estamos a recrutar ${Date.now() % 1000}`);
       await waitFor(() => $('.editor .save-state.saved .save-check'), 'the check after saving', 5000);
@@ -1135,7 +1135,7 @@
       const card = await waitFor(() => $$('.home .proj-card')[0], 'an ad card');
       const id = card.dataset.id;
       card.querySelector('.proj-more').click();
-      (await waitFor(() => byText('.proj-card .menu [role="menuitem"]', /Eliminar/), 'the card menu')).click();
+      (await waitFor(() => byText('.proj-card .menu [role="menuitem"]', /Mover para a reciclagem/), 'the card menu')).click();
       await waitFor(() => $$('.fx-piece').length >= 4, 'the card to crumble', 1000);
       await waitFor(() => !$$('.fx-piece').length, 'the bricks to fall away', 2500);
       await waitFor(async () => (await RS.store.listProjects()).filter((r) => !r.deletedAt).length === before - 1, 'one ad deleted', 3000);
@@ -1146,7 +1146,7 @@
   });
 
   test('smooth: exporting the video on screen does not prepare it again', async () => {
-    for await (const s of H.visitScreens(['editor:Vídeo'])) void s;
+    for await (const s of H.visitScreens(['editor:Vídeo/Estilo'])) void s;
     await waitFor(() => $('.video-stage canvas[data-motion]'), 'the stage playing');
     // full preparations only (the style cards of the panel may still be filling in, «lite»)
     const real = RS.motion.prepare;
@@ -1158,15 +1158,14 @@
       assertEqual(full, 0, 'the export dialog prepared the stage\'s video again');
     } finally { RS.motion.prepare = real; }
     await H.closeExport();
-    byText('.editor .rail button', /^\s*Texto\s*$/).click();
-    await waitFor(() => $('.editor .panel[aria-label="Texto"]'), 'back to «Texto»');
+    for await (const s of H.visitScreens(['editor:Imagem/Oferta'])) void s;
   });
 
   // ---------------------------------------------------------------- final review fixes (motion styles round)
   test('review: in Ilustrativo the install sheet is above the home, not under its cards', async () => {
     await H.goHome();
     await inStyle('illustrative', async () => {
-      const b = await waitFor(() => $('.home-top .install-btn'), 'the install button');
+      const b = await waitFor(installBtn, 'the install item');
       b.click();
       const sheet = await waitFor(() => $('.modal.install'), 'the install sheet');
       await H.settleAnimations();
@@ -1178,19 +1177,17 @@
     });
   });
 
-  test('review: exporting after an edit made in «Imagem» prepares the video afresh', async () => {
-    for await (const s of H.visitScreens(['editor:Vídeo'])) void s;
+  test('review: exporting right after an edit of the ad prepares the video afresh', async () => {
+    // «Oferta» on «Vídeo»: the edit and the export happen before the stage has prepared again
+    for await (const s of H.visitScreens(['editor:Vídeo/Oferta'])) void s;
     await waitFor(() => $('.video-stage canvas[data-motion]'), 'the stage playing');
-    for await (const s of H.visitScreens(['editor:Texto'])) void s;
-    H.type($('#f-kicker'), `Mudou depois do vídeo ${Date.now() % 1000}`);
-    await sleep(100);
     const real = RS.motion.prepare;
     let full = 0;
     RS.motion.prepare = function (p, o) { if (!(o && o.lite)) full++; return real.call(this, p, o); };
     try {
+      H.type($('#f-kicker'), `Mudou depois do vídeo ${Date.now() % 1000}`);
       $('.editor .topbar button[title^="Exportar"]').click();
       await waitFor(() => $('.modal.export'), 'the export dialog');
-      byText('.modal.export .kind-switch button', /Vídeo/).click();
       await waitFor(() => $('.modal.export .export-preview canvas[data-motion]'), 'the video preview', 8000);
       assert(full > 0, 'the export showed the video prepared before the edit');
     } finally { RS.motion.prepare = real; }
@@ -1210,7 +1207,7 @@
   const groupBy = (re) => $$('.editor .panel .group').find((g) => re.test(g.querySelector('.group-toggle').textContent));
   test('organize: «Profissões do anúncio» starts folded, says what is chosen and opens on a tap', async () => {
     try { localStorage.removeItem('rs-groups'); } catch { /* none */ }
-    for await (const s of H.visitScreens(['editor:Aspeto', 'editor:Texto'])) void s;
+    for await (const s of H.visitScreens(['editor:Imagem/Estilo', 'editor:Imagem/Oferta'])) void s;
     const g = await waitFor(() => groupBy(/Profissões do anúncio/), 'the «Profissões do anúncio» block');
     const t = g.querySelector('.group-toggle');
     assertEqual(t.getAttribute('aria-expanded'), 'false', '«Profissões do anúncio» is open at first');
@@ -1224,12 +1221,12 @@
   });
 
   test('organize: every block folds and the panel remembers it', async () => {
-    for await (const s of H.visitScreens(['editor:Texto'])) void s;
+    for await (const s of H.visitScreens(['editor:Imagem/Oferta'])) void s;
     const g = await waitFor(() => groupBy(/^\s*Vantagens/), 'the «Vantagens» block');
     assertEqual(g.querySelector('.group-toggle').getAttribute('aria-expanded'), 'true', '«Vantagens» is folded at first');
     g.querySelector('.group-toggle').click();
     await waitFor(() => !g.querySelector('.group-body').getClientRects().length, '«Vantagens» to fold');
-    for await (const s of H.visitScreens(['editor:Aspeto', 'editor:Texto'])) void s;
+    for await (const s of H.visitScreens(['editor:Imagem/Estilo', 'editor:Imagem/Oferta'])) void s;
     const again = groupBy(/^\s*Vantagens/);
     assertEqual(again.querySelector('.group-toggle').getAttribute('aria-expanded'), 'false', 'the fold was forgotten');
     assert(again.querySelector('.eye'), 'the eye («Visível») is gone from a folded block');
@@ -1238,7 +1235,7 @@
   });
 
   test('organize: a tap on a text of the poster opens its folded block', async () => {
-    for await (const s of H.visitScreens(['editor:Texto'])) void s;
+    for await (const s of H.visitScreens(['editor:Imagem/Oferta'])) void s;
     const g = groupBy(/^\s*Título/);
     g.querySelector('.group-toggle').click();
     await waitFor(() => g.querySelector('.group-toggle').getAttribute('aria-expanded') === 'false', '«Título» folded');
@@ -1292,8 +1289,8 @@
     await waitFor(() => document.activeElement && document.activeElement.id === id, `#${id} in focus (${document.activeElement && document.activeElement.id})`, 2000);
     assert(g.contains(document.activeElement), `#${id} is not in ${re}`);
   }
-  test('organize: a tap on the poster\'s photo or logo opens its folded block in «Imagens»', async () => {
-    for await (const s of H.visitScreens(['editor:Imagens'])) void s;
+  test('organize: a tap on the poster\'s photo or logo opens its folded block in «Fotos»', async () => {
+    for await (const s of H.visitScreens(['editor:Imagem/Fotos'])) void s;
     if (!(await H.saved()).photo) {
       (await waitFor(() => $('.library .lib-item'), 'a photo of the library')).click();
       await H.saved((d) => !!d.photo);
@@ -1303,15 +1300,15 @@
       await H.saved((d) => d.brand.name === 'Timework');
     }
     for (const [key, re, id] of [['photo', /^\s*Fotografia\s*$/, 'f-photo'], ['logo', /^\s*Logótipo\s*$/, 'f-logo']]) {
-      await fold('Imagens', re);
-      for await (const s of H.visitScreens(['editor:Texto'])) void s;
+      await fold('Imagem/Fotos', re);
+      for await (const s of H.visitScreens(['editor:Imagem/Oferta'])) void s;
       await tapPoster(key);
-      await opensAt('Imagens', re, id);
+      await opensAt('Fotos', re, id);
     }
   });
 
   test('organize: a tap on the poster\'s QR (WhatsApp mode) opens «Código QR» in «Contactos»', async () => {
-    for await (const s of H.visitScreens(['editor:Contactos'])) void s;
+    for await (const s of H.visitScreens(['editor:Imagem/Contactos'])) void s;
     if (!((await H.saved()).whatsapp || {}).number) {
       H.type(await waitFor(() => $('#f-contact-wa'), 'the WhatsApp number'), '912345678');
       await H.saved((d) => d.whatsapp && d.whatsapp.number === '912345678');
@@ -1319,13 +1316,13 @@
     const wa = byText('.panel .qr-mode .seg button', /WhatsApp/);
     if (wa.getAttribute('aria-checked') !== 'true') wa.click();
     await H.saved((d) => d.qrMode === 'whatsapp' && d.show.qr !== false && d.show.contacts !== false);
-    await fold('Contactos', /^\s*Código QR\s*$/);
-    for await (const s of H.visitScreens(['editor:Texto'])) void s;
+    await fold('Imagem/Contactos', /^\s*Código QR\s*$/);
+    for await (const s of H.visitScreens(['editor:Imagem/Oferta'])) void s;
     await tapPoster('qr');
     await opensAt('Contactos', /^\s*Código QR\s*$/, 'f-qr');
   });
 
-  test('organize: no two blocks share a fold memory (every panel and video tab)', async () => {
+  test('organize: no two blocks share a fold memory (the sections of the three pieces)', async () => {
     const seen = new Map(), clash = [];
     const note = (where) => {
       const keys = $$('.editor .panel .group').map((g) => g.dataset.fold);
@@ -1336,41 +1333,34 @@
         seen.set(k, where);
       }
     };
-    for (const panel of ['Texto', 'Contactos', 'Imagens', 'Aspeto']) {
+    for (const panel of ['Imagem/Oferta', 'Imagem/Contactos', 'Imagem/Fotos', 'Imagem/Estilo', 'Carrossel/Estilo']) {
       for await (const s of H.visitScreens([`editor:${panel}`])) void s;
       note(panel);
     }
-    for await (const s of H.visitScreens(['editor:Vídeo'])) void s;
-    const vtab = async (name) => {
-      const b = await waitFor(() => byText('.video-panel .video-tabs [role="tab"]', new RegExp(`^\\s*${name}\\s*$`)), `the ${name} tab`);
-      if (b.getAttribute('aria-selected') !== 'true') b.click();
-      await waitFor(() => $(`.video-panel [role="tabpanel"][aria-labelledby="${b.id}"]`), `the ${name} tab open`);
-    };
+    for await (const s of H.visitScreens(['editor:Vídeo/Estilo'])) void s;
     // a model with its own colours and letter (the animated poster has neither)
-    await vtab('Modelo');
     if (RS.motion.styleOf((await H.saved()).video.motion).poster) {
       byText('.video-panel .motion-card', /Néon/).click();
       await H.saved((d) => d.video.motion === 'neon');
     }
-    for (const name of ['Modelo', 'Textos', 'Aspeto', 'Som e fim']) {
-      await vtab(name);
+    for (const name of ['Estilo', 'Sequência']) {
+      for await (const s of H.visitScreens([`editor:Vídeo/${name}`])) void s;
       note(`Vídeo › ${name}`);
     }
     assert(!clash.length, clash.join('; '));
   });
 
   test('calm: the new moments are cross-fades in Calmo', async () => {
-    for await (const s of H.visitScreens(['editor:Texto'])) void s;
+    for await (const s of H.visitScreens(['editor:Imagem/Oferta'])) void s;
     await inStyle('calm', async () => {
       press($('.editor .topbar button[title^="Exportar"]'));
       await sleep(60);
       assertEqual($$('.fx-brick').length, 0, 'a brick in Calmo');
-      byText('.editor .rail button', /^\s*Aspeto\s*$/).click();
-      await waitFor(() => $('.editor .panel[aria-label="Aspeto"]'), 'the Aspeto panel');
+      byText('.editor .rail button', /^\s*Estilo\s*$/).click();
+      await waitFor(() => $('.editor .panel[aria-label="Estilo"]'), 'the Estilo panel');
       const moving = document.getAnimations().filter((a) => a.playState === 'running' && a.animationName && a.animationName !== 'spin' && a.effect.getKeyframes().some((k) => 'transform' in k || 'translate' in k || 'rotate' in k));
       assertEqual(moving.map((a) => a.animationName), [], 'things fly in Calmo');
     });
-    byText('.editor .rail button', /^\s*Texto\s*$/).click();
-    await waitFor(() => $('.editor .panel[aria-label="Texto"]'), 'back to «Texto»');
+    for await (const s of H.visitScreens(['editor:Imagem/Oferta'])) void s;
   });
 })();

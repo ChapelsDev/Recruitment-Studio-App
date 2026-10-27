@@ -1,17 +1,19 @@
-// Interface: «Vídeo» › «Modelo» › «Fotografias» lists the photos the video
+// Interface: «Vídeo» › «Fotos» › «Fotografias» lists the photos the video
 // uses; «Enquadrar» opens a dialog with the photo and a point to drag (or move
 // with the arrow keys) to what must stay in the centre; the stage follows.
 // Runs after ui-feel.case.js (any screen: it opens the newest ad itself).
 (() => {
   const { sleep, $, $$, byText, waitFor, saved } = window.H;
+  // a section of the rail on «Vídeo»: «Estilo» (the models), «Fotos» (the photos)
+  const SECTION = { Estilo: 'estilo', 'Sequência': 'sequencia', Fotos: 'fotos' };
   async function videoTab(name) {
-    const b = await waitFor(() => byText('.video-panel .video-tabs [role="tab"]', new RegExp(`^\\s*${name}\\s*$`)), `the ${name} tab`);
+    const b = await waitFor(() => byText('.editor .rail [role="tab"]', new RegExp(`^\\s*${name}\\s*$`)), `the ${name} section`);
     if (b.getAttribute('aria-selected') !== 'true') b.click();
-    return waitFor(() => $(`.video-panel [role="tabpanel"][aria-labelledby="${b.id}"]`), `the ${name} tab open`);
+    return waitFor(() => $(`.video-panel .video-section[data-section="${SECTION[name]}"]`), `the ${name} section open`);
   }
-  // the «Fotografias» block (in «Modelo», after the galleries), opened when it is folded
+  // the «Fotografias» block (in «Fotos»), opened when it is folded
   async function photosGroup() {
-    await videoTab('Modelo');
+    await videoTab('Fotos');
     const g = await waitFor(() => $$('.video-panel .group').find((x) => /^\s*Fotografias\s*$/.test(x.querySelector('h3').textContent)), 'the «Fotografias» block');
     const t = g.querySelector('.group-toggle');
     if (t && t.getAttribute('aria-expanded') === 'false') { t.click(); await waitFor(() => t.getAttribute('aria-expanded') === 'true', '«Fotografias» to open'); }
@@ -30,8 +32,8 @@
   let id = null, btn = null;
 
   test('framing: «Fotografias» lists the photos of the video, each with «Enquadrar»', async () => {
-    for await (const s of H.visitScreens(['editor:Vídeo'])) void s;
-    await videoTab('Modelo');
+    for await (const s of H.visitScreens(['editor:Vídeo/Estilo'])) void s;
+    await videoTab('Estilo');
     const card = byText('.video-panel .motion-card', /Colagem/);
     if (card.getAttribute('aria-checked') !== 'true') card.click();
     await saved((d) => d.video.motion === 'colagem');
@@ -195,13 +197,15 @@
   });
 
   test('framing: «Cinema» lists only the photo it shows; a style with cards lists them too', async () => {
-    await videoTab('Modelo');
+    await videoTab('Estilo');
     byText('.video-panel .motion-card', /Cinema/).click();
     await H.saved((x) => x.video.motion === 'cinema');
     await photosGroup();
     await waitFor(() => items().length === 1, `Cinema's one photo (${items().length} listed)`, 20000);
+    await videoTab('Estilo');
     byText('.video-panel .motion-card', /Néon/).click();
     await H.saved((x) => x.video.motion === 'neon');
+    await photosGroup();
     await waitFor(() => items().length > 1, `Néon's photos (${items().length} listed)`, 20000);
   });
 })();

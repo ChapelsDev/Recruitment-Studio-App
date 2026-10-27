@@ -357,7 +357,7 @@
     id: 'contrato', name: 'Contrato', concept: 'Um contrato numa prancheta: vantagens marcadas a tinta azul, uma assinatura e um carimbo no fim.',
     font: { head: { family: 'DM Serif Display', weight: 400 }, bold: { family: 'DM Serif Display', weight: 400 } },
     palettes: { light: { bg: '#F3EEE3', ink: '#1B3A7A', main: '#1B3A7A', accent: '#C0392B' } },
-    bgModes: ['light'], photos: 0, travel: 'page', pages: true,
+    bgModes: ['light'], photos: 0, travel: 'page', pages: true, slides: { V: true },
     // every act is a new page of the contract (turned), except the card printed where the phone was
     canonical: { M: null, V: null, D: null, L: null, C: null },
     labels: {

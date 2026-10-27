@@ -1,0 +1,32 @@
+TAP version 13
+# Subtest: UI: choosing a cover waits for photos instead of freezing the provisional timeline
+not ok 1 - UI: choosing a cover waits for photos instead of freezing the provisional timeline
+  ---
+  duration_ms: 2415.9894
+  type: 'test'
+  location: 'C:\\Users\\guilherme.andrade\\Desktop\\Dev\\RS-codex\\recruitment-studio-web\\tests\\unit\\recovery-ui.test.cjs:239:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    cover must not use the provisional three-second timeline
+    
+    false !== true
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (C:\Users\guilherme.andrade\Desktop\Dev\RS-codex\recruitment-studio-web\tests\unit\recovery-ui.test.cjs:252:10)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2786.835

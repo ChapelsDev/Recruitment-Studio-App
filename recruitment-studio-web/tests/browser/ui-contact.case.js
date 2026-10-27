@@ -21,12 +21,12 @@
     assertEqual(p.trades, ['pedreiro', 'servente']);
   });
 
-  test('sections: the rail reads Texto, Contactos, Imagens, Aspeto, then Vídeo and Definições', async () => {
-    assertEqual($$('.editor .rail button').map((b) => b.textContent.trim()), ['Texto', 'Contactos', 'Imagens', 'Aspeto', 'Vídeo', 'Definições']);
+  test('sections: the rail reads Oferta, Contactos, Fotos, Estilo', async () => {
+    assertEqual($$('.editor .rail button').map((b) => b.textContent.trim()), ['Oferta', 'Contactos', 'Fotos', 'Estilo']);
   });
 
   test('photos: «Deste anúncio» lists the photos of both trades', async () => {
-    await tab('Imagens');
+    await tab('Fotos');
     const chip = await waitFor(() => byText('.library .tchip', /Deste anúncio/), '«Deste anúncio»');
     assertEqual(chip.getAttribute('aria-checked'), 'true');
     const expected = RS.PHOTO_LIBRARY.items.filter((i) => i.cat === 'pedreiro' || i.cat === 'servente').length;
@@ -35,9 +35,9 @@
 
   const groupTitles = () => $$('.panel .group-toggle').map((t) => t.textContent.trim());
   test('contacts: «Contactos» holds the WhatsApp, the other contacts and the QR; «Texto» none of them', async () => {
-    await tab('Texto');
+    await tab('Oferta');
     assert(!$('#f-contact-wa') && !$('.panel input[id^="f-contact-"]') && !$('.panel .qr-mode'), 'contacts are still in «Texto»');
-    assertEqual(groupTitles(), ['Profissões do anúncio', 'Título', 'Vantagens', 'Vagas', 'Salário e vagas (opcional)', 'Selo']);
+    assertEqual(groupTitles(), ['Profissões do anúncio', 'Título', 'Vantagens', 'Vagas', 'Ficha da oferta (opcional)', 'Selo']);
     await tab('Contactos');
     assertEqual($('.panel .panel-head h2').textContent.trim(), 'Contactos');
     assertEqual(groupTitles(), ['O seu WhatsApp', 'Outros contactos', 'Código QR']);
@@ -64,7 +64,7 @@
   });
 
   test('poster: a tap on its WhatsApp button opens «Contactos» at the number', async () => {
-    await tab('Texto');
+    await tab('Oferta');
     const p = await saved((d) => d.whatsapp && d.whatsapp.number === '912345678');
     const reg = RS.engine.renderToCanvas(p, { scale: 0.2, mode: 'editor' }).regions.find((r) => r.key === 'contact:wa');
     assert(reg, 'no pill');
@@ -113,22 +113,35 @@
   });
 
   test('brand: saving keeps the number and the default message for new ads', async () => {
-    await tab('Aspeto');
+    await tab('Estilo');
+    byText('.panel button', /Abrir biblioteca pessoal/).click();
     type(await waitFor(() => $('#f-brand-wa-template'), 'default message field'), 'Olá! Interessa-me a vaga de {profissões}.');
     await settle(); // a person's click is a later task: the panel has re-rendered by then
-    byText('.panel button', /Guardar como a minha marca/).click();
+    // Codex: «Guardar marca» is disabled until the catalog has loaded
+    const save = await waitFor(() => { const b = byText('.library-save button', /Guardar marca/); return b && !b.disabled && b; }, 'library loaded');
+    save.click();
+    await waitFor(() => $('.library-notice'), 'saved brand');
+    // the brand just saved (the newest) becomes the default — not just any card with the button
+    const brands = (await RS.store.getCatalog()).brands;
+    const at = brands.indexOf(brands.reduce((a, b) => ((b.savedAt || 0) > (a.savedAt || 0) ? b : a)));
+    const card = await waitFor(() => { const s = $$('.reuse-dialog .library-section')[0]; return s && s.querySelectorAll('.library-card')[at]; }, 'the new brand\'s card');
+    const useIt = [...card.querySelectorAll('button')].find((b) => b.textContent.includes('Usar por omissão'));
+    if (useIt) useIt.click();
+    // Codex: brands live in «Marcas e modelos» (the catalog); new ads use its default brand
     const brand = await waitFor(async () => {
-      const b = await RS.store.getMeta('brand');
+      const b = RS.reuse.defaultBrand(await RS.store.getCatalog());
       return b && b.waTemplates && b.waTemplates['pt-PT'] ? b : null;
     }, 'the brand to be saved');
     assertEqual(brand.whatsapp, { country: '351', number: '912345678' });
     assertEqual(brand.waTemplates['pt-PT'], 'Olá! Interessa-me a vaga de {profissões}.');
+    $('.reuse-dialog .modal-head button').click();
+    await waitFor(() => !$('.reuse-dialog'), 'library closed');
   });
 
-  test('aspeto: «Modelo» comes first, folded, naming the template, and a template chosen there applies', async () => {
-    await tab('Aspeto');
-    assertEqual($('.panel .panel-head h2').textContent.trim(), 'Aspeto');
-    assertEqual(groupTitles(), ['Modelo', 'Cores da marca', 'Letra', 'Tamanhos', 'A minha marca']);
+  test('estilo: «Modelo» comes first, folded, naming the template, and a template chosen there applies', async () => {
+    await tab('Estilo');
+    assertEqual($('.panel .panel-head h2').textContent.trim(), 'Estilo');
+    assertEqual(groupTitles(), ['Modelo', 'Cores da marca', 'Letra', 'Tamanhos', 'Marcas e modelos pessoais']);
     const g = $('.panel .group'), toggle = g.querySelector('.group-toggle');
     assertEqual(toggle.getAttribute('aria-expanded'), 'false', '«Modelo» starts open');
     const before = await saved();

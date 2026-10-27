@@ -11,6 +11,11 @@ RS.engine = (() => {
   const mctx = document.createElement('canvas').getContext('2d');
   const widthCache = new Map();
   const metricCache = new Map();
+  const drawingReports = new WeakMap();
+  function noteText(ctx, text, options) {
+    const report = drawingReports.get(ctx);
+    if (report && options.report !== false && String(text || '').trim()) report.minTextSize = Math.min(report.minTextSize, options.size);
+  }
 
   const fontCss = (spec, size) => `${spec.weight} ${size.toFixed(2)}px "${spec.family}", "Segoe UI", Arial, sans-serif`;
   function setFont(ctx, spec, size, trackEm) {
@@ -159,6 +164,7 @@ RS.engine = (() => {
       vh, capPx, lhPx,
       // One line on its own (the video brings a headline in line by line).
       drawLine(ctx, i, x, y, color) {
+        noteText(ctx, res.lines[i], o);
         setFont(ctx, o.font, o.size, o.track);
         ctx.fillStyle = color;
         ctx.textBaseline = 'alphabetic';
@@ -166,6 +172,7 @@ RS.engine = (() => {
         ctx.fillText(res.lines[i], x, y + capPx + i * lhPx);
       },
       draw(ctx, x, y, color, align, boxW) {
+        noteText(ctx, res.lines.join(''), o);
         setFont(ctx, o.font, o.size, o.track);
         ctx.fillStyle = color;
         ctx.textBaseline = 'alphabetic';
@@ -546,7 +553,7 @@ RS.engine = (() => {
       const k = R.style.logoScale * (o.logoMul || 1);
       const nameL = lineLayout(name, { font: R.fonts.head, size: BASE.brandName * s * k, lh: 1, track: R.fonts.headTrack, maxW: w, locale: R.locale });
       const tag = (R.brand.tagline || '').trim();
-      const tagL = tag ? lineLayout(tag, { font: R.fonts.sub, size: BASE.brandTag * s * k, lh: 1.2, track: 0.16, upper: true, maxW: w, locale: R.locale }) : null;
+      const tagL = tag ? lineLayout(tag, { font: R.fonts.sub, size: BASE.brandTag * s * k, lh: 1.2, track: 0.16, upper: true, maxW: w, locale: R.locale, report: false }) : null;
       const gap = 12 * s * k;
       const h = nameL.h + (tagL ? gap + tagL.h : 0);
       return {
@@ -1024,7 +1031,7 @@ RS.engine = (() => {
   function photo(R, rect, clip) {
     const ctx = R.ctx;
     const img = R.images.photo;
-    const p = R.project.photo || { zoom: 1, fx: 0.5, fy: img && img.height > img.width * 1.3 ? 0.36 : 0.5, flip: false };
+    const p = M.photoForFormat(R.project.photo, R.fmt?.id) || { zoom: 1, fx: 0.5, fy: img && img.height > img.width * 1.3 ? 0.36 : 0.5, flip: false };
     ctx.save();
     if (clip) { clip(ctx); ctx.clip(); } else { ctx.beginPath(); ctx.rect(rect.x, rect.y, rect.w, rect.h); ctx.clip(); }
     if (img) {
@@ -1144,6 +1151,7 @@ RS.engine = (() => {
     const fmt = M.FORMATS[opts.format || project.format] || M.FORMATS.portrait;
     const template = RS.templates.get(project.template);
     const locale = opts.locale || project.locale;
+    const offer = M.offerProjection(project, locale, opts.output || (opts.anim ? 'video' : 'image'));
     const style = project.style;
     const scale = opts.scale || 1;
     const regions = [];
@@ -1152,13 +1160,13 @@ RS.engine = (() => {
     const R = {
       ctx, W: fmt.w, H: fmt.h, fmt, project, template, locale, scale, anim,
       mode: opts.mode || 'export',
-      t: project.texts[locale] || project.texts[project.locales[0]],
-      show: project.show, brand: project.brand || {}, style,
+      t: offer.t,
+      show: offer.show, brand: project.brand || {}, style,
       fonts: M.FONTS[style.fonts] || M.FONTS.modern,
       images: opts.images || {},
       fmtMul: fmt.id === 'story' ? 1.06 : 1,
       headLines: fmt.id === 'story' ? 5 : fmt.id === 'square' ? 3 : 4,
-      report: { shrink: 1, photoUpscale: 0 },
+      report: { shrink: 1, photoUpscale: 0, minTextSize: Infinity },
       photoInfo: null,
       // video frames need no click areas (and cached stacks would keep adding them)
       hit: anim ? () => {} : (key, x, y, w, h, clip) => { regions.push({ key, x, y, w, h, clip }); },
@@ -1173,9 +1181,17 @@ RS.engine = (() => {
     const ax = cam.ax != null ? cam.ax : fmt.w / 2, ay = cam.ay != null ? cam.ay : fmt.h / 2;
     ctx.setTransform(scale * z, 0, 0, scale * z, scale * (1 - z) * ax, scale * (1 - z) * ay);
     ctx.imageSmoothingQuality = 'high';
-    template.render(R);
-    if (R.mode === 'editor' && opts.guides && fmt.id === 'story') storyGuides(R);
-    ctx.restore();
+    const previousReport = drawingReports.get(ctx);
+    drawingReports.set(ctx, R.report);
+    try { template.render(R); }
+    finally {
+      if (previousReport) drawingReports.set(ctx, previousReport); else drawingReports.delete(ctx);
+      ctx.restore();
+    }
+    if (!Number.isFinite(R.report.minTextSize)) R.report.minTextSize = 0;
+    if (R.mode === 'editor' && opts.guides && fmt.id === 'story') {
+      ctx.save(); ctx.setTransform(scale, 0, 0, scale, 0, 0); storyGuides(R); ctx.restore();
+    }
     return { regions, report: R.report, photo: R.photoInfo, width: fmt.w, height: fmt.h };
   }
 

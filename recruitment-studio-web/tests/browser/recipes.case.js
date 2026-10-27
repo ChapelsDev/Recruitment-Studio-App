@@ -271,13 +271,30 @@
     assert(!P.scenes[endOf(P)].items.some((x) => x.kind === 'qr'), 'the QR is still on the card');
   });
 
-  test('photos: a chosen photo that is gone falls back to the trades', () => {
+  // Codex (2026-10-26): chosen photos belong to the ad even outside the library
+  // (imported, removed from «As minhas»), so photoIds keeps them as chosen.
+  test('photos: chosen photos stay chosen, even outside the library', () => {
     const p = fixture('full', 'neon');
     const lib = [{ id: 'p1', cat: 'pedreiro' }, { id: 's1', cat: 'servente' }, { id: 'x1', cat: 'eletricista' }];
-    p.video.photos = { mode: 'chosen', ids: ['gone'] };
-    assertEqual(RS.motion.photoIds(p, lib, []), ['p1', 's1']);
-    p.video.photos = { mode: 'chosen', ids: ['x1', 'gone', 'mine'] };
-    assertEqual(RS.motion.photoIds(p, lib, [{ asset: 'mine', cat: 'geral' }]), ['x1', 'mine']);
+    p.video.photos = { mode: 'chosen', ids: ['x1', 'imported'] };
+    assertEqual(RS.motion.photoIds(p, lib, []), ['x1', 'imported']);
+  });
+  test('photos: chosen photos that cannot be loaded are left out; none left falls back to the trades', async () => {
+    const real = { index: RS.library.index, full: RS.library.full, userItems: RS.library.userItems, load: RS.assets.load };
+    const url = H.fakePhoto(0, 60, 90).toDataURL('image/png');
+    RS.library.index = async () => ({ items: [{ id: 'p1', cat: 'pedreiro' }, { id: 's1', cat: 'servente' }, { id: 'x1', cat: 'eletricista' }] });
+    RS.library.full = async () => url;
+    RS.library.userItems = async () => [];
+    RS.assets.load = async () => null; // every non-library id is gone
+    try {
+      const p = fixture('full', 'colagem');
+      p.video.photos = { mode: 'chosen', ids: ['gone'] };
+      assertEqual((await RS.motion.recipePhotos(p, {})).map(RS.motion.photoIdOf), ['p1', 's1']);
+      p.video.photos = { mode: 'chosen', ids: ['x1', 'gone'] };
+      assertEqual((await RS.motion.recipePhotos(p, {})).map(RS.motion.photoIdOf), ['x1']);
+    } finally {
+      RS.library.index = real.index; RS.library.full = real.full; RS.library.userItems = real.userItems; RS.assets.load = real.load;
+    }
   });
 
   test('framework: the seven styles stay after the recipes and Néon is the fallback', () => {

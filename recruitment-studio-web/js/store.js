@@ -4,7 +4,32 @@ window.RS = window.RS || {};
 
 RS.store = (() => {
   const DB_NAME = 'recruitment-studio';
+  const TRASH_DAYS = 30, HISTORY_LIMIT = 50, HISTORY_INTERVAL = 60 * 1000;
+  const clone = (v) => RS.util.clone(v);
   const memory = { projects: new Map(), assets: new Map(), meta: new Map() };
+  const EDITOR_LEASE_MS = 45000, listeners = new Set(), CHANGE_KEY = 'rs-project-change';
+  let channel = null;
+  const deliver = (message) => { for (const listener of listeners) { try { listener(message); } catch {} } };
+  const storageChange = (event) => { if (event.key === CHANGE_KEY && event.newValue) { try { deliver(JSON.parse(event.newValue)); } catch {} } };
+  function announce(rec, actor) {
+    const message = { id: rec.id, revision: rec.revision || 0, actor: actor || '', editor: rec.editor?.id || '', nonce: RS.util.uid() };
+    deliver(message);
+    try { if (channel) channel.postMessage(message); else if (typeof BroadcastChannel !== 'undefined') { const sender = new BroadcastChannel(CHANGE_KEY); sender.postMessage(message); sender.close(); } } catch {}
+    try { window.localStorage?.setItem(CHANGE_KEY, JSON.stringify(message)); } catch {}
+    return rec;
+  }
+  function watchProjects(listener) {
+    listeners.add(listener);
+    if (listeners.size === 1) {
+      try { if (typeof BroadcastChannel !== 'undefined') { channel = new BroadcastChannel(CHANGE_KEY); channel.onmessage = (e) => deliver(e.data); } } catch {}
+      window.addEventListener?.('storage', storageChange);
+    }
+    return () => { listeners.delete(listener); if (!listeners.size) { channel?.close(); channel = null; window.removeEventListener?.('storage', storageChange); } };
+  }
+  function editorConflict(current, reason) {
+    const message = reason === 'deleted' ? 'Este anúncio está na reciclagem. Restaure-o antes de editar.' : reason === 'missing' ? 'Este anúncio já não está disponível.' : reason === 'owner' ? 'Este anúncio está aberto para edição noutra janela.' : 'Existe uma versão mais recente guardada noutra janela.';
+    return Object.assign(new Error(message), { code: 'EDITOR_CONFLICT', reason, current: current ? clone(current) : null });
+  }
   let dbPromise = null;
   let persistent = true;
 
@@ -41,7 +66,7 @@ RS.store = (() => {
     return new Promise((resolve, reject) => {
       const tx = db.transaction(store, mode);
       let result;
-      Promise.resolve(fn(tx.objectStore(store), null)).then((v) => { result = v; }, reject);
+      Promise.resolve().then(() => fn(tx.objectStore(store), null)).then((v) => { result = v; }, (err) => { try { tx.abort(); } catch {} reject(err); });
       tx.oncomplete = () => resolve(result);
       tx.onerror = () => reject(tx.error);
       tx.onabort = () => reject(tx.error || new Error('Transaction aborted'));
@@ -49,55 +74,250 @@ RS.store = (() => {
   }
 
   // ---------------------------------------------------------------- projects
-  const listProjects = () => run('projects', 'readonly', (s, mem) => (s ? wrap(s.getAll()) : [...mem.values()]));
-  const getProject = (id) => run('projects', 'readonly', (s, mem) => (s ? wrap(s.get(id)) : mem.get(id)));
-  function putProject(project, thumb) {
-    return run('projects', 'readwrite', async (s, mem) => {
-      const prev = s ? await wrap(s.get(project.id)) : mem.get(project.id);
-      const rec = {
-        id: project.id, name: project.name, updatedAt: project.updatedAt, deletedAt: project.deletedAt || null,
-        template: project.template, thumb: thumb || (prev && prev.thumb) || null, data: project,
-      };
-      if (s) s.put(rec); else mem.set(rec.id, rec);
-      return rec;
-    });
+  const listProjects = () => run('projects', 'readonly', (s, mem) => (s ? wrap(s.getAll()) : clone([...mem.values()])));
+  const getProject = (id) => run('projects', 'readonly', (s, mem) => (s ? wrap(s.get(id)) : mem.has(id) ? clone(mem.get(id)) : undefined));
+  const contentKey = (p) => JSON.stringify({ ...p, updatedAt: undefined, createdAt: undefined, deletedAt: undefined, locale: undefined });
+  function addVersion(history, rec, reason, now) {
+    const last = history[history.length - 1];
+    if (last && contentKey(last.data) === contentKey(rec.data)) return history;
+    return [...history, { id: RS.util.uid(), savedAt: rec.savedAt || rec.updatedAt || now, capturedAt: now, reason, data: clone(rec.data), thumb: rec.thumb || null }].slice(-HISTORY_LIMIT);
   }
-  const removeProject = (id) => run('projects', 'readwrite', (s, mem) => (s ? s.delete(id) : mem.delete(id)));
-  async function setDeleted(id, deletedAt) {
+  function projectRecord(project, thumb, prev, opts = {}) {
+    const now = Date.now();
+    let history = prev && Array.isArray(prev.history) ? prev.history : [];
+    const last = history[history.length - 1];
+    if (prev && contentKey(prev.data) !== contentKey(project) && (opts.checkpoint || !last || now - last.capturedAt >= HISTORY_INTERVAL)) {
+      history = addVersion(history, prev, opts.reason || 'Automática', now);
+    }
+    const rec = {
+      id: project.id, name: project.name, updatedAt: project.updatedAt, deletedAt: project.deletedAt || null,
+      template: project.template, thumb: thumb || (prev && prev.thumb) || null, data: clone(project), history, savedAt: now,
+      revision: (prev?.revision || 0) + 1, editor: prev?.editor || null,
+    };
+    if (opts.snapshotCurrent) rec.history = addVersion(history, rec, 'Guardada manualmente', now);
+    return rec;
+  }
+  function putProject(project, thumb, opts = {}) {
+    // Capture the value now: callers may continue typing while IndexedDB opens.
+    const data = clone(project);
+    return run('projects', 'readwrite', async (s, mem) => {
+      const prev = s ? await wrap(s.get(data.id)) : mem.get(data.id);
+      // An editor left open in another tab must not resurrect a trashed ad.
+      if (prev && prev.deletedAt) throw editorConflict(prev, 'deleted');
+      if (opts.editorId && !prev) throw editorConflict(null, 'missing');
+      if (opts.expectedRevision !== undefined && (prev?.revision || 0) !== opts.expectedRevision) throw editorConflict(prev, 'revision');
+      if (opts.editorId && !opts.takeover && prev.editor?.id !== opts.editorId) throw editorConflict(prev, 'owner');
+      const rec = projectRecord(data, thumb, prev, opts);
+      if (opts.editorId) rec.editor = { id: opts.editorId, expires: Date.now() + EDITOR_LEASE_MS };
+      if (s) s.put(rec); else mem.set(rec.id, rec);
+      return clone(rec);
+    }).then((rec) => announce(rec, opts.editorId));
+  }
+  const removeProject = (id) => run('projects', 'readwrite', (s, mem) => (s ? s.delete(id) : mem.delete(id))).then(() => { announce({ id, revision: -1 }); });
+  function changeProject(id, fn) {
+    return run('projects', 'readwrite', async (s, mem) => {
+      const rec = s ? await wrap(s.get(id)) : mem.has(id) ? clone(mem.get(id)) : null;
+      if (!rec) throw new Error('O anúncio já não está disponível.');
+      const next = fn(rec);
+      if (s) s.put(next); else mem.set(id, next);
+      return clone(next);
+    }).then((rec) => announce(rec));
+  }
+  function claimEditor(id, editorId, expectedRevision) {
+    return run('projects', 'readwrite', async (s, mem) => {
+      const rec = s ? await wrap(s.get(id)) : mem.has(id) ? clone(mem.get(id)) : null;
+      if (!rec || rec.deletedAt) throw editorConflict(rec, rec ? 'deleted' : 'missing');
+      if (rec.editor?.id !== editorId && rec.editor?.expires > Date.now()) throw editorConflict(rec, 'owner');
+      if (expectedRevision !== undefined && (rec.revision || 0) !== expectedRevision) throw editorConflict(rec, 'revision');
+      rec.editor = { id: editorId, expires: Date.now() + EDITOR_LEASE_MS };
+      if (s) s.put(rec); else mem.set(id, rec); return clone(rec);
+    }).then((rec) => announce(rec, editorId));
+  }
+  function releaseEditor(id, editorId) {
+    return run('projects', 'readwrite', async (s, mem) => {
+      const rec = s ? await wrap(s.get(id)) : mem.has(id) ? clone(mem.get(id)) : null;
+      if (rec?.editor?.id === editorId) { rec.editor = null; if (s) s.put(rec); else mem.set(id, rec); return clone(rec); }
+      return null;
+    }).then((rec) => { if (rec) announce(rec, editorId); });
+  }
+  const setDeleted = (id, deletedAt) => changeProject(id, (rec) => {
+    const p = clone(rec.data);
+    p.deletedAt = deletedAt || null;
+    if (!deletedAt) p.updatedAt = Date.now();
+    return projectRecord(p, rec.thumb, rec);
+  });
+  const saveVersion = (p, thumb, opts = {}) => putProject(p, thumb, { ...opts, checkpoint: true, snapshotCurrent: true });
+  const updateOrganization = (id, patch) => changeProject(id, (rec) => {
+    if (rec.deletedAt) throw new Error('Restaure primeiro o anúncio da reciclagem.');
+    const p = clone(rec.data);
+    p.organization = RS.model.cleanOrganization({ ...p.organization, ...patch });
+    p.updatedAt = Date.now();
+    return projectRecord(p, rec.thumb, rec, { checkpoint: true, reason: 'Antes de organizar' });
+  });
+  const listVersions = async (id) => {
     const rec = await getProject(id);
-    if (!rec) return;
-    rec.data.deletedAt = deletedAt;
-    await putProject(rec.data, rec.thumb);
+    return rec && Array.isArray(rec.history) ? [...rec.history].reverse() : [];
+  };
+  const updatePublication = (id, plan, status, expected) => changeProject(id, (rec) => {
+    if (rec.deletedAt) throw new Error('Restaure primeiro o anúncio da reciclagem.');
+    if (expected && contentKey(RS.model.normalize(rec.data)) !== contentKey(RS.model.normalize(expected))) throw new Error('O anúncio mudou noutra janela. Feche o planeamento e volte a abrir para rever os dados atuais.');
+    const p = clone(rec.data); p.publication = RS.model.cleanPublication(plan, p.locales);
+    p.organization = RS.model.cleanOrganization({ ...p.organization, status }); p.updatedAt = Date.now();
+    return projectRecord(p, rec.thumb, rec, { checkpoint: true, reason: 'Antes de planear a publicação' });
+  });
+  const restoreVersion = (id, versionId, opts = {}) => changeProject(id, (rec) => {
+    if (rec.deletedAt) throw new Error('Restaure primeiro o anúncio da reciclagem.');
+    if (opts.editorId && (rec.editor?.id !== opts.editorId || (rec.revision || 0) !== opts.expectedRevision)) throw editorConflict(rec, 'revision');
+    const version = (rec.history || []).find((v) => v.id === versionId);
+    if (!version) throw new Error('Esta versão já não está disponível.');
+    const p = RS.model.normalize(version.data);
+    p.id = rec.id; p.createdAt = rec.data.createdAt; p.deletedAt = null; p.updatedAt = Date.now();
+    return projectRecord(p, version.thumb, rec, { checkpoint: true, reason: 'Antes de restaurar' });
+  });
+  function projectAssetIds(p) {
+    const ph = p.video && p.video.photos || {};
+    const snapshot = ph.snapshot || {};
+    return [...new Set([p.photo && p.photo.asset, p.logo && p.logo.asset, p.video && p.video.ownSound,
+      ...(ph.ids || []), ...(snapshot.cards || []), ...(snapshot.full || []), snapshot.hero,
+      ...RS.model.carouselAssetIds(p)].filter(Boolean))];
+  }
+  // Import is one transaction: a quota/error leaves neither half an ad nor
+  // unreferenced assets behind. Existing ads and library items are preserved.
+  async function importBundle(project, assets, libraryItems) {
+    const db = await open();
+    const rec = projectRecord(project, null, null);
+    if (!db) {
+      for (const a of assets) memory.assets.set(a.id, a);
+      memory.meta.set('library', [...(memory.meta.get('library') || []), ...libraryItems]);
+      memory.projects.set(rec.id, rec);
+      return;
+    }
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction(['projects', 'assets', 'meta'], 'readwrite');
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error);
+      tx.onabort = () => reject(tx.error || new Error('Não foi possível importar o anúncio.'));
+      const fail = (err) => { try { tx.abort(); } catch {} reject(err); };
+      try {
+        for (const a of assets) tx.objectStore('assets').put(a);
+        tx.objectStore('projects').put(rec);
+        const meta = tx.objectStore('meta');
+        const req = meta.get('library');
+        req.onsuccess = () => {
+          try { meta.put([...(req.result || []), ...libraryItems], 'library'); } catch (err) { fail(err); }
+        };
+      } catch (err) { fail(err); }
+    });
   }
 
   // ---------------------------------------------------------------- assets
   const putAsset = (a) => run('assets', 'readwrite', (s, mem) => (s ? s.put(a) : mem.set(a.id, a)));
   const getAsset = (id) => run('assets', 'readonly', (s, mem) => (s ? wrap(s.get(id)) : mem.get(id)));
-  const listAssetIds = () => run('assets', 'readonly', (s, mem) => (s ? wrap(s.getAllKeys()) : [...mem.keys()]));
-  const removeAsset = (id) => run('assets', 'readwrite', (s, mem) => (s ? s.delete(id) : mem.delete(id)));
 
   // ---------------------------------------------------------------- meta
   const getMeta = (key) => run('meta', 'readonly', (s, mem) => (s ? wrap(s.get(key)) : mem.get(key)));
   const setMeta = (key, value) => run('meta', 'readwrite', (s, mem) => (s ? s.put(value, key) : mem.set(key, value)));
+  const updateLibrary = (fn) => run('meta', 'readwrite', async (s, mem) => {
+    const previous = s ? await wrap(s.get('library')) : mem.get('library');
+    const value = fn(clone(previous || []));
+    if (s) s.put(value, 'library'); else mem.set('library', clone(value));
+    return clone(value);
+  });
 
-  // Removes posters deleted more than a minute ago and images nobody uses.
+  // Read/modify/write one catalogue transaction, including the legacy default.
+  // Two open tabs can save different items without losing each other's changes.
+  const updateCatalog = (fn = (c) => c) => run('meta', 'readwrite', async (s, mem) => {
+    const [value, legacy] = s ? await Promise.all([wrap(s.get('catalog')), wrap(s.get('brand'))]) : [mem.get('catalog'), mem.get('brand')];
+    const c = fn(RS.reuse.catalog(value, legacy));
+    const brand = RS.reuse.defaultBrand(c);
+    if (s) { s.put(c, 'catalog'); s.put(brand, 'brand'); }
+    else { mem.set('catalog', clone(c)); mem.set('brand', clone(brand)); }
+    return clone(c);
+  });
+  const getCatalog = () => updateCatalog();
+  const changeCatalog = (action) => updateCatalog((c) => RS.reuse.mutate(c, action));
+  const saveDefaultBrand = (brand) => updateCatalog((c) => {
+    const id = c.defaultBrandId || RS.util.uid();
+    return RS.reuse.mutate(c, { type: 'save', kind: 'brand', id, value: { ...brand, id, label: brand.label || brand.name || 'A minha marca' } });
+  });
+
+  // A backup observes one database transaction, never a mixture of edits.
+  function readWorkspaceTransaction(tx) {
+    return Promise.all([wrap(tx.objectStore('projects').getAll()), wrap(tx.objectStore('assets').getAll()),
+      wrap(tx.objectStore('meta').getAllKeys()), wrap(tx.objectStore('meta').getAll())])
+      .then(([projects, assets, keys, values]) => ({ projects, assets, meta: keys.map((k, i) => [k, values[i]]) }));
+  }
+  async function readWorkspace() {
+    const db = await open();
+    if (!db) return { projects: clone([...memory.projects.values()]), assets: [...memory.assets.values()], meta: clone([...memory.meta]) };
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(['projects', 'assets', 'meta'], 'readonly');
+      let snapshot;
+      readWorkspaceTransaction(tx).then((s) => { snapshot = s; }, reject);
+      tx.oncomplete = () => resolve(snapshot); tx.onerror = () => reject(tx.error); tx.onabort = () => reject(tx.error);
+    });
+  }
+  function workspaceSignature(s) {
+    const sorted = (rows, key) => [...rows].sort((a, b) => String(key(a)).localeCompare(String(key(b))));
+    return JSON.stringify({ projects: sorted(s.projects.map(({ editor, ...r }) => r), (r) => r.id), meta: sorted(s.meta, (r) => r[0]),
+      assets: sorted(s.assets.map(({ blob, ...a }) => ({ ...a, size: blob?.size, type: blob?.type })), (r) => r.id) });
+  }
+  async function restoreWorkspace(expected, changes) {
+    const db = await open();
+    if (!db) throw new Error('O navegador não permite guardar dados. Abra a cópia num navegador com armazenamento disponível.');
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction(['projects', 'assets', 'meta'], 'readwrite');
+      const fail = (e) => { try { tx.abort(); } catch {} reject(e); };
+      tx.oncomplete = resolve; tx.onerror = () => reject(tx.error); tx.onabort = () => reject(tx.error || new Error('O restauro foi cancelado; os dados anteriores mantêm-se.'));
+      readWorkspaceTransaction(tx).then((current) => {
+        if (workspaceSignature(current) !== expected) throw new Error('Os dados mudaram desde a pré-visualização. Abra novamente a cópia para rever o restauro.');
+        for (const r of changes.projects) {
+          const old = current.projects.find((p) => p.id === r.id);
+          r.revision = Math.max(old?.revision || 0, r.revision || 0) + 1; r.editor = old?.editor || null;
+          tx.objectStore('projects').put(r);
+        }
+        for (const a of changes.assets) tx.objectStore('assets').put(a);
+        for (const [key, value] of changes.meta) tx.objectStore('meta').put(value, key);
+      }).catch(fail);
+    });
+    for (const rec of changes.projects) announce(rec);
+  }
+
+  // Retained versions and the recycling bin own their assets too.
   async function housekeeping() {
     try {
       if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
-      const recs = await listProjects();
-      const cutoff = Date.now() - 60 * 1000;
-      for (const r of recs) if (r.deletedAt && r.deletedAt < cutoff) await removeProject(r.id);
-      const live = (await listProjects()).filter((r) => !r.deletedAt || r.deletedAt >= cutoff);
-      const used = new Set();
-      for (const r of live) {
-        if (r.data.photo) used.add(r.data.photo.asset);
-        if (r.data.logo) used.add(r.data.logo.asset);
-        if (r.data.video && r.data.video.ownSound) used.add(r.data.video.ownSound);
+      const cutoff = Date.now() - TRASH_DAYS * 86400000;
+      const collect = (recs, brand, library, catalog, assetIds, removeAd, removeImage) => {
+        const used = new Set();
+        for (const r of recs) {
+          if (r.deletedAt && r.deletedAt < cutoff) { removeAd(r.id); continue; }
+          for (const p of [r.data, ...(r.history || []).map((v) => v.data)]) {
+            for (const id of projectAssetIds(p)) used.add(id);
+          }
+        }
+        if (brand && brand.logo) used.add(brand.logo);
+        for (const b of catalog?.brands || []) if (b.logo) used.add(b.logo);
+        for (const t of catalog?.templates || []) for (const id of projectAssetIds(t.project)) used.add(id);
+        for (const it of library || []) used.add(it.asset);
+        for (const id of assetIds) if (!used.has(id)) removeImage(id);
+      };
+      const db = await open();
+      if (!db) {
+        collect([...memory.projects.values()], memory.meta.get('brand'), memory.meta.get('library'), memory.meta.get('catalog'), [...memory.assets.keys()],
+          (id) => memory.projects.delete(id), (id) => memory.assets.delete(id));
+        return;
       }
-      const brand = await getMeta('brand');
-      if (brand && brand.logo) used.add(brand.logo);
-      for (const it of (await getMeta('library')) || []) used.add(it.asset);
-      for (const id of await listAssetIds()) if (!used.has(id)) await removeAsset(id);
+      // Do not purge an ad restored (or an asset imported) by another tab
+      // between reading its references and deleting the old records.
+      await new Promise((resolve, reject) => {
+        const tx = db.transaction(['projects', 'assets', 'meta'], 'readwrite');
+        const projects = tx.objectStore('projects'), assets = tx.objectStore('assets'), meta = tx.objectStore('meta');
+        tx.oncomplete = resolve; tx.onerror = () => reject(tx.error); tx.onabort = () => reject(tx.error);
+        Promise.all([wrap(projects.getAll()), wrap(meta.get('brand')), wrap(meta.get('library')), wrap(meta.get('catalog')), wrap(assets.getAllKeys())])
+          .then(([recs, brand, library, catalog, ids]) => collect(recs, brand, library, catalog, ids, (id) => projects.delete(id), (id) => assets.delete(id)))
+          .catch((err) => { try { tx.abort(); } catch {} reject(err); });
+      });
     } catch (err) {
       console.warn('Housekeeping skipped', err);
     }
@@ -105,7 +325,10 @@ RS.store = (() => {
 
   return {
     open, isPersistent: () => persistent, listProjects, getProject, putProject, removeProject, setDeleted,
-    putAsset, getAsset, getMeta, setMeta, housekeeping,
+    putAsset, getAsset, getMeta, setMeta, housekeeping, importBundle, projectAssetIds,
+    TRASH_DAYS, HISTORY_LIMIT, HISTORY_INTERVAL, saveVersion, listVersions, restoreVersion,
+    updateOrganization, getCatalog, changeCatalog, saveDefaultBrand, updateCatalog, updatePublication,
+    readWorkspace, workspaceSignature, restoreWorkspace, updateLibrary, claimEditor, releaseEditor, watchProjects, editorConflict, EDITOR_LEASE_MS,
   };
 })();
 
@@ -182,7 +405,7 @@ RS.assets = (() => {
     // as it is, which skips a redraw, a re-encode and a second decode.
     if (k === 1 && file.type === (kind === 'photo' ? 'image/jpeg' : 'image/png')) {
       const id = U.uid();
-      await RS.store.putAsset({ id, blob: file.slice(0, file.size, file.type), w: w0, h: h0, kind, type: file.type });
+      await RS.store.putAsset({ id, blob: file.slice(0, file.size, file.type), w: w0, h: h0, kind, type: file.type, name: file.name || '' });
       cache.set(id, img);
       return { id, w: w0, h: h0, img };
     }
@@ -194,7 +417,7 @@ RS.assets = (() => {
     const type = kind === 'photo' ? 'image/jpeg' : 'image/png';
     const blob = await toBlob(c, type, 0.92);
     const id = U.uid();
-    await RS.store.putAsset({ id, blob, w: c.width, h: c.height, kind, type });
+    await RS.store.putAsset({ id, blob, w: c.width, h: c.height, kind, type, name: file.name || '' });
     const decoded = await decode(blob);
     cache.set(id, decoded);
     return { id, w: c.width, h: c.height, img: decoded };
@@ -237,14 +460,36 @@ RS.assets = (() => {
 
   // ---------------------------------------------------------------- project files (.anuncio)
   async function exportProjectFile(project) {
-    const assets = {};
-    const sound = project.video && project.video.ownSound ? { asset: project.video.ownSound } : null;
-    for (const ref of [project.photo, project.logo, sound]) {
-      if (!ref) continue;
-      const rec = await RS.store.getAsset(ref.asset);
-      if (rec) assets[rec.id] = { kind: rec.kind, w: rec.w, h: rec.h, name: rec.name, duration: rec.duration, data: await U.blobToDataURL(rec.blob) };
+    const p = RS.model.normalize(project);
+    const assets = Object.create(null);
+    const [lib, mine] = await Promise.all([RS.library.index(), RS.library.userItems()]);
+    const items = [...lib.items, ...mine];
+    const plan = RS.motion.photoPlan(p, lib.items, mine);
+    if (p.video.photos.mode === 'chosen') delete p.video.photos.snapshot;
+    if (p.video.photos.mode !== 'chosen') p.video.photos.snapshot = { ...plan, key: RS.model.photoSelectionKey(p) };
+    // Capture library crop defaults too: these must not depend on the library
+    // shipped with another app version.
+    const photoIds = new Set([...plan.cards, ...plan.full, plan.hero].filter(Boolean));
+    const portableFocus = {};
+    for (const id of RS.store.projectAssetIds(p)) {
+      const item = items.find((it) => (it.asset || it.id) === id);
+      let rec = await RS.store.getAsset(id);
+      if (!rec && item && item.id) {
+        rec = { kind: 'photo', blob: await U.dataURLToBlob(await RS.library.full(id)) };
+      }
+      if (!rec) throw new Error('Falta uma imagem ou som deste anúncio. Escolha o recurso de novo antes de guardar o ficheiro.');
+      const data = await U.blobToDataURL(rec.blob);
+      assets[id] = { kind: rec.kind, w: rec.w, h: rec.h, name: rec.name, duration: rec.duration, data,
+        library: item?.asset || photoIds.has(id) ? { ...RS.library.metadata(item), cat: item && item.cat || 'geral', thumb: item && item.thumb || data } : null };
+      if (photoIds.has(id)) {
+        portableFocus[id] = RS.model.videoPhotoFocus(p, id, item);
+      }
     }
-    const json = JSON.stringify({ app: 'recruitment-studio', v: 1, savedAt: Date.now(), project, assets });
+    // Referenced photos take priority over old crop bookmarks at the model's
+    // 64-photo limit when the file is normalised on the receiving device.
+    p.video.photos.focus = { ...portableFocus, ...(p.video.photos.focus || {}) };
+    RS.workflow?.rebasePublication(project, p);
+    const json = JSON.stringify({ app: 'recruitment-studio', v: 2, savedAt: Date.now(), project: p, assets });
     return new Blob([json], { type: 'application/json' });
   }
 
@@ -258,36 +503,52 @@ RS.assets = (() => {
     if (!parsed || parsed.app !== 'recruitment-studio' || !parsed.project) {
       throw new Error('Este ficheiro não é um projeto do Recruitment Studio.');
     }
+    if (parsed.v != null && ![1, 2].includes(parsed.v)) throw new Error('Este ficheiro precisa de uma versão mais recente do Recruitment Studio.');
     const project = RS.model.normalize(parsed.project);
-    const idMap = {};
+    const beforeRemap = U.clone(project);
+    const idMap = Object.create(null), assets = [], libraryItems = [];
+    const required = new Set(RS.store.projectAssetIds(project));
     for (const [oldId, a] of Object.entries(parsed.assets || {})) {
+      if (!required.has(oldId)) continue;
+      if (!a || typeof a.data !== 'string' || !/^data:(?:image|audio)\/[a-z0-9.+-]+;base64,/i.test(a.data)) {
+        throw new Error('O ficheiro contém uma imagem ou som inválido.');
+      }
       const blob = await U.dataURLToBlob(a.data);
       const id = U.uid();
-      await RS.store.putAsset({ id, blob, w: a.w, h: a.h, kind: a.kind, type: blob.type, name: a.name, duration: a.duration });
+      assets.push({ id, blob, w: a.w, h: a.h, kind: a.kind, type: blob.type, name: a.name, duration: a.duration });
+      if (a.library && a.kind === 'photo') {
+        const thumb = typeof a.library.thumb === 'string' && /^data:image\/[a-z0-9.+-]+;base64,/i.test(a.library.thumb) ? a.library.thumb : a.data;
+        libraryItems.push({ ...RS.library.metadata(a.library), asset: id, cat: typeof a.library.cat === 'string' ? a.library.cat : 'geral', thumb, addedAt: Date.now() });
+      }
       idMap[oldId] = id;
     }
+    if (parsed.v === 2 && [...required].some((id) => !idMap[id])) throw new Error('O ficheiro está incompleto: falta uma imagem ou som do anúncio.');
     if (project.video.ownSound) project.video.ownSound = idMap[project.video.ownSound] || null;
     if (!project.video.ownSound && project.video.sound === 'own') project.video.sound = 'generated';
     if (project.photo) project.photo.asset = idMap[project.photo.asset] || null;
     if (project.photo && !project.photo.asset) project.photo = null;
     if (project.logo) project.logo.asset = idMap[project.logo.asset] || null;
     if (project.logo && !project.logo.asset) project.logo = null;
-    // «Enquadrar»: a point follows its photo to the new id. The chosen photos (library
-    // and «As minhas») are not in the file: they stay as they are on this device, so a
-    // point of one of «As minhas» stays too, even when it was also the ad's photo.
-    const focus = project.video.photos.focus;
+    RS.model.remapCarouselAssets(project, (id) => idMap[id] || id);
+    const ph = project.video.photos;
+    ph.ids = ph.ids.map((id) => idMap[id] || id);
+    if (ph.snapshot) {
+      ph.snapshot = { key: RS.model.photoSelectionKey(project), cards: ph.snapshot.cards.map((id) => idMap[id] || id),
+        full: ph.snapshot.full.map((id) => idMap[id] || id), hero: idMap[ph.snapshot.hero] || ph.snapshot.hero };
+    }
+    const focus = ph.focus;
     if (focus) {
-      const mine = new Set(((await RS.store.getMeta('library')) || []).map((it) => it.asset));
       const out = {};
       for (const [id, f] of Object.entries(focus)) {
-        if (!idMap[id] || mine.has(id)) out[id] = f;
-        if (idMap[id]) out[idMap[id]] = f;
+        out[idMap[id] || id] = f;
       }
-      project.video.photos.focus = out;
+      ph.focus = out;
     }
     project.id = U.uid();
     project.deletedAt = null;
     project.updatedAt = Date.now();
+    RS.workflow?.rebasePublication(beforeRemap, project);
+    await RS.store.importBundle(project, assets, libraryItems);
     return project;
   }
 
@@ -376,7 +637,39 @@ RS.library = (() => {
     return new File([blob], `${id}.jpg`, { type: blob.type || 'image/jpeg' });
   }
 
-  const userItems = async () => (await RS.store.getMeta('library')) || [];
+  function metadata(item = {}) {
+    item ||= {};
+    const tags = Array.isArray(item.tags) ? item.tags : String(item.tags || '').split(',');
+    return { name: String(item.name || '').trim().slice(0, 120), description: String(item.description || '').trim().slice(0, 600),
+      originalName: String(item.originalName || '').slice(0, 240), tags: [...new Set(tags.map((v) => String(v).trim().slice(0, 40)).filter(Boolean))].slice(0, 24), favorite: item.favorite === true,
+      sourceDigest: /^[a-f0-9]{64}$/.test(item.sourceDigest || '') ? item.sourceDigest : '', contentDigest: /^[a-f0-9]{64}$/.test(item.contentDigest || '') ? item.contentDigest : '' };
+  }
+  const userItems = async () => ((await RS.store.getMeta('library')) || []).map((it) => ({ ...it, ...metadata(it) }));
+  const label = (it) => it.name || it.originalName || `Fotografia ${String(it.asset || it.id || '').slice(-6)}`;
+  function filter(items, { query = '', favorite = false, tag = '' } = {}) {
+    const terms = RS.model.foldText(query).split(/\s+/).filter(Boolean);
+    return items.filter((it) => (!favorite || it.favorite) && (!tag || it.tags?.includes(tag)) && terms.every((s) => RS.model.foldText([label(it), it.description, ...(it.tags || []), RS.trades.list.find((t) => t.photo === it.cat)?.label].join(' ')).includes(s)));
+  }
+  async function saveMetadata(asset, patch) {
+    return RS.store.updateLibrary((list) => {
+      const item = list.find((it) => it.asset === asset); if (!item) throw new Error('Esta fotografia já foi retirada da biblioteca.');
+      const allowed = Object.fromEntries(['name', 'description', 'tags', 'favorite', 'cat'].filter((k) => k in patch).map((k) => [k, patch[k]]));
+      Object.assign(item, allowed, metadata({ ...item, ...allowed })); return list;
+    });
+  }
+  async function usage(asset, current) {
+    const [records, catalogue] = await Promise.all([RS.store.listProjects(), RS.store.getCatalog()]);
+    const uses = (p) => p && RS.store.projectAssetIds(p).includes(asset);
+    const projects = records.map((r) => ({ id: r.id, name: current?.id === r.id ? current.name : r.name, trashed: !!r.deletedAt,
+      current: uses(current?.id === r.id ? current : r.data), history: (r.history || []).some((v) => uses(v.data)) })).filter((r) => r.current || r.history);
+    if (current && !records.some((r) => r.id === current.id) && uses(current)) projects.push({ id: current.id, name: current.name, current: true, history: false, trashed: false });
+    return { projects, templates: catalogue.templates.filter((t) => uses(t.project)).map((t) => ({ id: t.id, name: t.name })) };
+  }
+  async function fingerprint(blob) {
+    if (!globalThis.crypto?.subtle) return '';
+    const bytes = new Uint8Array(await crypto.subtle.digest('SHA-256', await blob.arrayBuffer()));
+    return Array.from(bytes, (v) => v.toString(16).padStart(2, '0')).join('');
+  }
 
   async function thumbOf(img) {
     const k = Math.min(1, 360 / Math.max(img.width, img.height));
@@ -386,28 +679,43 @@ RS.library = (() => {
     return c.toDataURL('image/jpeg', 0.78);
   }
 
-  // Adds the person's own photos; returns how many were accepted.
-  // onProgress(done) is called before each file.
+  // Detailed results for each selected file. Existing metadata is merged in one
+  // transaction; duplicate checks run again inside it to cover concurrent imports.
   async function addUserPhotos(files, cat, onProgress) {
-    const list = await userItems();
-    let added = 0;
+    const result = { added: 0, duplicates: 0, failed: 0, items: [], duplicateCheck: !!globalThis.crypto?.subtle };
+    for (const item of await userItems()) if (!item.contentDigest && result.duplicateCheck) {
+      const rec = await RS.store.getAsset(item.asset);
+      if (rec?.blob) {
+        const digest = await fingerprint(rec.blob);
+        await RS.store.updateLibrary((rows) => { const it = rows.find((v) => v.asset === item.asset); if (it && !it.contentDigest) it.contentDigest = digest; return rows; });
+      }
+    }
     for (const [i, f] of [...files].entries()) {
       if (onProgress) onProgress(i);
       try {
+        const sourceDigest = await fingerprint(f), list = await userItems();
+        const existing = sourceDigest && list.find((it) => it.sourceDigest === sourceDigest || it.contentDigest === sourceDigest);
+        if (existing) { result.duplicates++; result.items.push({ name: f.name, status: 'duplicate', asset: existing.asset, reason: `Já existe: ${label(existing)}` }); continue; }
         const a = await RS.assets.importFile(f, 'photo');
-        list.unshift({ asset: a.id, cat: cat || 'geral', thumb: await thumbOf(a.img), addedAt: Date.now() });
-        added++;
+        const rec = await RS.store.getAsset(a.id), contentDigest = await fingerprint(rec.blob), thumb = await thumbOf(a.img);
+        let duplicate = null;
+        await RS.store.updateLibrary((rows) => {
+          duplicate = rows.find((it) => sourceDigest && it.sourceDigest === sourceDigest || contentDigest && it.contentDigest === contentDigest);
+          if (!duplicate) rows.unshift({ asset: a.id, cat: cat || 'geral', thumb, addedAt: Date.now(), ...metadata({ name: String(f.name || 'Fotografia').replace(/\.[^.]+$/, ''), originalName: f.name, sourceDigest, contentDigest }) });
+          return rows;
+        });
+        if (duplicate) { result.duplicates++; result.items.push({ name: f.name, status: 'duplicate', asset: duplicate.asset, reason: `Já existe: ${label(duplicate)}` }); }
+        else { result.added++; result.items.push({ name: f.name, status: 'added', asset: a.id, reason: 'Adicionada' }); }
       } catch (err) {
-        console.warn('Photo skipped', f.name, err);
+        result.failed++; result.items.push({ name: f.name, status: 'failed', reason: err.message || 'Não foi possível importar este ficheiro.' });
       }
     }
-    await RS.store.setMeta('library', list);
-    return added;
+    return result;
   }
 
   async function removeUser(asset) {
-    await RS.store.setMeta('library', (await userItems()).filter((x) => x.asset !== asset));
+    await RS.store.updateLibrary((rows) => rows.filter((x) => x.asset !== asset));
   }
 
-  return { index, full, fileFor, userItems, addUserPhotos, removeUser };
+  return { index, full, fileFor, userItems, addUserPhotos, removeUser, metadata, label, filter, saveMetadata, usage };
 })();

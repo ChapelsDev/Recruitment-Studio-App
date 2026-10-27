@@ -620,6 +620,8 @@
     palettes: { dark: { bg: '#0F3B8C', ink: '#FFFFFF', main: '#0F3B8C', accent: '#FFD23F' } },
     // 10–30 s: every page is a station of its own on the sheet
     bgModes: ['dark'], photos: 0, travel: 'whip', continuous: true, pages: true,
+    // a carousel slide is taken at rest, before the whip to the next station
+    slideLead: WHIP / 2 + 0.12,
     // the sheet is the main colour; lines and words white; the highlight readable on it
     colors(c) {
       c.bg = U.isDark(c.main) ? c.main : U.mix(c.main, '#000000', 0.55);

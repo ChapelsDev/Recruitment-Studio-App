@@ -1,0 +1,98 @@
+[
+  {
+    "name": "pt-PT/carrossel/001.png",
+    "bytes": 1206343,
+    "dimensions": [
+      1080,
+      1350
+    ]
+  },
+  {
+    "name": "pt-PT/carrossel/002.png",
+    "bytes": 848793,
+    "dimensions": [
+      1080,
+      1350
+    ]
+  },
+  {
+    "name": "pt-PT/carrossel/003.png",
+    "bytes": 113469,
+    "dimensions": [
+      1080,
+      1350
+    ]
+  },
+  {
+    "name": "pt-PT/carrossel/004.png",
+    "bytes": 102116,
+    "dimensions": [
+      1080,
+      1350
+    ]
+  },
+  {
+    "name": "pt-PT/carrossel/005.png",
+    "bytes": 130684,
+    "dimensions": [
+      1080,
+      1350
+    ]
+  },
+  {
+    "name": "pt-PT/publicacao.txt",
+    "bytes": 383
+  },
+  {
+    "name": "manifesto.json",
+    "bytes": 765,
+    "json": {
+      "v": 1,
+      "project": "Revisão pedreiro editorial portrait",
+      "createdAt": "2026-10-26T16:28:50.742Z",
+      "locales": [
+        "pt-PT"
+      ],
+      "parts": {
+        "carousel": true,
+        "text": true
+      },
+      "carouselFormat": "portrait",
+      "slides": {
+        "pt-PT": 5
+      },
+      "covers": {},
+      "files": [
+        {
+          "name": "pt-PT/carrossel/001.png",
+          "bytes": 1206343
+        },
+        {
+          "name": "pt-PT/carrossel/002.png",
+          "bytes": 848793
+        },
+        {
+          "name": "pt-PT/carrossel/003.png",
+          "bytes": 113469
+        },
+        {
+          "name": "pt-PT/carrossel/004.png",
+          "bytes": 102116
+        },
+        {
+          "name": "pt-PT/carrossel/005.png",
+          "bytes": 130684
+        },
+        {
+          "name": "pt-PT/publicacao.txt",
+          "bytes": 383
+        }
+      ],
+      "warnings": []
+    }
+  },
+  {
+    "name": "LEIA-ME.txt",
+    "bytes": 601
+  }
+]

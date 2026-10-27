@@ -1,4 +1,4 @@
-// Ready-made texts per construction trade, in pt / de / fr / en.
+// Ready-made texts per construction trade, in pt / de / fr / en / it / es.
 // Benefits come from a shared phrase book so a poster made from a preset can be
 // translated automatically when a language is added (only untouched texts change).
 window.RS = window.RS || {};
@@ -7,7 +7,7 @@ RS.trades = (() => {
   const { uid } = RS.util;
 
   // Locale code -> phrase language. Languages without an entry copy the source text.
-  const LANG = { 'pt-PT': 'pt', 'de-CH': 'de', 'de-DE': 'de', fr: 'fr', en: 'en' };
+  const LANG = { 'pt-PT': 'pt', 'de-CH': 'de', 'de-DE': 'de', fr: 'fr', en: 'en', it: 'it', es: 'es' };
   const langOf = (locale) => LANG[locale] || null;
 
   const P = {
@@ -111,6 +111,52 @@ RS.trades = (() => {
       intro: INTRO.stable, benefits: ['pay', 'training', 'license', 'longterm', 'region'], badge: BADGE.open,
       positions: [t('Diretor de obra', 'Bauleiter', 'Conducteur de travaux', 'Site manager'), t('Medidor-orçamentista', 'Kalkulator Bau', 'Métreur', 'Quantity surveyor'), t('Técnico de segurança', 'Sicherheitsbeauftragter', 'Technicien sécurité', 'Safety officer')] },
   ];
+  const pair = (row, it, es) => Object.assign(row, { it, es });
+  pair(P.pay, 'Retribuzione superiore alla media', 'Remuneración por encima de la media');
+  pair(P.start, 'Inizio immediato', 'Incorporación inmediata');
+  pair(P.license, 'Patente B preferibile', 'Se valora el permiso de conducir B');
+  pair(P.longterm, 'Contratti di lunga durata', 'Contratos de larga duración');
+  pair(P.housing, 'Alloggio garantito', 'Alojamiento garantizado');
+  pair(P.overtime, 'Straordinari retribuiti', 'Horas extra remuneradas');
+  pair(P.tools, 'Attrezzi e DPI forniti', 'Herramientas y EPI proporcionados');
+  pair(P.meals, 'Indennità di vitto', 'Ayuda para comidas');
+  pair(P.transport, 'Trasporto al cantiere', 'Transporte a la obra');
+  pair(P.training, 'Formazione e crescita professionale', 'Formación y desarrollo profesional');
+  pair(P.insurance, 'Assicurazione contro gli infortuni sul lavoro', 'Seguro de accidentes de trabajo');
+  pair(P.travel, 'Viaggio pagato', 'Viaje pagado');
+  pair(P.region, 'Cantieri nella tua zona', 'Obras en tu zona');
+  pair(P.ontime, 'Stipendio sempre puntuale', 'Salario siempre puntual');
+  pair(KICKER, 'Cerchiamo', 'Buscamos'); pair(POS_TITLE, 'Posizioni aperte:', 'Vacantes:');
+  pair(INTRO.site, 'Hai esperienza in cantiere e cerchi una nuova sfida?', '¿Tienes experiencia en obra y buscas un nuevo reto?');
+  pair(INTRO.craft, 'Sei un professionista del mestiere e vuoi guadagnare di più?', '¿Eres profesional del oficio y quieres ganar más?');
+  pair(INTRO.stable, 'Cerchi un progetto stabile con buone condizioni?', '¿Buscas un proyecto estable con buenas condiciones?');
+  pair(BADGE.now, 'Inizio immediato', 'Incorporación inmediata'); pair(BADGE.pay, 'Ottima retribuzione', 'Buen salario'); pair(BADGE.open, 'Candidati ora', 'Vacantes abiertas');
+  pair(helper, 'Aiutante', 'Ayudante');
+  CONTACTS.it = [['phone', '+39 000 000 0000'], ['mail', 'lavoro@aempresa.it']];
+  CONTACTS.es = [['phone', '+34 000 000 000'], ['mail', 'empleo@aempresa.es']];
+  HASH.it = '#lavoro #edilizia #cantiere #assunzioni'; HASH.es = '#empleo #construccion #obra #seleccion';
+  // Complete stock text coverage. These are editable starting points; review in context.
+  const EXTRA = {
+    obras: ['Operai e capisquadra edili', 'Oficiales y encargados de construcción', ['Caposquadra edile', 'Operaio edile specializzato', 'Manovale edile'], ['Encargado de obra', 'Oficial de construcción', 'Peón de obra'], '#edilizia', '#construccion'],
+    pedreiro: ['Muratori, addetti alla malta e manovali', 'Albañiles, amasadores y peones', ['Muratore esperto', 'Addetto alla preparazione della malta', 'Manovale edile'], ['Albañil con experiencia', 'Amasador de mortero', 'Peón de obra'], '#muratore', '#albañil'],
+    cofragem: ['Carpentieri edili e addetti alle casseforme', 'Encofradores y carpinteros de encofrado', ['Addetto alle casseforme', 'Carpentiere edile', 'Aiutante'], ['Encofrador', 'Carpintero de encofrado', 'Ayudante'], '#casseforme', '#encofrador'],
+    ferro: ['Ferraioli', 'Ferrallistas', ['Ferraiolo', 'Aiutante ferraiolo'], ['Ferrallista', 'Ayudante de ferrallista'], '#ferraiolo', '#ferrallista'],
+    eletricista: ['Elettricisti per cantieri e manutenzione', 'Electricistas de obra y mantenimiento', ['Elettricista qualificato', 'Montatore di quadri elettrici', 'Aiutante elettricista'], ['Electricista de primera', 'Montador de cuadros eléctricos', 'Ayudante de electricista'], '#elettricista', '#electricista'],
+    canalizador: ['Idraulici e tecnici di climatizzazione', 'Fontaneros y técnicos de climatización', ['Idraulico', 'Tecnico di climatizzazione', 'Aiutante'], ['Fontanero', 'Técnico de climatización', 'Ayudante'], '#idraulico', '#fontanero'],
+    pintor: ['Imbianchini e intonacatori', 'Pintores y yeseros', ['Imbianchino edile', 'Intonacatore', 'Aiutante'], ['Pintor de construcción', 'Yesero', 'Ayudante'], '#imbianchino', '#pintor'],
+    carpinteiro: ['Carpentieri e falegnami', 'Carpinteros y ebanistas', ['Falegname', 'Carpentiere in legno', 'Montatore di cucine'], ['Carpintero de acabados', 'Carpintero de estructuras', 'Montador de cocinas'], '#falegname', '#carpintero'],
+    serralheiro: ['Fabbri e saldatori', 'Cerrajeros y soldadores', ['Fabbro per carpenteria metallica', 'Saldatore MIG/MAG', 'Saldatore TIG'], ['Cerrajero de construcción', 'Soldador MIG/MAG', 'Soldador TIG'], '#saldatore', '#soldador'],
+    ladrilhador: ['Piastrellisti e posatori', 'Alicatadores y soladores', ['Piastrellista', 'Posatore di pietra', 'Aiutante'], ['Alicatador', 'Colocador de piedra', 'Ayudante'], '#piastrellista', '#alicatador'],
+    telhados: ['Copritetti e montatori di coperture', 'Techadores y montadores de cubiertas', ['Copritetto', 'Montatore di pannelli sandwich', 'Aiutante'], ['Techador', 'Montador de paneles sándwich', 'Ayudante'], '#coperture', '#cubiertas'],
+    maquinas: ['Operatori di macchine e gruisti', 'Operadores de maquinaria y gruistas', ['Escavatorista', 'Gruista', 'Autista di mezzi pesanti'], ['Operador de excavadora', 'Gruista', 'Conductor de vehículos pesados'], '#macchineedili', '#maquinaria'],
+    pladur: ['Installatori di cartongesso e controsoffitti', 'Instaladores de pladur y falsos techos', ['Cartongessista', 'Montatore di controsoffitti', 'Aiutante'], ['Instalador de pladur', 'Montador de falsos techos', 'Ayudante'], '#cartongesso', '#pladur'],
+    servente: ['Manovali e aiutanti edili', 'Peones y ayudantes de obra', ['Manovale edile', 'Aiutante muratore', 'Aiutante di magazzino di cantiere'], ['Peón de obra', 'Ayudante de albañil', 'Ayudante de almacén de obra'], '#manovale', '#peon'],
+    tecnico: ['Tecnici e ingegneri di cantiere', 'Técnicos e ingenieros de obra', ['Direttore di cantiere', 'Tecnico computista', 'Tecnico della sicurezza'], ['Jefe de obra', 'Técnico de mediciones y presupuestos', 'Técnico de seguridad'], '#tecnicoedile', '#ingenieria'],
+  };
+  for (const trade of LIST) {
+    const [it, es, ip, ep, itTag, esTag] = EXTRA[trade.id]; pair(trade.headline, it, es); pair(trade.tag, itTag, esTag);
+    trade.positions.forEach((p, i) => pair(p, ip[i], ep[i]));
+  }
   const byId = Object.fromEntries(LIST.map((x) => [x.id, x]));
 
   // One person of each trade, singular, as used inside a sentence ("Vi o anúncio

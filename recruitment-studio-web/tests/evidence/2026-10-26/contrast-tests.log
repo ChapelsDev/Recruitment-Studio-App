@@ -1,0 +1,213 @@
+TAP version 13
+# Subtest: offline readiness measures shell and photos separately, reports interrupted preparation and resumes only missing resources
+ok 1 - offline readiness measures shell and photos separately, reports interrupted preparation and resumes only missing resources
+  ---
+  duration_ms: 242.8021
+  type: 'test'
+  ...
+# Subtest: activation preserves other apps caches and fetch uses only this version; cache eviction is reflected in readiness
+ok 2 - activation preserves other apps caches and fetch uses only this version; cache eviction is reflected in readiness
+  ---
+  duration_ms: 23.6015
+  type: 'test'
+  ...
+# Subtest: offline bridge distinguishes disk copies and forwards actual worker progress without claiming availability early
+ok 3 - offline bridge distinguishes disk copies and forwards actual worker progress without claiming availability early
+  ---
+  duration_ms: 7.0465
+  type: 'test'
+  ...
+# Subtest: UI: save multiple brands and a model, rename it, then create an independent ad from home
+ok 4 - UI: save multiple brands and a model, rename it, then create an independent ad from home
+  ---
+  duration_ms: 2917.7145
+  type: 'test'
+  ...
+# Subtest: UI: common offer is saved once and changed salary prompts review of custom publication text
+ok 5 - UI: common offer is saved once and changed salary prompts review of custom publication text
+  ---
+  duration_ms: 2097.2161
+  type: 'test'
+  ...
+# Subtest: UI: mobile preview can be collapsed while editing and restored without changing the ad
+ok 6 - UI: mobile preview can be collapsed while editing and restored without changing the ad
+  ---
+  duration_ms: 1230.5392
+  type: 'test'
+  ...
+# Subtest: UI: desktop panel divider accepts keyboard and pointer input, clamps width and keeps its preference
+ok 7 - UI: desktop panel divider accepts keyboard and pointer input, clamps width and keeps its preference
+  ---
+  duration_ms: 480.9709
+  type: 'test'
+  ...
+# Subtest: UI: workspace backup cancellation, preview and copy restore remain explicit and refresh home
+ok 8 - UI: workspace backup cancellation, preview and copy restore remain explicit and refresh home
+  ---
+  duration_ms: 313.138
+  type: 'test'
+  ...
+# Subtest: UI: phone save failures stay actionable until retry succeeds; session-only storage never claims durable saving
+ok 9 - UI: phone save failures stay actionable until retry succeeds; session-only storage never claims durable saving
+  ---
+  duration_ms: 2463.19
+  type: 'test'
+  ...
+# Subtest: UI: export focus stays inside the dialog and nested confirmation restores its trigger
+ok 10 - UI: export focus stays inside the dialog and nested confirmation restores its trigger
+  ---
+  duration_ms: 427.396
+  type: 'test'
+  ...
+# Subtest: UI: video scrubbing pauses playback, moment navigation works and the chosen frame/title are saved per language
+ok 11 - UI: video scrubbing pauses playback, moment navigation works and the chosen frame/title are saved per language
+  ---
+  duration_ms: 1249.8088
+  type: 'test'
+  ...
+# Subtest: UI: video has an explicit keyboard-operable pause and resume control
+ok 12 - UI: video has an explicit keyboard-operable pause and resume control
+  ---
+  duration_ms: 365.5503
+  type: 'test'
+  ...
+# Subtest: UI: carousel pages can be edited, split, joined, reordered, hidden and given an independent photograph
+ok 13 - UI: carousel pages can be edited, split, joined, reordered, hidden and given an independent photograph
+  ---
+  duration_ms: 1688.1539
+  type: 'test'
+  ...
+# Subtest: UI: production settings persist, unsupported video blocks only its selected package, cancellation recovers controls
+ok 14 - UI: production settings persist, unsupported video blocks only its selected package, cancellation recovers controls
+  ---
+  duration_ms: 1227.2209
+  type: 'test'
+  ...
+# Subtest: UI: captions stay per language after closing export and reopening the ad; regenerate supports undo
+ok 15 - UI: captions stay per language after closing export and reopening the ad; regenerate supports undo
+  ---
+  duration_ms: 733.3762
+  type: 'test'
+  ...
+# Subtest: UI: recovery restores versions and trashed ads through their visible controls on a phone
+ok 16 - UI: recovery restores versions and trashed ads through their visible controls on a phone
+  ---
+  duration_ms: 547.0377
+  type: 'test'
+  ...
+# Subtest: UI: restoring from the editor cannot be overwritten by an earlier autosave
+ok 17 - UI: restoring from the editor cannot be overwritten by an earlier autosave
+  ---
+  duration_ms: 1437.8435
+  type: 'test'
+  ...
+# Subtest: UI: phone export opens history and saves a manual version of the edited caption
+ok 18 - UI: phone export opens history and saves a manual version of the edited caption
+  ---
+  duration_ms: 1020.7272
+  type: 'test'
+  ...
+# Subtest: UI: a save failure keeps the edited ad open instead of silently losing changes
+ok 19 - UI: a save failure keeps the edited ad open instead of silently losing changes
+  ---
+  duration_ms: 554.0652
+  type: 'test'
+  ...
+# Subtest: UI: portable export shows progress, prevents repeat clicks and allows retry after failure
+ok 20 - UI: portable export shows progress, prevents repeat clicks and allows retry after failure
+  ---
+  duration_ms: 567.8427
+  type: 'test'
+  ...
+# Subtest: UI: organise, combine filters, favourite and duplicate as a draft
+ok 21 - UI: organise, combine filters, favourite and duplicate as a draft
+  ---
+  duration_ms: 690.9281
+  type: 'test'
+  ...
+# Subtest: UI: reviewed translations become stale after source edits and review supports undo
+ok 22 - UI: reviewed translations become stale after source edits and review supports undo
+  ---
+  duration_ms: 1376.3393
+  type: 'test'
+  ...
+# Subtest: UI: export warnings target a contact and the selected translation; edits refresh the warnings
+ok 23 - UI: export warnings target a contact and the selected translation; edits refresh the warnings
+  ---
+  duration_ms: 693.7356
+  type: 'test'
+  ...
+# Subtest: UI: concurrent changes suspend saves and saving a copy preserves both windows work
+ok 24 - UI: concurrent changes suspend saves and saving a copy preserves both windows work
+  ---
+  duration_ms: 1299.8073
+  type: 'test'
+  ...
+# Subtest: UI: reloading shows the saved version, then explicit takeover preserves it in history
+not ok 25 - UI: reloading shows the saved version, then explicit takeover preserves it in history
+  ---
+  duration_ms: 835.3252
+  type: 'test'
+  location: 'C:\\Users\\guilherme.andrade\\Desktop\\Dev\\RS-codex\\recruitment-studio-web\\tests\\unit\\recovery-ui.test.cjs:518:1'
+  failureType: 'testCodeFailure'
+  error: "Cannot read properties of null (reading 'disabled')"
+  code: 'ERR_TEST_FAILURE'
+  name: 'TypeError'
+  stack: |-
+    C:\Users\guilherme.andrade\Desktop\Dev\RS-codex\recruitment-studio-web\tests\unit\recovery-ui.test.cjs:526:110
+    until (C:\Users\guilherme.andrade\Desktop\Dev\RS-codex\recruitment-studio-web\tests\unit\recovery-ui.test.cjs:11:46)
+    TestContext.<anonymous> (C:\Users\guilherme.andrade\Desktop\Dev\RS-codex\recruitment-studio-web\tests\unit\recovery-ui.test.cjs:526:9)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: UI: leaving a conflicted editor requires confirmation and never replaces the saved version
+ok 26 - UI: leaving a conflicted editor requires confirmation and never replaces the saved version
+  ---
+  duration_ms: 970.6892
+  type: 'test'
+  ...
+# Subtest: UI: offline settings show partial readiness, retry failures and display completion from worker state
+ok 27 - UI: offline settings show partial readiness, retry failures and display completion from worker state
+  ---
+  duration_ms: 331.6351
+  type: 'test'
+  ...
+# Subtest: UI: publication planning tracks pending languages, changed posts and manual closure from home
+ok 28 - UI: publication planning tracks pending languages, changed posts and manual closure from home
+  ---
+  duration_ms: 717.5586
+  type: 'test'
+  ...
+# Subtest: UI: photo search, metadata, favorites, usage and per-file import feedback
+ok 29 - UI: photo search, metadata, favorites, usage and per-file import feedback
+  ---
+  duration_ms: 748.9337
+  type: 'test'
+  ...
+# Subtest: UI: save approved phrases, suggest an exact translation and explicitly approve it in the new context
+ok 30 - UI: save approved phrases, suggest an exact translation and explicitly approve it in the new context
+  ---
+  duration_ms: 987.1646
+  type: 'test'
+  ...
+# Subtest: UI: compare formats edits one crop, can copy to all, and selects the format for continued editing
+ok 31 - UI: compare formats edits one crop, can copy to all, and selects the format for continued editing
+  ---
+  duration_ms: 1086.4566
+  type: 'test'
+  ...
+# Subtest: UI: file chooser is attached to the document and cancellation cleans it up
+ok 32 - UI: file chooser is attached to the document and cancellation cleans it up
+  ---
+  duration_ms: 77.3501
+  type: 'test'
+  ...
+1..32
+# tests 32
+# suites 0
+# pass 31
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 29765.7874

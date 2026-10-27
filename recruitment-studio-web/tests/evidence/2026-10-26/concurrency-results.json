@@ -1,0 +1,15 @@
+{
+  "origin": "http://127.0.0.1:18973",
+  "pages": [
+    "2",
+    "4"
+  ],
+  "server": "stopped",
+  "reload": "B loaded saved title A and remained suspended",
+  "takeover": "B became owner; A suspended",
+  "history": "restored A from Before change of window; then restored B from Before restore",
+  "exitCancel": "kept A local draft",
+  "exitDiscard": "discarded A local draft",
+  "verifiedOriginal": "TESTE B — continuação explícita na segunda janela",
+  "verifiedCopy": "TESTE B — rascunho preservado em cópia"
+}

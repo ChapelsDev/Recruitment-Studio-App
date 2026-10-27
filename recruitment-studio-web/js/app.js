@@ -4,6 +4,10 @@
   const { html, render, useState, useEffect, useLayoutEffect, useRef, useMemo, useCallback } = window.htmPreact;
   const U = RS.util, M = RS.model, E = RS.engine, T = RS.templates, S = RS.store, A = RS.assets, L = RS.library, TR = RS.trades, C = RS.contact;
   const { CountUp, CotaLoader, BrickLoader, CraneProgress, Celebration, useDelayed } = RS.ui;
+  const W = RS.workflow;
+  const { Modal, OrganizationDialog, HomeFilters, TranslationDialog } = RS.workflowUI({ Icon, ListEditor });
+  const { ReuseDialog, ProductionDialog, BackupDialog, VideoCoverDialog, FormatComparison, VideoTimeline } = RS.productionUI({ Icon, Modal, PhotoLibrary, confirmDialog, toast, makeThumb, videoPhotos, afterPaint: () => afterPaint() });
+  const { PieceSwitch, CarouselStage, useCarousel, CarouselStylePanel, CarouselSequencePanel, CarouselPhotosPanel, StyleCover, styleName, drawSlide } = RS.carouselUI({ Icon, queueThumb, afterPaint: () => afterPaint(), Group, VideoTexts, PhotoLibrary, VideoPhotos, FramePhoto, FocusThumb, BodyLayer });
 
   // ============================================================== motion + small helpers
   // «Calmo» (chosen in «Definições», or the device asks for reduced motion): no flights
@@ -60,7 +64,10 @@
     return new Promise((resolve) => {
       const input = document.createElement('input');
       input.type = 'file'; input.name = 'files'; input.accept = accept; input.multiple = true;
-      input.onchange = () => resolve([...(input.files || [])]);
+      input.tabIndex = -1; input.style.cssText = 'position:fixed;left:-10000px;top:0;width:1px;height:1px;';
+      const finish = (files) => { input.remove(); resolve(files); };
+      input.onchange = () => finish([...(input.files || [])]);
+      input.addEventListener('cancel', () => finish([])); document.body.appendChild(input);
       input.click();
     });
   }
@@ -71,8 +78,26 @@
     return html`<svg class="ico" width=${size} height=${size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
       stroke-width=${stroke} stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d=${RS.ICON_PATHS[name] || ''} /></svg>`;
   }
+  if (!RS.ICON_PATHS.pause) RS.ICON_PATHS.pause = 'M8 5v14M16 5v14';
   function Spinner({ large }) {
     return html`<span class=${'spinner' + (large ? ' lg' : '')} aria-hidden="true"></span>`;
+  }
+  function useProjectFile() {
+    const [fileSaving, setFileSaving] = useState(false);
+    const pending = useRef(false);
+    const saveFile = async (project) => {
+      if (pending.current) return;
+      pending.current = true; setFileSaving(true);
+      try {
+        const snapshot = M.normalize(project);
+        await afterPaint();
+        const blob = await A.exportProjectFile(snapshot);
+        const ok = await U.saveBlob(blob, `${U.slug(snapshot.name)}.anuncio`, [{ description: 'Projeto Recruitment Studio', accept: { 'application/json': ['.anuncio'] } }]);
+        if (ok) toast('Projeto guardado com as imagens e o som. Pode abri-lo noutro aparelho.');
+      } catch (err) { toast(err.message || 'Não foi possível guardar o ficheiro.', { kind: 'error' }); }
+      finally { pending.current = false; setFileSaving(false); }
+    };
+    return { fileSaving, saveFile };
   }
   // In Ilustrativo the icon is drawn inline so its three dots can type now and then.
   const WM_LIVE = html`<svg class="wm-mark wm-live" viewBox="0 0 512 512" width="26" height="26" aria-hidden="true" focusable="false">
@@ -190,6 +215,7 @@
     thumbJobs.set(key, job);
     if (!thumbTask) { thumbTask = true; later(runThumbJob); }
   }
+  queueThumb.cancel = (key) => thumbJobs.delete(key);
   // `pending`: the images are still arriving; keep the shimmer instead of drawing
   // the placeholder illustration for a moment.
   function PosterThumb({ project, format, images, width, locale, vt, pending }) {
@@ -222,7 +248,7 @@
   // its trades (RS.motion.photoSet); loaded once per ad look.
   const photoSets = new Map();
   function motionPhotos(project, images) {
-    const key = `${(project.trades || []).join(',')}|${project.photo ? project.photo.asset : ''}|${images && images.photo ? 'p' : ''}`;
+    const key = `${(project.trades || []).join(',')}|${project.photo ? project.photo.asset : ''}|${images && images.photo ? 'p' : ''}|${JSON.stringify(M.photoSnapshot(project))}`;
     if (!photoSets.has(key)) {
       if (photoSets.size > 6) photoSets.clear();
       photoSets.set(key, (async () => {
@@ -240,7 +266,7 @@
     const ph = project.video && project.video.photos;
     return ph && ph.mode === 'chosen' ? ph.ids : null;
   };
-  const videoPhotosKey = (project, images) => `${(project.trades || []).join(',')}|${project.photo ? project.photo.asset : ''}|${images && images.photo ? 'p' : ''}|${(chosenPhotos(project) || []).join(',')}`;
+  const videoPhotosKey = (project, images) => `${(project.trades || []).join(',')}|${project.photo ? project.photo.asset : ''}|${images && images.photo ? 'p' : ''}|${(chosenPhotos(project) || []).join(',')}|${JSON.stringify(M.photoSnapshot(project))}`;
   function videoPhotos(project, images) {
     const key = videoPhotosKey(project, images);
     if (!videoSets.has(key)) {
@@ -255,7 +281,7 @@
   }
   // Everything the video reads from the ad (not its name, not the dates): a
   // prepared video is only made again when this changes.
-  const videoKey = (p) => JSON.stringify([p.video, p.texts, p.offer, p.whatsapp, p.waTemplates, p.brand, p.logo, p.photo, p.style, p.show, p.locales, p.locale, p.trades, p.trade]);
+  const videoKey = (p) => JSON.stringify([{ ...p.video, cover: undefined }, p.texts, p.offer, p.whatsapp, p.waTemplates, p.brand, p.logo, p.photo, p.style, p.show, p.locales, p.locale, p.trades, p.trade]);
   // the gallery's cards are too small for «Enquadrar»: a framing does not prepare them again
   const cardKey = (p) => {
     const ph = p.video && p.video.photos;
@@ -267,10 +293,10 @@
     useEffect(() => {
       if (!on) return undefined;
       let live = true;
-      videoPhotos(project, images).then((s) => { if (live) setSet(s); });
+      videoPhotos(project, images).then((photos) => { if (live) setSet({ key, photos }); });
       return () => { live = false; };
     }, [key, on]);
-    return set;
+    return set?.key === key ? set.photos : null;
   }
   // Plays a prepared video (RS.motion) in a loop, with a short pause on the
   // last frame, until the returned function is called. `clock` (seconds) drives
@@ -322,7 +348,7 @@
   // Gallery of the motion styles, each one moving while it is on screen. The
   // cards follow what the video shows (not the ad's name) once the edits
   // settle: every model is prepared again, so not on every key.
-  function MotionCard({ style, project: live, images, photos, on, onPick, disabled }) {
+  function MotionCard({ style, project: live, images, photos, on, onPick, disabled, width = 62 }) {
     const project = useSettled(live, 300);
     const ref = useRef();
     const [visible, setVisible] = useState(false);
@@ -345,15 +371,15 @@
       return () => thumbJobs.delete(job);
     }, [cardKey(project), style, images, photos]);
     return html`<button ref=${ref} type="button" role="radio" aria-checked=${on} class=${'motion-card' + (on ? ' on' : '')} disabled=${disabled} onClick=${onPick}>
-      ${P ? html`<${VideoPreview} prepared=${P} width=${62} still=${visible ? null : 1.2} fps=${12} />`
-        : html`<span class="poster-thumb motion-wait" style="width:62px;height:110px" aria-hidden="true"></span>`}
+      ${P ? html`<${VideoPreview} prepared=${P} width=${width} still=${visible ? null : 1.2} fps=${12} />`
+        : html`<span class="poster-thumb motion-wait" style=${`width:${width}px;height:${Math.round(width * 16 / 9)}px`} aria-hidden="true"></span>`}
       <span>${style.name}</span>
     </button>`;
   }
-  function MotionPicker({ project, images, photos, value, onChange, disabled, list, label }) {
+  function MotionPicker({ project, images, photos, value, onChange, disabled, list, label, cardWidth }) {
     return html`<div class="motion-picker" role="radiogroup" aria-label=${label || 'Estilo do vídeo'}>
       ${(list || RS.motion.STYLES).map((s) => html`<${MotionCard} key=${s.id} style=${s} project=${project} images=${images} photos=${photos}
-        on=${value === s.id} disabled=${disabled} onPick=${() => onChange(s)} />`)}
+        on=${value === s.id} disabled=${disabled} onPick=${() => onChange(s)} width=${cardWidth} />`)}
     </div>`;
   }
   function makeThumb(project, images) {
@@ -361,26 +387,7 @@
     return canvas.toDataURL('image/jpeg', 0.82);
   }
   function applyBrand(project, brand) {
-    if (!brand) return project;
-    const p = U.clone(project);
-    // savedAt marks a brand saved with «Guardar como a minha marca»; a brand
-    // holding only the number typed in «Mostrar QR» leaves the rest alone.
-    if (brand.savedAt) {
-      p.brand = { name: brand.name || '', tagline: brand.tagline || '' };
-      p.logo = brand.logo ? { asset: brand.logo } : null;
-      if (brand.primary && brand.accent) {
-        p.style.primary = brand.primary;
-        p.style.accent = brand.accent;
-        p.style.customColors = true;
-      }
-      if (brand.contacts && brand.contacts.length) {
-        for (const code of p.locales) p.texts[code].contacts = brand.contacts.map((c) => M.iconItem(c.icon, c.text));
-      }
-    }
-    // «Fala comigo»: the recruiter's number and the default message wording.
-    if (brand.whatsapp && brand.whatsapp.number) p.whatsapp = { ...brand.whatsapp };
-    if (brand.waTemplates) p.waTemplates = { ...brand.waTemplates };
-    return p;
+    return RS.reuse.applyBrand(project, brand);
   }
   // Marks one element as the poster that morphs into the next screen.
   function markPoster(el) { document.querySelectorAll('[style*="view-transition-name"]').forEach((n) => { n.style.viewTransitionName = ''; }); if (el) el.style.viewTransitionName = 'poster'; }
@@ -439,6 +446,23 @@
   // The motion style, the theme and the vibration — the home's «Definições» sheet
   // and the editor's «Definições» tab. Every choice applies at once and is kept on
   // this device (RS.appearance).
+  function OfflinePanel() {
+    const [state, setState] = useState(null), [working, setWorking] = useState(false);
+    useEffect(() => RS.offline.subscribe(setState), []);
+    const action = async (prepare) => { if (working) return; setWorking(true); try { await (prepare ? RS.offline.prepare() : RS.offline.check()); } finally { setWorking(false); } };
+    const running = working || state?.running;
+    return html`<section class="settings-group offline-panel"><h3>Disponível sem rede</h3>
+      ${!state ? html`<p role="status">A verificar recursos guardados…</p>` : state.mode === 'file' ? html`<p>Esta cópia abre diretamente da pasta do computador. Mantenha a pasta completa para usar a aplicação e as fotografias sem rede.</p>` : html`
+        <p role="status">${state.error || (state.appReady ? state.controlled ? 'Aplicação disponível offline.' : 'Aplicação preparada. Reabra para confirmar o funcionamento offline.' : 'A aplicação ainda não está totalmente preparada.')}</p>
+        ${state.mode === 'web' && html`<p>Fotografias: ${state.photosReady || 0} de ${state.photosTotal === null ? 'total por verificar' : state.photosTotal} disponíveis.</p>
+          <progress aria-label="Recursos disponíveis offline" value=${(state.coreReady || 0) + (state.photosReady || 0)} max=${(state.coreTotal || 0) + (state.photosTotal || 0) || 1}></progress>`}
+        <div class="row-btns"><button class="btn ghost sm" disabled=${running} onClick=${() => action(false)}>Verificar novamente</button><button class="btn primary sm" disabled=${running || state.mode !== 'web'} onClick=${() => action(true)}>${running ? 'A preparar…' : state.errors?.length ? 'Repetir recursos em falta' : 'Preparar todos os recursos'}</button></div>
+        ${state.errors?.length > 0 && html`<details class="offline-errors"><summary>${state.errors.length} recursos não foram guardados</summary><ul>${state.errors.slice(0, 8).map((e, i) => html`<li key=${i}>${e.url.includes('/photos/full/') ? `Fotografia ${e.url.split('/').pop().replace(/\.js$/, '')}` : 'Recurso da aplicação'}: ${e.reason}</li>`)}</ul>${state.errors.length > 8 && html`<p>E mais ${state.errors.length - 8}. A repetição tenta todos os recursos em falta.</p>`}</details>`}
+        <p class="settings-note">Prepare os recursos com ligação à rede antes de sair. A preparação explícita descarrega as fotografias mesmo com a poupança de dados ativa.</p>
+      `}
+      <p class="settings-note">Os anúncios e recursos próprios ficam no armazenamento deste navegador. Use também uma cópia de segurança externa.</p>
+    </section>`;
+  }
   function SettingsPanel() {
     const [s, setS] = useState(() => RS.appearance.get());
     useEffect(() => RS.appearance.subscribe(setS), []);
@@ -465,6 +489,7 @@
           onChange=${(e) => RS.appearance.set({ haptics: e.target.checked })} /><span class="switch-ui"></span> Vibração</label>
         <p class="settings-note">Um toque leve no telemóvel quando carrega nos botões.</p>
       </section>
+      <${OfflinePanel} />
     </div>`;
   }
   // The home's «Definições»: a dialog (a sheet rising from the bottom on a phone).
@@ -500,13 +525,15 @@
   // «Instalar»: one tap where the browser installs by itself; otherwise the sheet
   // with the steps of the browser in use and, on a computer, the QR for the phone.
   // On the .exe (file://) and in an installed computer app: «Instalar no telemóvel».
-  function InstallButton() {
+  // Installing: offered (not on a phone that already has the app), its words, the
+  // action, and the guide sheet it opens (to render where the offer is).
+  function useInstall() {
     const [, setCan] = useState(!!installBus.evt);
     const [sheet, setSheet] = useState(null);
     useEffect(() => { installBus.subs.add(setCan); return () => installBus.subs.delete(setCan); }, []);
     const p = RS.install.detect();
     const phone = PHONES.has(p);
-    if (p === 'installed' && RS.install.phone(navigator.userAgent, { maxTouchPoints: navigator.maxTouchPoints })) return null;
+    const offered = !(p === 'installed' && RS.install.phone(navigator.userAgent, { maxTouchPoints: navigator.maxTouchPoints }));
     const toPhone = p === 'file' || p === 'installed';
     const label = toPhone ? 'Instalar no telemóvel' : 'Instalar';
     async function install() {
@@ -521,9 +548,8 @@
       }
       setSheet(RS.install.detect());
     }
-    return html`<button class="btn primary install-btn" onClick=${install} aria-label=${label} title=${toPhone ? 'Um código QR para instalar a app no telemóvel' : 'Instalar o Recruitment Studio neste aparelho'}>
-        <${Icon} name=${toPhone ? 'smartphone' : 'download'} /> <span class="hide-sm">${label}</span></button>
-      ${sheet && html`<${InstallSheet} platform=${sheet} onClose=${() => setSheet(null)} />`}`;
+    return { offered, label, toPhone, install, title: toPhone ? 'Um código QR para instalar a app no telemóvel' : 'Instalar o Recruitment Studio neste aparelho',
+      sheet: sheet && html`<${InstallSheet} platform=${sheet} onClose=${() => setSheet(null)} />` };
   }
   // The guide's drawing (RS.install.DEMOS): the browser in use with its bar, the
   // menu or the confirmation each step opens, and a finger (on a computer, the
@@ -666,12 +692,104 @@
   }
 
   // ============================================================== home
+  // Recovery is available on the home screen (also on phones) and in the editor.
+  function RecoveryDialog({ projectId, onClose, onRestore, onSnapshot, editorOptions }) {
+    const trash = !projectId;
+    const [rows, setRows] = useState(null);
+    const [working, setWorking] = useState(false);
+    const [error, setError] = useState('');
+    const [notice, setNotice] = useState('');
+    const pending = useRef(false), modal = useRef();
+    const previousFocus = useRef(document.activeElement);
+    const date = (ts) => new Date(ts).toLocaleString('pt-PT', { dateStyle: 'short', timeStyle: 'short' });
+    const read = async () => trash
+      ? (await S.listProjects()).filter((r) => r.deletedAt).sort((a, b) => b.deletedAt - a.deletedAt)
+      : S.listVersions(projectId);
+    useEffect(() => {
+      let live = true;
+      read().then((r) => { if (live) setRows(r); }).catch((err) => { if (live) setError(err.message); });
+      if (modal.current) modal.current.focus();
+      return () => { live = false; if (previousFocus.current && previousFocus.current.isConnected) previousFocus.current.focus(); };
+    }, [projectId]);
+    const close = () => { if (!pending.current) onClose(); };
+    async function action(fn) {
+      if (pending.current) return;
+      pending.current = true; setWorking(true); setError(''); setNotice('');
+      try { await fn(); setRows(await read()); }
+      catch (err) { setError(err.message || 'Não foi possível concluir. Tente de novo.'); }
+      finally { pending.current = false; setWorking(false); }
+    }
+    const restore = (row) => action(async () => {
+      const rec = trash ? await S.setDeleted(row.id, null) : await S.restoreVersion(projectId, row.id, editorOptions ? editorOptions() : {});
+      if (onRestore) await onRestore(rec);
+      setNotice(trash ? 'Anúncio restaurado' : 'Versão restaurada. A versão anterior continua no histórico.');
+    });
+    const snapshot = () => action(async () => {
+      if (onSnapshot) await onSnapshot();
+      else {
+        const rec = await S.getProject(projectId);
+        if (!rec) throw new Error('O anúncio já não está disponível.');
+        await S.saveVersion(rec.data, rec.thumb);
+      }
+      setNotice('Versão guardada no histórico');
+    });
+    const keys = (e) => {
+      e.stopPropagation();
+      if (e.key === 'Escape') { e.preventDefault(); close(); }
+      if (e.key !== 'Tab') return;
+      const nodes = [...modal.current.querySelectorAll('button:not(:disabled), [href], input:not(:disabled), [tabindex="0"]')];
+      const first = nodes[0], last = nodes[nodes.length - 1];
+      if (!first) { e.preventDefault(); return; }
+      if (e.shiftKey && (document.activeElement === first || document.activeElement === modal.current)) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && (document.activeElement === last || document.activeElement === modal.current)) { e.preventDefault(); first.focus(); }
+    };
+    return html`<div class="modal-back" onMouseDown=${(e) => { if (e.target === e.currentTarget) close(); }} onKeyDown=${keys}>
+      <section ref=${modal} class="modal recovery" role="dialog" aria-modal="true" aria-labelledby="recovery-title" tabIndex="-1" aria-busy=${working}>
+        <header class="modal-head"><h2 id="recovery-title">${trash ? 'Reciclagem' : 'Histórico de versões'}</h2>
+          <button class="icon-btn" aria-label="Fechar recuperação" disabled=${working} onClick=${close}><${Icon} name="x" /></button></header>
+        <div class="recovery-body">
+          <p>${trash ? `Os anúncios ficam aqui durante ${S.TRASH_DAYS} dias, com as imagens, o som e as versões.`
+            : `Até ${S.HISTORY_LIMIT} versões por anúncio. As alterações automáticas são agrupadas por minuto. Restaurar conserva a versão atual no histórico.`}</p>
+          ${!trash && html`<button class="btn ghost recovery-save" disabled=${working} onClick=${snapshot}><${Icon} name="save" /> Guardar versão atual</button>`}
+          ${error && html`<p class="recovery-error" role="alert">${error}</p>`}
+          ${notice && html`<p class="recovery-notice" role="status">${notice}</p>`}
+          ${!rows && !error ? html`<p role="status">A carregar…</p>` : rows && !rows.length ? html`<p class="recovery-empty">${trash ? 'A reciclagem está vazia.' : 'Ainda não há versões anteriores. Pode guardar uma versão agora.'}</p>` : null}
+          <ul class="recovery-list">${(rows || []).map((r) => html`<li key=${r.id}>
+            ${r.thumb && html`<img class="recovery-thumb" src=${r.thumb} alt="" loading="lazy" />`}
+            <div class="recovery-info"><strong>${r.data.name || 'Sem título'}</strong>
+              <span>${date(trash ? r.deletedAt : r.savedAt)}</span>
+              <small>${trash ? `Disponível por mais ${Math.max(0, Math.ceil((r.deletedAt + S.TRASH_DAYS * 86400000 - Date.now()) / 86400000))} dias` : r.reason}</small>
+            </div>
+            <button class="btn ghost sm" disabled=${working} onClick=${() => restore(r)} aria-label=${`Restaurar ${trash ? 'anúncio' : 'versão'} ${r.data.name || ''} de ${date(trash ? r.deletedAt : r.savedAt)}`}><${Icon} name="rotate-ccw" size=${16} /> Restaurar</button>
+          </li>`)}</ul>
+        </div>
+      </section>
+    </div>`;
+  }
+
   function Home({ onNew, onOpen, busy, brand, setBrand }) {
+    const { fileSaving, saveFile } = useProjectFile();
+    const inst = useInstall();
     const [recs, setRecs] = useState(homeCache.recs);
     const [menu, setMenu] = useState(null);
     const [reading, setReading] = useState(false);
     const [meet, setMeet] = useState(false);
     const [settings, setSettings] = useState(false);
+    const [recovery, setRecovery] = useState(null);
+    const [organizing, setOrganizing] = useState(null);
+    const [reuseOpen, setReuseOpen] = useState(false);
+    const [backupOpen, setBackupOpen] = useState(false);
+    const [filters, setFilters] = useState(homeCache.filters || { ...W.DEFAULT_FILTERS });
+    const changeFilters = (next) => { homeCache.filters = next; setFilters(next); };
+    const shown = useMemo(() => W.selectProjects(recs || [], filters), [recs, filters]);
+    // search and «Filtros» once there are enough ads to need them (always while a filter is on)
+    const allFilters = { ...W.DEFAULT_FILTERS, ...filters };
+    const filtering = Object.keys(W.DEFAULT_FILTERS).some((k) => allFilters[k] !== W.DEFAULT_FILTERS[k]);
+    const findable = !!recs && (recs.length >= 8 || filtering);
+    async function favorite(rec) {
+      try { await S.updateOrganization(rec.id, { favorite: !M.cleanOrganization(rec.data.organization).favorite }); await refresh(); }
+      catch (err) { toast(err.message, { kind: 'error' }); }
+    }
     const live = RS.ui.useMotionStyle() === 'illustrative';
     const gridRef = useRef();
     RS.ui.useFlip(gridRef);
@@ -679,8 +797,7 @@
     // A number typed in «Mostrar QR» is kept in «A minha marca» (only the number).
     async function keepNumber(whatsapp) {
       const b = { ...(brand || {}), whatsapp };
-      await S.setMeta('brand', b);
-      setBrand(b);
+      setBrand(RS.reuse.defaultBrand(await S.saveDefaultBrand(b)));
     }
     // Version of the published copy (the offline cache name), to check an update arrived.
     const [version, setVersion] = useState('');
@@ -723,6 +840,8 @@
       const p = U.clone(rec.data);
       p.id = U.uid(); p.name = `${rec.data.name} (cópia)`; p.nameAuto = false;
       p.createdAt = p.updatedAt = Date.now();
+      p.organization = { ...M.cleanOrganization(p.organization), status: 'draft', favorite: false };
+      p.publication = M.cleanPublication();
       await S.putProject(p, rec.thumb);
       refresh();
       toast('Anúncio duplicado');
@@ -740,12 +859,9 @@
         return;
       }
       refresh();
-      toast(`«${rec.name}» foi eliminado`, { action: 'Anular', onAction: async () => { await S.setDeleted(rec.id, null); refresh(); } });
-    }
-    async function saveFile(rec) {
-      const blob = await A.exportProjectFile(rec.data);
-      const ok = await U.saveBlob(blob, `${U.slug(rec.name)}.anuncio`, [{ description: 'Projeto Recruitment Studio', accept: { 'application/json': ['.anuncio'] } }]);
-      if (ok) toast('Ficheiro do projeto guardado');
+      toast(`«${rec.name}» foi movido para a reciclagem`, { action: 'Anular', onAction: async () => {
+        try { await S.setDeleted(rec.id, null); await refresh(); } catch (err) { toast(err.message, { kind: 'error' }); }
+      } });
     }
 
     const newCard = html`<button class=${'new-card' + (busy === 'gallery' ? ' busy' : '')} onClick=${() => { if (!busy || navAnim.on) onNew(); }} style="--i:0" aria-busy=${busy === 'gallery'}>
@@ -761,40 +877,60 @@
       <header class="home-top">
         <${Wordmark} />
         <div class="spacer"></div>
-        <${InstallButton} />
-        <button class="btn ghost" onClick=${() => setMeet(true)} aria-label="Mostrar QR" title="Um QR do seu WhatsApp para mostrar cara a cara"><${Icon} name="qr-code" /> <span class="hide-sm">Mostrar QR</span></button>
-        <button class="btn ghost" onClick=${openFile} disabled=${reading} aria-busy=${reading}>
-          ${reading ? html`<${Spinner} />` : html`<${Icon} name="folder-open" />`} <span class="hide-sm">${reading ? 'A abrir…' : 'Abrir ficheiro'}</span></button>
-        <button class="icon-btn settings-btn" onClick=${() => setSettings(true)} aria-haspopup="dialog" aria-label="Definições" title="Definições: movimento, tema e vibração"><${Icon} name="settings" /></button>
+        ${reading && html`<span class="project-file-status" role="status"><${Spinner} /> A abrir…</span>`}
+        <button class="icon-btn home-qr" onClick=${() => setMeet(true)} aria-label="Mostrar QR" title="Mostrar QR: o seu WhatsApp para mostrar cara a cara"><${Icon} name="qr-code" /><span class="sr-only">Mostrar QR</span></button>
+        <${MoreMenu} where="home" items=${[
+          { label: reading ? 'A abrir…' : 'Abrir ficheiro', icon: 'folder-open', disabled: reading, title: 'Abrir um anúncio guardado num ficheiro (.anuncio)', onClick: openFile },
+          { label: 'Marcas e modelos', icon: 'copy', onClick: () => setReuseOpen(true) },
+          { label: 'Cópias de segurança', icon: 'save', onClick: () => setBackupOpen(true) },
+          { label: 'Reciclagem', icon: 'trash-2', onClick: () => setRecovery({ id: null }) },
+          inst.offered && { label: inst.label, icon: inst.toPhone ? 'smartphone' : 'download', cls: 'install-item', title: inst.title, onClick: inst.install },
+          { label: 'Definições', icon: 'settings', title: 'Movimento, tema e vibração', onClick: () => setSettings(true) },
+        ].filter(Boolean)} />
       </header>
+      ${inst.sheet}
       ${settings && html`<${SettingsSheet} onClose=${() => setSettings(false)} />`}
+      ${backupOpen && html`<${BackupDialog} onClose=${() => setBackupOpen(false)} onRestore=${async () => { setBrand(RS.reuse.defaultBrand(await S.getCatalog())); await refresh(); }} />`}
+      ${reuseOpen && html`<${ReuseDialog} onChange=${setBrand} onClose=${() => setReuseOpen(false)} onUse=${async (p) => { await S.putProject(p); await onOpen(p); }} />`}
       ${meet && html`<${MeetQR} whatsapp=${brand && brand.whatsapp} onNumber=${keepNumber} keptIn="na sua marca" onClose=${() => setMeet(false)} />`}
+      ${recovery && html`<${RecoveryDialog} projectId=${recovery.id} onClose=${() => setRecovery(null)} onRestore=${() => refresh()} />`}
+      ${organizing && html`<${OrganizationDialog} project=${organizing.data} onClose=${() => setOrganizing(null)} onSave=${async (o) => { await S.updateOrganization(organizing.id, o); await refresh(); }} />`}
       <main class="home-main">
         <div class="home-intro">
           <h1>Os seus anúncios</h1>
-          <p>Escolha um modelo e a função, escreva a oferta e descarregue a imagem pronta para o Facebook e o Instagram. Tudo fica guardado neste aparelho.</p>
+          <p>Imagem, carrossel e vídeo de cada oferta, guardados neste aparelho.${fileSaving ? html` <span class="project-file-status" role="status"><${Spinner} /> A preparar projeto…</span>` : ''}</p>
         </div>
+        ${findable && recs.length > 0 && html`<${HomeFilters} records=${recs} filters=${filters} onChange=${changeFilters} /><p class="filter-count" role="status">${shown.length} de ${recs.length} anúncios</p>`}
         ${!recs ? null : !recs.length ? html`<${EmptySite}>${newCard}<//>` : html`<div ref=${gridRef} class=${'card-grid stagger' + (busy === 'gallery' || (busy && busy.startsWith('open:')) ? ' is-busy' : '')}>
           ${newCard}
-          ${recs && recs.map((r, i) => html`<div key=${r.id} data-id=${r.id} data-flip=${r.id} class=${'proj-card' + (busy === `open:${r.id}` ? ' busy' : '')} style=${`--i:${Math.min(i + 1, 10)}`}>
+          ${shown.map((r, i) => html`<div key=${r.id} data-id=${r.id} data-flip=${r.id} class=${'proj-card' + (busy === `open:${r.id}` ? ' busy' : '')} style=${`--i:${Math.min(i + 1, 10)}`}>
             <button class="proj-open" onClick=${(e) => { if (busy && !navAnim.on) return; markPoster(e.currentTarget.querySelector('.proj-thumb')); onOpen(r.data, `open:${r.id}`); }}
               aria-label=${`Abrir ${r.name}`} aria-busy=${busy === `open:${r.id}`}>
               <span class="proj-thumb">${r.thumb ? html`<img src=${r.thumb} alt="" />` : html`<span class="proj-thumb-empty"><${Icon} name="image" size=${28} /></span>`}
                 ${busy === `open:${r.id}` && html`<span class="busy-veil"><${Spinner} large /> A abrir…</span>`}</span>
               <span class="proj-name">${r.name || 'Sem título'}</span>
               <span class="proj-meta">${T.get(r.template).name} · ${U.relativeTime(r.updatedAt)}</span>
+              <span class="proj-organization"><span class=${`project-status ${M.cleanOrganization(r.data.organization).status}`}>${M.STATUSES[M.cleanOrganization(r.data.organization).status]}</span>${r.data.organization && r.data.organization.campaign && html`<span class="project-campaign">${r.data.organization.campaign}</span>`}</span>
             </button>
+            <div class="proj-pieces" role="group" aria-label=${`Abrir ${r.name || 'Sem título'} em`}>
+              ${[['image', 'image', 'Abrir na imagem'], ['carousel', 'layers', 'Abrir no carrossel'], ['video', 'video', 'Abrir no vídeo']].map(([piece, icon, label]) => html`<button key=${piece} class="icon-btn"
+                aria-label=${`${label}: ${r.name || 'Sem título'}`} title=${label} onClick=${() => { if (busy && !navAnim.on) return; onOpen(r.data, `open:${r.id}`, piece); }}><${Icon} name=${icon} size=${16} /></button>`)}
+            </div>
+            <button class="icon-btn proj-favorite" aria-label=${`Favorito: ${r.name}`} aria-pressed=${M.cleanOrganization(r.data.organization).favorite} onClick=${() => favorite(r)}><${Icon} name="star" size=${18} /></button>
             <button class="icon-btn proj-more" aria-label=${`Mais ações para ${r.name}`} aria-expanded=${menu === r.id}
               onClick=${(e) => { e.stopPropagation(); setMenu(menu === r.id ? null : r.id); }}><${Icon} name="ellipsis" /></button>
             ${menu === r.id && html`<div class="menu pop" role="menu">
+              <button role="menuitem" onClick=${() => setOrganizing(r)}><${Icon} name="folder-open" /> Organizar anúncio</button>
               <button role="menuitem" onClick=${() => duplicate(r)}><${Icon} name="copy" /> Duplicar</button>
-              <button role="menuitem" onClick=${() => saveFile(r)}><${Icon} name="save" /> Guardar ficheiro do projeto</button>
-              <button role="menuitem" class="danger" onClick=${() => remove(r)}><${Icon} name="trash-2" /> Eliminar</button>
+              <button role="menuitem" disabled=${fileSaving} onClick=${() => saveFile(r.data)}><${Icon} name="save" /> Guardar ficheiro do projeto</button>
+              <button role="menuitem" onClick=${() => setRecovery({ id: r.id })}><${Icon} name="clock" /> Histórico de versões</button>
+              <button role="menuitem" class="danger" onClick=${() => remove(r)}><${Icon} name="trash-2" /> Mover para a reciclagem</button>
             </div>`}
           </div>`)}
         </div>`}
+        ${recs && recs.length > 0 && !shown.length && html`<p class="workflow-empty">Nenhum anúncio corresponde aos filtros. <button class="btn link" onClick=${() => changeFilters({ ...W.DEFAULT_FILTERS })}>Limpar filtros</button></p>`}
         ${recs && !recs.length && html`<p class="home-empty">Ainda não há anúncios. O primeiro demora dois minutos.</p>`}
-        ${!S.isPersistent() && html`<p class="home-warn"><${Icon} name="triangle-alert" /> Este navegador não permite guardar dados. Use «Guardar ficheiro do projeto» para não perder o trabalho.</p>`}
+        ${!S.isPersistent() && html`<p class="home-warn"><${Icon} name="triangle-alert" /> Este navegador não permite guardar dados. Use «Guardar ficheiro do projeto» (no ⋯ de cada anúncio) para não perder o trabalho.</p>`}
         ${version && html`<p class="home-version">Versão ${version}</p>`}
       </main>
     </div>`;
@@ -844,8 +980,14 @@
     return first ? `${first.label}${ids.length > 1 ? ` +${ids.length - 1}` : ''}` : '';
   };
 
-  function Gallery({ brand, onBack, onCreate, busy }) {
+  function Gallery({ brand: initialBrand, onBack, onCreate, busy }) {
+    useLayoutEffect(() => { window.scrollTo(0, 0); }, []);
+    const [brand, setBrand] = useState(initialBrand), [brands, setBrands] = useState([]);
+    useEffect(() => { let live = true; S.getCatalog().then((c) => { if (live) { setBrands(c.brands); const selected = c.brands.find((b) => b.id === initialBrand?.id) || RS.reuse.defaultBrand(c); setBrand(selected); setUseBrand(!!selected); } }).catch(() => {}); return () => { live = false; }; }, []);
     const [format, setFormat] = useState('portrait');
+    // «Começar por»: the piece the new ad opens on (Imagem: the poster templates;
+    // Carrossel: «Do anúncio» and the six styles; Vídeo: the video models)
+    const [start, setStart] = useState('image');
     const [trades, setTrades] = useState([]);
     const trade = trades[0] || '';
     const [useBrand, setUseBrand] = useState(!!brand);
@@ -858,7 +1000,9 @@
     const small = size.w && size.w < 700;
     useEffect(() => {
       if (!brand || !brand.logo) { setLogo(null); return; }
-      A.load(brand.logo).then((img) => setLogo(img || null)).catch(() => setLogo(null));
+      let live = true; setLogo(undefined);
+      A.load(brand.logo).then((img) => { if (live) setLogo(img || null); }).catch(() => { if (live) setLogo(null); });
+      return () => { live = false; };
     }, [brand]);
     useEffect(() => { L.index().then(setLib); }, []);
     // With a bundled library, every preview shows a real photo of the chosen trade.
@@ -890,6 +1034,23 @@
     const pad = small ? 8 : 12;
     const cardW = size.w ? Math.floor((size.w - (cols - 1) * gap) / cols) : 0;
     const images = useMemo(() => ({ logo: useBrand ? logo || null : null, photo: libPhoto ? libPhoto.img : null }), [useBrand, logo, libPhoto]);
+    // a carousel style or a video recipe starts from the poster template that goes with it
+    const templateFor = (recipeId) => T.list.find((t) => M.TEMPLATE_RECIPE[t.id] === recipeId) || T.list[0];
+    // one trade for every carousel cover and video model (the chosen ones, else the first
+    // template's), and the ad made from a card keeps the trade its cover showed
+    const startTrades = trades.length ? trades : [T.list[0].trade];
+    const startSamples = useMemo(() => (start === 'image' ? {} : Object.fromEntries(['ad', ...M.CAROUSEL_STYLE_IDS].map((id) => {
+      const p = M.newProject(id === 'ad' ? T.list[0] : templateFor(id), { format, trades: startTrades });
+      return [id, useBrand ? applyBrand(p, brand) : p];
+    }))), [start, format, startTrades.join(), useBrand, brand]);
+    const startWith = (e, t, extra) => {
+      if (busy && !navAnim.on) return;
+      markPoster(e.currentTarget.querySelector('canvas'));
+      onCreate(t, format, useBrand ? brand : null, startTrades, pick && pick.id, extra);
+    };
+    const coverW = Math.max(60, Math.min(cardW - pad * 2 - 2, 300));
+    const motionList = RS.motion.STYLES.filter((s) => !s.test);
+    const TITLE = { image: 'Escolha um modelo', carousel: 'Escolha um carrossel', video: 'Escolha um vídeo' };
     useEffect(() => {
       const onKey = (e) => { if (e.key === 'Escape') onBack(); };
       window.addEventListener('keydown', onKey);
@@ -899,28 +1060,54 @@
     return html`<div class="gallery screen">
       <header class="gal-top">
         <div class="gal-head">
-          <button class="btn ghost" onClick=${onBack} disabled=${creating}><${Icon} name="chevron-left" /> <span class="hide-sm">Anúncios</span></button>
+          <button class="btn ghost" onClick=${onBack} disabled=${creating} aria-label="Voltar aos anúncios"><${Icon} name="chevron-left" /> <span class="hide-sm">Anúncios</span></button>
           <div class="gal-title">
-            <h1>Escolha um modelo</h1>
-            <p>Escolha também a função: os textos chegam prontos e pode mudar tudo depois.</p>
+            <h1>${TITLE[start]}</h1>
+            <p>Escolha também a função: os textos chegam prontos e pode mudar tudo depois. As outras peças do anúncio ficam prontas a usar.</p>
           </div>
           <div class="spacer"></div>
           ${brand && html`<label class="switch"><input type="checkbox" checked=${useBrand} onChange=${(e) => setUseBrand(e.target.checked)} /><span class="switch-ui"></span> <span class="hide-sm">Usar a minha marca</span><span class="show-sm">Marca</span></label>`}
-          <${FormatSwitch} value=${format} onChange=${setFormat} compact=${small} />
+          ${brands.length > 1 && html`<select class="gallery-brand" aria-label="Marca para o novo anúncio" disabled=${!useBrand || creating} value=${brand?.id || ''} onChange=${(e) => setBrand(brands.find((b) => b.id === e.target.value))}>${brands.map((b) => html`<option key=${b.id} value=${b.id}>${b.label}</option>`)}</select>`}
+          ${start === 'image' && html`<${FormatSwitch} value=${format} onChange=${setFormat} compact=${small} />`}
+        </div>
+        <div class="gal-start">
+          <span class="gal-start-label" id="gal-start-label">Começar por</span>
+          <div class="seg" role="radiogroup" aria-label="Começar por">
+            ${[['image', 'Imagem', 'image'], ['carousel', 'Carrossel', 'layers'], ['video', 'Vídeo', 'video']].map(([v, l, icon]) => html`<button key=${v} type="button" role="radio"
+              aria-checked=${start === v} class=${start === v ? 'on' : ''} disabled=${creating} onClick=${() => setStart(v)}><${Icon} name=${icon} size=${16} /> ${l}</button>`)}
+          </div>
         </div>
         <${TradePicker} value=${trades} onChange=${setTrades} withTemplate />
       </header>
-      <div class=${'gal-grid stagger' + (creating ? ' is-busy' : '')} ref=${gridRef} style=${`grid-template-columns:repeat(${cols},1fr);gap:${gap}px`}>
+      <div class="gal-body" ref=${gridRef}>
+      ${start === 'carousel' && html`<div class=${'gal-grid gal-styles stagger' + (creating ? ' is-busy' : '')} style=${`grid-template-columns:repeat(${cols},1fr);gap:${gap}px`}>
+        ${['ad', ...M.CAROUSEL_STYLE_IDS].map((id, i) => {
+          const t = id === 'ad' ? T.list[0] : templateFor(id);
+          const mine = busy === `create:${id}`;
+          return html`<button key=${id} class=${'tpl-card gal-style-card' + (mine ? ' busy' : '')} data-style=${id} style=${`--i:${i};padding:${pad}px`} aria-busy=${mine}
+            onClick=${(e) => startWith(e, t, { piece: 'carousel', style: id })}>
+            <span class="tpl-canvas gal-cover">${cardW > pad * 2 && startSamples[id] && html`<${StyleCover} project=${startSamples[id]} images=${images} style=${id} width=${coverW} />`}
+              ${mine && html`<span class="busy-veil"><${Spinner} large /> A preparar o anúncio…</span>`}</span>
+            <span class="tpl-meta"><strong>${styleName(id)}</strong><span>${id === 'ad' ? 'A capa é o cartaz do anúncio; os diapositivos seguem-no.' : RS.motion.styleOf(id).concept || ''}</span></span>
+          </button>`;
+        })}
+      </div>`}
+      ${start === 'video' && html`<div class=${'gal-videos' + (creating ? ' is-busy' : '')}>
+        ${startSamples.ad && html`<${MotionPicker} project=${startSamples.ad} images=${images} value=${null} list=${motionList} label="Modelos de vídeo" cardWidth=${small ? 96 : 132} disabled=${creating}
+          onChange=${(st) => { if (busy && !navAnim.on) return; onCreate(templateFor(st.id), format, useBrand ? brand : null, startTrades, pick && pick.id, { piece: 'video', motion: st.id }); }} />`}
+      </div>`}
+      ${start === 'image' && html`<div class=${'gal-grid stagger' + (creating ? ' is-busy' : '')} style=${`grid-template-columns:repeat(${cols},1fr);gap:${gap}px`}>
         ${T.list.map((t, i) => {
           const mine = busy === `create:${t.id}`;
           return html`<button key=${t.id} class=${'tpl-card' + (mine ? ' busy' : '')} style=${`--i:${i};padding:${pad}px`} aria-busy=${mine}
-          onClick=${(e) => { if (busy && !navAnim.on) return; markPoster(e.currentTarget.querySelector('canvas')); onCreate(t, format, useBrand, trades.length ? trades : [t.trade], pick && pick.id); }}>
+          onClick=${(e) => { if (busy && !navAnim.on) return; markPoster(e.currentTarget.querySelector('canvas')); onCreate(t, format, useBrand ? brand : null, trades.length ? trades : [t.trade], pick && pick.id); }}>
           <span class="tpl-canvas">${cardW > pad * 2 && html`<${PosterThumb} project=${samples[i]} format=${format} images=${images} pending=${waiting} width=${cardW - pad * 2 - 2} />`}
             ${mine && html`<span class="busy-veil"><${Spinner} large /> A preparar o anúncio…</span>`}</span>
           <span class="tpl-meta"><strong>${t.name}</strong><span>${t.description}</span></span>
           <span class="tpl-trade"><${Icon} name=${TR.get(trade || t.trade).icon} size=${14} /> ${tradesLabel(trades.length ? trades : [t.trade])}</span>
         </button>`;
         })}
+      </div>`}
       </div>
     </div>`;
   }
@@ -938,12 +1125,25 @@
   }
 
   // ============================================================== editor
-  const TABS = [
-    { id: 'texto', label: 'Texto', icon: 'type' },
+  // The rail: what the ad says (Oferta, Contactos, Fotos — shared by the three
+  // pieces), how the piece on screen looks (Estilo) and how it unfolds
+  // (Sequência: the carousel's slides, the video's length, texts and sound).
+  const RAIL = [
+    { id: 'oferta', label: 'Oferta', icon: 'type' },
     { id: 'contactos', label: 'Contactos', icon: 'phone' },
-    { id: 'imagens', label: 'Imagens', icon: 'image' },
-    { id: 'aspeto', label: 'Aspeto', icon: 'palette' },
+    { id: 'fotos', label: 'Fotos', icon: 'image' },
+    { id: 'estilo', label: 'Estilo', icon: 'palette' },
+    { id: 'sequencia', label: 'Sequência', icon: 'list', pieces: ['carousel', 'video'] },
   ];
+  const railFor = (mode) => RAIL.filter((t) => !t.pieces || t.pieces.includes(mode));
+  // a tapped slide text → its block in «Sequência» and the field to focus
+  const carouselFocus = (key) => {
+    const kind = key.split(':')[0];
+    if (kind === 'x') return { block: key, field: `cx-${key.slice(2)}`, at: Date.now() };
+    const block = { headline: 'H', kicker: 'H', intro: 'I', benefit: 'M', highlight: 'D', position: 'L', message: 'C', closing: 'F', contact: 'K' }[kind] || 'H';
+    const field = { headline: 'vt-headline', kicker: 'vt-kicker', intro: 'vt-intro', message: 'vt-message', closing: 'vt-closing' }[kind] || null;
+    return { block, field, at: Date.now() };
+  };
   const REGION_LABELS = {
     kicker: 'Chamada', headline: 'Título', intro: 'Introdução', positionsTitle: 'Título das vagas',
     badge: 'Selo', logo: 'Logótipo', photo: 'Fotografia · arraste para enquadrar', qr: 'Código QR',
@@ -952,9 +1152,10 @@
   const regionLabel = (key) => REGION_LABELS[key] || REGION_LABELS[key.split(':')[0]] || '';
   const fieldId = (key) => 'f-' + key.replace(':', '-');
 
-  function Editor({ initial, brand, setBrand, onExit }) {
+  function Editor({ initial, initialRevision = 0, initialPiece, brand, setBrand, onExit }) {
+    const { fileSaving, saveFile: downloadProject } = useProjectFile();
     const [project, setProject] = useState(initial);
-    const [tab, setTab] = useState('texto');
+    const [tab, setTab] = useState('oferta');
     // Images preloaded before opening (App.open / create) are used straight away.
     const cached = (ref) => (ref && A.cache.get(ref.asset)) || null;
     const [images, setImages] = useState(() => ({ photo: cached(initial.photo), logo: cached(initial.logo) }));
@@ -963,21 +1164,72 @@
     const imgBusyRef = useRef(null);
     const [leaving, setLeaving] = useState(false);
     const [saveState, setSaveState] = useState('saved');
+    const [saveError, setSaveError] = useState('');
+    const [conflict, setConflict] = useState(null), [resolvingConflict, setResolvingConflict] = useState(false);
+    const session = useRef({ token: U.uid(), revision: initialRevision, ready: null, blocked: null, disposed: false, resolving: false });
     const [saves, setSaves] = useState(0); // each save draws its check again
     const [exportOpen, setExportOpen] = useState(false);
+    const [reuseOpen, setReuseOpen] = useState(false), [productionOpen, setProductionOpen] = useState(false);
+    const [historyOpen, setHistoryOpen] = useState(false);
+    const [coverAt, setCoverAt] = useState(null);
+    const [comparisonOpen, setComparisonOpen] = useState(false);
+    const [organizationOpen, setOrganizationOpen] = useState(false);
+    const [reviewLocale, setReviewLocale] = useState(null);
     const [meetOpen, setMeetOpen] = useState(false);
     const [guides, setGuides] = useState(true);
     const [report, setReport] = useState(null);
     const [pvLarge, setPvLarge] = useState(false);
-    const [mode, setMode] = useState('image'); // 'image' | 'video'
+    const [previewCollapsed, setPreviewCollapsed] = useState(() => { try { return localStorage.getItem('rs-preview-collapsed') === 'true'; } catch { return false; } });
+    const [panelWidth, setPanelWidth] = useState(() => { try { return U.clamp(Number(localStorage.getItem('rs-panel-width')) || 410, 300, 580); } catch { return 410; } });
+    const [viewportWidth, setViewportWidth] = useState(window.innerWidth);
+    const panelDrag = useRef(null);
+    const panelMax = Math.min(580, Math.max(300, viewportWidth - 410));
+    const shownPanelWidth = Math.min(panelWidth, panelMax);
+    useEffect(() => { const resize = () => setViewportWidth(window.innerWidth); window.addEventListener('resize', resize); return () => window.removeEventListener('resize', resize); }, []);
+    useEffect(() => { try { localStorage.setItem('rs-panel-width', String(panelWidth)); localStorage.setItem('rs-preview-collapsed', String(previewCollapsed)); } catch {} }, [panelWidth, previewCollapsed]);
+    const resizePanel = (value) => setPanelWidth(U.clamp(Math.round(value), 300, panelMax));
+    const [mode, setMode] = useState(['image', 'carousel', 'video'].includes(initialPiece) ? initialPiece : 'image'); // the piece on screen
     const [vFormat, setVFormat] = useState('story'); // the format the «Vídeo» stage plays (Reels and Stories are 9:16)
-    const [vTab, setVTab] = useState('modelo'); // the «Vídeo» panel's open tab, kept while the editor is open
     const mobile = useMedia('(max-width: 860px)');
     const hist = useRef({ past: [], future: [], lastKey: null, lastAt: 0 });
     const projRef = useRef(project);
     const imgRef = useRef(images);
+    const saveTimer = useRef(null), saveQueue = useRef(Promise.resolve());
+    const historyActive = useRef(false);
+    historyActive.current = historyOpen;
+    const checkpoint = useRef(true);
     projRef.current = project;
     imgRef.current = images;
+    function blockConflict(err) {
+      if (session.current.disposed) return;
+      session.current.blocked = err; clearTimeout(saveTimer.current); setConflict(err); setSaveState('error'); setSaveError(err.message);
+    }
+    function ensureSession() {
+      const s = session.current;
+      if (!s.ready) s.ready = S.claimEditor(projRef.current.id, s.token, s.revision).then((rec) => {
+        s.revision = rec.revision || 0; return rec;
+      }).catch((err) => {
+        s.ready = null;
+        if (err.code === 'EDITOR_CONFLICT') blockConflict(err);
+        else { setSaveState('error'); setSaveError(err.message); }
+        return null;
+      });
+      return s.ready;
+    }
+    useEffect(() => {
+      const s = session.current; s.disposed = false; ensureSession();
+      const verify = async () => {
+        if (s.blocked || s.resolving || historyActive.current || s.disposed) return;
+        await saveQueue.current.catch(() => {}); await ensureSession();
+        if (s.blocked || s.resolving || s.disposed) return;
+        try { await S.claimEditor(projRef.current.id, s.token, s.revision); }
+        catch (e) { if (e.reason === 'revision' && e.current?.editor?.id === s.token && e.current.revision === s.revision) return; if (e.code === 'EDITOR_CONFLICT') blockConflict(e); }
+      };
+      const stop = S.watchProjects((event) => { if (event.id === projRef.current.id && event.actor !== s.token) verify(); });
+      const timer = setInterval(verify, 10000);
+      window.addEventListener('focus', verify);
+      return () => { s.disposed = true; stop(); clearInterval(timer); window.removeEventListener('focus', verify); const id = projRef.current.id; saveQueue.current.catch(() => {}).then(() => s.ready).then(() => S.releaseEditor(id, s.token)).catch(() => {}); };
+    }, []);
 
     const photoId = project.photo && project.photo.asset;
     const logoId = project.logo && project.logo.asset;
@@ -992,6 +1244,7 @@
     }, [photoId, logoId]);
 
     const update = useCallback((fn, opts = {}) => {
+      if (session.current.resolving) return;
       setProject((prev) => {
         const next = U.clone(prev);
         fn(next);
@@ -1010,37 +1263,116 @@
       });
     }, []);
     const undo = useCallback(() => {
+      if (session.current.resolving) return;
       const h = hist.current;
       if (!h.past.length) return;
       setProject((cur) => { h.future.push(cur); h.lastKey = null; return h.past.pop(); });
     }, []);
     const redo = useCallback(() => {
+      if (session.current.resolving) return;
       const h = hist.current;
       if (!h.future.length) return;
       setProject((cur) => { h.past.push(cur); h.lastKey = null; return h.future.pop(); });
     }, []);
 
-    useEffect(() => {
+    const persist = useCallback((manual = false) => {
+      if (session.current.resolving) return Promise.reject(new Error('Aguarde a conclusão da escolha para voltar a guardar.'));
+      clearTimeout(saveTimer.current);
+      const p = projRef.current, imgs = imgRef.current;
       setSaveState('saving');
-      const t = setTimeout(async () => {
-        try {
-          await S.putProject(projRef.current, makeThumb(projRef.current, imgRef.current));
-          setSaveState('saved');
-          setSaves((n) => n + 1);
-        } catch (err) {
-          console.error(err);
-          setSaveState('error');
+      const job = saveQueue.current.catch(() => {}).then(async () => {
+        const s = session.current;
+        if (s.blocked) throw s.blocked;
+        if (!await ensureSession()) throw s.blocked || new Error('Não foi possível confirmar a edição nesta janela. Tente guardar novamente.');
+        if (s.blocked) throw s.blocked;
+        const thumb = makeThumb(p, imgs);
+        const options = { checkpoint: checkpoint.current, editorId: s.token, expectedRevision: s.revision };
+        const rec = manual ? await S.saveVersion(p, thumb, options) : await S.putProject(p, thumb, options);
+        s.revision = rec.revision;
+        // The first changed save in each editing session preserves its baseline.
+        if (JSON.stringify(p) !== JSON.stringify(initial)) checkpoint.current = false;
+        if (projRef.current === p) { setSaveState('saved'); setSaveError(''); setSaves((n) => n + 1); }
+        return rec;
+      });
+      saveQueue.current = job;
+      return job.catch((err) => { if (err.code === 'EDITOR_CONFLICT') blockConflict(err); else { setSaveState('error'); setSaveError(err.message || 'Não foi possível guardar.'); } throw err; });
+    }, []);
+    useEffect(() => {
+      if (historyOpen || session.current.blocked) return undefined;
+      setSaveState('saving');
+      saveTimer.current = setTimeout(() => persist().catch((err) => { if (err.code !== 'EDITOR_CONFLICT') console.error(err); }), 700);
+      return () => clearTimeout(saveTimer.current);
+    }, [project, images, historyOpen]);
+    useEffect(() => {
+      const flush = () => { if (!historyActive.current && !session.current.blocked && !session.current.resolving) persist().catch((err) => { if (err.code !== 'EDITOR_CONFLICT') console.error(err); }); };
+      const hide = () => { if (document.visibilityState === 'hidden') flush(); };
+      document.addEventListener('visibilitychange', hide);
+      window.addEventListener('pagehide', flush);
+      RS.beforeReload = persist;
+      return () => {
+        document.removeEventListener('visibilitychange', hide);
+        window.removeEventListener('pagehide', flush);
+        if (RS.beforeReload === persist) delete RS.beforeReload;
+      };
+    }, []);
+    async function openHistory() {
+      try { await persist(); setExportOpen(false); setHistoryOpen(true); }
+      catch (err) { toast('Não foi possível guardar as alterações. Tente de novo antes de restaurar uma versão.', { kind: 'error' }); }
+    }
+    async function restored(rec) {
+      // Loading a version is already committed. Nothing from the old editor
+      // queue may overwrite it, and its images must be decoded for the preview.
+      clearTimeout(saveTimer.current);
+      const p = M.normalize(rec.data);
+      session.current.revision = rec.revision || 0;
+      hist.current = { past: [], future: [], lastKey: null, lastAt: 0 };
+      projRef.current = p;
+      setProject(p);
+      setSaveState('saved');
+      checkpoint.current = true;
+    }
+    async function resolveConflict(action) {
+      const s = session.current; if (s.resolving) return;
+      s.resolving = true; setResolvingConflict(true); clearTimeout(saveTimer.current);
+      try {
+        await saveQueue.current.catch(() => {});
+        const local = U.clone(projRef.current), remote = await S.getProject(local.id);
+        if (action === 'copy') {
+          const copy = U.clone(local); copy.id = U.uid(); copy.name = `${local.name} (cópia)`; copy.nameAuto = false;
+          copy.createdAt = copy.updatedAt = Date.now(); copy.deletedAt = null; copy.organization = { ...M.cleanOrganization(copy.organization), status: 'draft', favorite: false }; copy.publication = M.cleanPublication();
+          let rec = await S.putProject(copy, makeThumb(copy, imgRef.current));
+          rec = await S.claimEditor(copy.id, s.token, rec.revision);
+          await S.releaseEditor(local.id, s.token); s.blocked = null; s.ready = Promise.resolve(rec); setConflict(null); setSaveError('');
+          await restored(rec); keepInHome(rec); toast('As alterações desta janela foram guardadas numa cópia.');
+        } else if (action === 'reload') {
+          if (!remote || remote.deletedAt) throw S.editorConflict(remote, remote ? 'deleted' : 'missing');
+          if (!await confirmDialog({ title: 'Recarregar a versão guardada?', body: 'Os textos e ajustes desta janela serão substituídos. Para os conservar num anúncio separado, cancele e escolha Guardar como cópia.', confirm: 'Recarregar' })) return;
+          const latest = await S.getProject(local.id); if (!latest || latest.deletedAt) throw S.editorConflict(latest, latest ? 'deleted' : 'missing');
+          await restored(latest); s.blocked = null; s.ready = null; setConflict(null); setSaveError('');
+          await ensureSession();
+        } else {
+          if (!remote || remote.deletedAt) throw S.editorConflict(remote, remote ? 'deleted' : 'missing');
+          if (!await confirmDialog({ title: 'Continuar a edição nesta janela?', body: 'Esta janela passa a guardar as suas alterações. A versão atualmente guardada será conservada no histórico. A outra janela terá de recarregar ou guardar uma cópia.', confirm: 'Continuar nesta janela' })) return;
+          const rec = await S.putProject(local, makeThumb(local, imgRef.current), { editorId: s.token, expectedRevision: remote.revision || 0, takeover: true, checkpoint: true, reason: 'Antes da mudança de janela' });
+          s.blocked = null; s.ready = Promise.resolve(rec); setConflict(null); setSaveError(''); await restored(rec); keepInHome(rec);
         }
-      }, 700);
-      return () => clearTimeout(t);
-    }, [project, images]);
+      } catch (e) { if (e.code === 'EDITOR_CONFLICT') blockConflict(e); else toast(e.message || 'Não foi possível resolver o conflito.', { kind: 'error' }); }
+      finally { s.resolving = false; setResolvingConflict(false); }
+    }
 
     async function exit() {
-      if (leaving) return;
+      if (leaving || session.current.resolving) return;
       RS.ui.flushExits(); // a row still leaving goes before the ad is saved
       setLeaving(true);
       await afterPaint();
-      try { keepInHome(await S.putProject(projRef.current, makeThumb(projRef.current, imgRef.current))); } catch (err) { console.error(err); }
+      try {
+        if (session.current.blocked) {
+          if (!await confirmDialog({ title: 'Sair sem guardar esta edição?', body: 'As alterações desta janela serão descartadas. A versão guardada mantém-se. Para conservar esta edição, cancele e escolha Guardar como cópia ou Guardar ficheiro de segurança.', confirm: 'Sair sem guardar' })) { setLeaving(false); return; }
+          const latest = await S.getProject(projRef.current.id);
+          if (latest) keepInHome(latest);
+        } else keepInHome(await persist());
+      }
+      catch (err) { setLeaving(false); toast('Não foi possível guardar. O anúncio continua aberto; tente de novo ou guarde um ficheiro.', { kind: 'error' }); return; }
       if ((await onExit(projRef.current.id)) === false) setLeaving(false);
     }
 
@@ -1051,7 +1383,7 @@
         const k = e.key.toLowerCase();
         if (k === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
         else if (k === 'y' || (k === 'z' && e.shiftKey)) { e.preventDefault(); redo(); }
-        else if (k === 's') { e.preventDefault(); toast('Está tudo guardado automaticamente neste aparelho.'); }
+        else if (k === 's') { e.preventDefault(); persist().then(() => toast(S.isPersistent() ? 'Anúncio guardado neste aparelho.' : 'O anúncio está apenas nesta sessão. Guarde um ficheiro para o conservar.')).catch((err) => toast(err.message, { kind: 'error' })); }
         else if (k === 'e') { e.preventDefault(); setExportOpen(true); }
       };
       window.addEventListener('keydown', onKey);
@@ -1059,8 +1391,8 @@
     }, []);
 
     const focusField = useCallback((key) => {
-      // the photo and the logo live in «Imagens»; the WhatsApp button, the other contacts and the QR in «Contactos»
-      setTab(key === 'photo' || key === 'logo' ? 'imagens' : key === 'qr' || key.split(':')[0] === 'contact' ? 'contactos' : 'texto');
+      // the photo and the logo live in «Fotos»; the WhatsApp button, the other contacts and the QR in «Contactos»
+      setTab(key === 'photo' || key === 'logo' ? 'fotos' : key === 'qr' || key.split(':')[0] === 'contact' ? 'contactos' : 'oferta');
       const go = (tries) => {
         const el = document.getElementById(fieldId(key));
         if (!el) { if (tries > 0) requestAnimationFrame(() => go(tries - 1)); return; }
@@ -1117,13 +1449,9 @@
       });
     }, []);
 
-    async function saveFile() {
-      const blob = await A.exportProjectFile(projRef.current);
-      const ok = await U.saveBlob(blob, `${U.slug(project.name)}.anuncio`, [{ description: 'Projeto Recruitment Studio', accept: { 'application/json': ['.anuncio'] } }]);
-      if (ok) toast('Ficheiro do projeto guardado. Pode abri-lo noutro computador com «Abrir ficheiro».');
-    }
+    const saveFile = () => downloadProject(projRef.current);
 
-    const panelProps = { project, update, images, brand, setBrand, choosePhoto, chooseLogo, setPhotoAsset, imgBusy };
+    const panelProps = { project, update, images, brand, setBrand, choosePhoto, chooseLogo, setPhotoAsset, imgBusy, onReuse: () => setReuseOpen(true) };
     const stageBusy = imgBusy === 'photo' ? 'A preparar a fotografia…' : imgBusy === 'logo' ? 'A preparar o logótipo…' : imgLoading ? 'A carregar as imagens…' : null;
     // «Vídeo»: the video of the ad, prepared once for the panel and the stage.
     const video = mode === 'video';
@@ -1144,70 +1472,178 @@
     }, [video, vKey, vFormat, images, vPhotos]);
     const vP = vPrep && vPrep.P;
     // the export may show the stage's video only if the ad has not changed since (an edit in «Imagem» does not prepare it)
-    const vFresh = vPrep && vPrep.vKey === vKey && vPrep.vFormat === vFormat && vPrep.images === images && vPrep.vPhotos === vPhotos ? vPrep.P : null;
-    // «Definições» shows its panel and leaves the stage as it is (image or video)
-    const [settingsTab, setSettingsTab] = useState(false);
-    const changeMode = (m) => { setSettingsTab(false); setMode(m); };
-    const goTab = (id) => { changeMode('image'); setTab(id); };
-    const goVideo = () => changeMode('video');
-    return html`<div class=${'editor screen' + (pvLarge ? ' pv-large' : '') + (video ? ' video-mode' : '')}>
-      <header class="topbar">
+    const vFresh = !imgLoading && vPhotos && vPrep && vPrep.vKey === vKey && vPrep.vFormat === vFormat && vPrep.images === images && vPrep.vPhotos === vPhotos ? vPrep.P : null;
+    // «Definições» (in ⋯): the settings sheet, over the editor
+    const [settingsOpen, setSettingsOpen] = useState(false);
+    // a piece and a section are independent: «Oferta» and «Contactos» never change the piece
+    const changeMode = (m) => setMode(m);
+    const goTab = (id) => setTab(id);
+    // «Carrossel»: the carousel of the ad, prepared after the frame
+    const carouselOn = mode === 'carousel';
+    const cP = useCarousel(project, images, carouselOn);
+    // a tap on a slide text opens its block in «Sequência» at that field
+    const [cFocus, setCFocus] = useState(null);
+    // «Imagem» has no «Sequência»
+    useEffect(() => { if (mode === 'image' && tab === 'sequencia') setTab('oferta'); }, [mode]);
+    const review = () => setReviewLocale(project.locale);
+    const resolveCheck = (check) => {
+      setExportOpen(false); setPvLarge(false);
+      if (check.review) { setReviewLocale(check.locale); return; }
+      update((p) => { if (check.locale) p.locale = check.locale; if (check.format && !check.videoTab) p.format = check.format; }, { coalesce: 'check-navigation' });
+      if (check.videoTab) {
+        // the video's length, texts and ending are in «Sequência», its model and colours in «Estilo»
+        changeMode('video'); setTab(check.videoTab === 'aspeto' ? 'estilo' : 'sequencia'); if (check.format) setVFormat(check.format);
+        const reveal = (tries) => {
+          const id = check.videoTab === 'modelo' ? 'video-duration' : check.field === 'headline' ? 'vt-headline' : 'vt-block-contacts';
+          const el = document.getElementById(id);
+          if (!el) { if (tries) requestAnimationFrame(() => reveal(tries - 1)); return; }
+          RS.ui.openField(id);
+          el.scrollIntoView({ block: 'center', behavior: reducedMotion() ? 'auto' : 'smooth' });
+          const control = el.matches('input, textarea') ? el : el.querySelector('input, button[role="radio"], .add-row');
+          if (control) control.focus({ preventScroll: true });
+        };
+        requestAnimationFrame(() => reveal(8));
+      }
+      else { changeMode('image'); focusField(check.field || 'headline'); }
+    };
+    // ⋯: the ad's file and history, the QR, its organisation, what waits for a review, models and settings
+    const pendingReview = project.locales.length > 1 ? project.locales.flatMap((code) => RS.workflow.reviewRows(project, code)).filter((r) => r.status !== 'reviewed').length : 0;
+    const staleCaptions = project.locales.filter((l) => ['stale', 'unverified'].includes(M.captionStatus(project, l)));
+    const menuItems = [
+      { label: fileSaving ? 'A preparar projeto…' : 'Guardar ficheiro', icon: 'save', disabled: fileSaving, title: 'Guardar uma cópia do projeto num ficheiro (.anuncio)', onClick: saveFile },
+      { label: 'Histórico de versões', icon: 'clock', onClick: openHistory },
+      { label: 'Mostrar QR', icon: 'qr-code', title: 'O seu WhatsApp para mostrar cara a cara', onClick: () => setMeetOpen(true) },
+      { label: 'Organizar', icon: 'folder-open', onClick: () => setOrganizationOpen(true) },
+      project.locales.length > 1 && { label: `Rever traduções${pendingReview ? ` (${pendingReview})` : ''}`, icon: 'languages', count: pendingReview, onClick: review },
+      ...staleCaptions.map((l) => ({ key: `caption-${l}`, label: `Rever publicação · ${M.localeInfo(l).short}`, icon: 'triangle-alert', count: 1, cls: 'caption-reminder',
+        onClick: () => { update((p) => { p.locale = l; }); setExportOpen(true); } })),
+      { label: 'Marcas e modelos', icon: 'copy', onClick: () => setReuseOpen(true) },
+      { label: 'Definições', icon: 'settings', title: 'Movimento, tema e vibração', onClick: () => setSettingsOpen(true) },
+    ].filter(Boolean);
+    // the top bar: ‹ · name · [piece · language · ↶ ↷] · ⋯ · Exportar (on a phone the
+    // bracketed group is a second row: .tb-row)
+    const sectionInfo = railFor(mode).find((t) => t.id === tab) || RAIL[0];
+    const videoSection = video && ['fotos', 'estilo', 'sequencia'].includes(tab);
+    return html`<div class=${'editor screen' + (pvLarge ? ' pv-large' : '') + (video ? ' video-mode' : '') + (mobile && previewCollapsed ? ' preview-collapsed' : '')} style=${{ '--editor-panel-width': `${shownPanelWidth}px` }}>
+      <header class=${'topbar' + (saveError || !S.isPersistent() ? ' has-save-warning' : '')}>
         <button class="btn ghost" onClick=${exit} disabled=${leaving} aria-busy=${leaving} aria-label=${leaving ? 'A guardar e a voltar aos anúncios' : 'Voltar aos anúncios'}>
           ${leaving ? html`<${Spinner} />` : html`<${Icon} name="chevron-left" />`} <span class="hide-sm">${leaving ? 'A guardar…' : 'Anúncios'}</span></button>
         <div class="name-wrap">
           <input class="name-input" name="project-name" value=${project.name} aria-label="Nome do anúncio (só para si, não aparece na imagem)"
             title="Nome do anúncio (só para si, não aparece na imagem)"
             onInput=${(e) => update((p) => { p.name = e.target.value; p.nameAuto = false; }, { coalesce: 'name' })} />
-          <span class=${'save-state ' + saveState}><span class="save-dot" aria-hidden="true"></span>${saveState === 'saved' && saves > 0 && html`<svg key=${saves} class="save-check" viewBox="0 0 22 14" aria-hidden="true" focusable="false"><path d="M2 7.5 L7 12 L15.5 2" pathLength="100" /><path class="save-trowel" d="M0 0 L7 0 L5 -4 Z" /></svg>`}${saveState === 'saving' ? 'A guardar…' : saveState === 'error' ? 'Não foi possível guardar' : 'Guardado'}</span>
+          <span class=${'save-state ' + saveState} role="status" aria-live="polite" aria-atomic="true"><span class="save-dot" aria-hidden="true"></span>${saveState === 'saved' && saves > 0 && S.isPersistent() && html`<svg key=${saves} class="save-check" viewBox="0 0 22 14" aria-hidden="true" focusable="false"><path d="M2 7.5 L7 12 L15.5 2" pathLength="100" /><path class="save-trowel" d="M0 0 L7 0 L5 -4 Z" /></svg>`}${saveState === 'saving' ? 'A guardar…' : saveState === 'error' ? 'Não foi possível guardar' : S.isPersistent() ? 'Guardado' : 'Só nesta sessão'}</span>
         </div>
-        <div class="seg mode-switch" role="radiogroup" aria-label="Imagem ou vídeo">
-          <button role="radio" aria-checked=${!video} class=${!video ? 'on' : ''} aria-label="Imagem" onClick=${() => changeMode('image')}><${Icon} name="image" size=${16} /><span class="hide-sm">Imagem</span></button>
-          <button role="radio" aria-checked=${video} class=${video ? 'on' : ''} aria-label="Vídeo" onClick=${() => changeMode('video')}><${Icon} name="video" size=${16} /><span class="hide-sm">Vídeo</span></button>
+        <div class="tb-row">
+          <${PieceSwitch} mode=${mode} onChange=${changeMode} />
+          <div class="spacer"></div>
+          <${LocaleSwitcher} project=${project} update=${update} />
+          <div class="tb-group">
+            <button class="icon-btn" onClick=${undo} disabled=${!hist.current.past.length} aria-label="Desfazer (Ctrl+Z)" title="Desfazer (Ctrl+Z)"><${Icon} name="undo-2" /></button>
+            <button class="icon-btn" onClick=${redo} disabled=${!hist.current.future.length} aria-label="Refazer (Ctrl+Y)" title="Refazer (Ctrl+Y)"><${Icon} name="redo-2" /></button>
+          </div>
         </div>
-        <div class="spacer"></div>
-        <${LocaleSwitcher} project=${project} update=${update} />
-        <div class="tb-group">
-          <button class="icon-btn" onClick=${undo} disabled=${!hist.current.past.length} aria-label="Desfazer (Ctrl+Z)" title="Desfazer (Ctrl+Z)"><${Icon} name="undo-2" /></button>
-          <button class="icon-btn" onClick=${redo} disabled=${!hist.current.future.length} aria-label="Refazer (Ctrl+Y)" title="Refazer (Ctrl+Y)"><${Icon} name="redo-2" /></button>
-        </div>
-        <button class="icon-btn" onClick=${() => setMeetOpen(true)} aria-label="Mostrar QR" title="Mostrar QR: o seu WhatsApp para mostrar cara a cara"><${Icon} name="qr-code" /></button>
-        <button class="btn ghost hide-md" onClick=${saveFile} title="Guardar uma cópia do projeto num ficheiro (.anuncio)"><${Icon} name="save" /> Guardar ficheiro</button>
+        <${MoreMenu} items=${menuItems} where="editor" />
         <button class="btn primary hide-sm" onClick=${() => setExportOpen(true)} title="Exportar (Ctrl+E)"><${Icon} name="download" /> Exportar</button>
+        ${!conflict && (saveError || !S.isPersistent()) && html`<div class="save-recovery" role="alert">
+          <span>${!S.isPersistent() ? 'Este navegador está a guardar apenas nesta sessão. Guarde um ficheiro antes de fechar.' : 'As alterações ainda não estão guardadas. ' + saveError}</span>
+          ${S.isPersistent() && html`<button class="btn ghost sm" disabled=${saveState === 'saving'} onClick=${() => persist().catch(() => {})}>Tentar guardar novamente</button>`}
+          <button class="btn ghost sm" disabled=${fileSaving} onClick=${saveFile}>Guardar ficheiro de segurança</button>
+        </div>`}
+        ${conflict && html`<div class="editor-conflict" role="alert"><strong>Gravação suspensa</strong><span>${conflict.message} As alterações desta janela continuam aqui.</span>
+          ${conflict.current && html`<small>Guardado: ${conflict.current.name} · ${new Date(conflict.current.savedAt || conflict.current.updatedAt).toLocaleString('pt-PT')}</small>`}
+          <div class="row-btns"><button class="btn ghost sm" disabled=${resolvingConflict || !conflict.current || !!conflict.current.deletedAt} onClick=${() => resolveConflict('reload')}>Recarregar guardada</button><button class="btn primary sm" disabled=${resolvingConflict} onClick=${() => resolveConflict('copy')}>Guardar como cópia</button><button class="btn ghost sm" disabled=${resolvingConflict || !conflict.current || !!conflict.current.deletedAt} onClick=${() => resolveConflict('takeover')}>Continuar nesta janela</button><button class="btn ghost sm" disabled=${fileSaving} onClick=${saveFile}>Guardar ficheiro de segurança</button></div>
+        </div>`}
       </header>
-      <div class="editor-body">
+      <div class="editor-body" inert=${resolvingConflict ? '' : undefined}>
         <nav class="rail" role="tablist" aria-label="Secções do editor">
-          ${TABS.map((t) => html`<button key=${t.id} role="tab" aria-selected=${!settingsTab && !video && tab === t.id} class=${!settingsTab && !video && tab === t.id ? 'on' : ''} onClick=${() => goTab(t.id)}>
+          ${railFor(mode).map((t) => html`<button key=${t.id} role="tab" aria-selected=${sectionInfo.id === t.id} class=${sectionInfo.id === t.id ? 'on' : ''} onClick=${() => goTab(t.id)}>
             <${Icon} name=${t.icon} size=${20} /><span>${t.label}</span>
           </button>`)}
-          <button key="video" role="tab" aria-selected=${!settingsTab && video} class=${'rail-video' + (!settingsTab && video ? ' on' : '')} onClick=${goVideo}>
-            <${Icon} name="video" size=${20} /><span>Vídeo</span>
-          </button>
-          <button key="settings" role="tab" aria-selected=${settingsTab} class=${'rail-settings' + (settingsTab ? ' on' : '')} onClick=${() => setSettingsTab(true)}>
-            <${Icon} name="settings" size=${20} /><span>Definições</span>
-          </button>
           ${mobile && html`<button class="rail-export" onClick=${() => setExportOpen(true)}><${Icon} name="download" size=${20} /><span>Exportar</span></button>`}
         </nav>
-        ${settingsTab ? html`<aside key="settings" class="panel settings-panel" role="tabpanel" aria-label="Definições">
-          <div class="panel-inner"><div class="panel-head"><h2>Definições</h2><p>O movimento, o tema e a vibração da app, guardados neste aparelho.</p></div><${SettingsPanel} /></div>
-        </aside>` : video ? html`<aside key="video" class="panel video-panel" role="tabpanel" aria-label="Vídeo">
-          <${VideoPanel} project=${project} update=${update} images=${images} photos=${vPhotos} P=${vP} vKey=${vKey}
-            tab=${vTab} setTab=${setVTab} onEditImage=${() => goTab('texto')} />
-        </aside>` : html`<aside key=${tab} class="panel" role="tabpanel" aria-label=${TABS.find((t) => t.id === tab).label}>
-          ${tab === 'texto' && html`<${TextPanel} ...${panelProps} />`}
-          ${tab === 'contactos' && html`<${ContactsPanel} ...${panelProps} />`}
-          ${tab === 'imagens' && html`<${ImagesPanel} ...${panelProps} />`}
-          ${tab === 'aspeto' && html`<${LookPanel} ...${panelProps} />`}
-        </aside>`}
-        ${video ? html`<${VideoStage} P=${vP} project=${project} format=${vFormat} setFormat=${setVFormat} mobile=${mobile} quiet=${exportOpen} />`
+        <aside id="editor-panel" key=${`${mode}:${sectionInfo.id}`} class=${'panel' + (videoSection ? ' video-panel' : '')} role="tabpanel" aria-label=${sectionInfo.label}>
+          ${sectionInfo.id === 'oferta' && html`<${TextPanel} ...${panelProps} />`}
+          ${sectionInfo.id === 'contactos' && html`<${ContactsPanel} ...${panelProps} />`}
+          ${videoSection ? html`<${VideoPanel} project=${project} update=${update} images=${images} photos=${vPhotos} P=${vP} vKey=${vKey}
+            section=${sectionInfo.id} onSection=${goTab} onEditImage=${() => { changeMode('image'); setTab('oferta'); }} />`
+          : carouselOn ? html`
+            ${sectionInfo.id === 'fotos' && html`<${CarouselPhotosPanel} project=${project} update=${update} images=${images} onStyle=${() => setTab('estilo')} />`}
+            ${sectionInfo.id === 'estilo' && html`<${CarouselStylePanel} project=${project} update=${update} images=${images} hasPhotos=${!!(project.photo && project.photo.asset)} />`}
+            ${sectionInfo.id === 'sequencia' && html`<${CarouselSequencePanel} project=${project} update=${update} focus=${cFocus} />`}`
+          : html`
+            ${sectionInfo.id === 'fotos' && html`<${ImagesPanel} ...${panelProps} />`}
+            ${sectionInfo.id === 'estilo' && html`<${LookPanel} ...${panelProps} />`}`}
+        </aside>
+        ${!mobile && html`<div class="panel-divider" role="separator" tabIndex="0" aria-orientation="vertical" aria-label="Largura do painel de edição" aria-controls="editor-panel" aria-valuemin="300" aria-valuemax=${panelMax} aria-valuenow=${shownPanelWidth} aria-valuetext=${`${shownPanelWidth} píxeis`} title="Arraste ou use as setas para ajustar. Duplo clique para repor."
+          onPointerDown=${(e) => { if (e.button !== 0) return; panelDrag.current = { x: e.clientX, width: shownPanelWidth, id: e.pointerId }; e.currentTarget.setPointerCapture?.(e.pointerId); e.currentTarget.focus(); e.preventDefault(); }}
+          onPointerMove=${(e) => { const d = panelDrag.current; if (d && d.id === e.pointerId) resizePanel(d.width + e.clientX - d.x); }}
+          onPointerUp=${() => { panelDrag.current = null; }} onPointerCancel=${() => { panelDrag.current = null; }}
+          onDblClick=${() => resizePanel(410)} onKeyDown=${(e) => { const next = { ArrowLeft: shownPanelWidth - (e.shiftKey ? 10 : 20), ArrowRight: shownPanelWidth + (e.shiftKey ? 10 : 20), Home: 300, End: panelMax }[e.key]; if (next != null) { e.preventDefault(); resizePanel(next); } }}></div>`}
+        <div class="preview-shell">
+          ${mobile && html`<button class="preview-toggle" aria-expanded=${!previewCollapsed} aria-controls="editor-preview" onClick=${() => { setPreviewCollapsed(!previewCollapsed); setPvLarge(false); }}><${Icon} name=${previewCollapsed ? 'eye' : 'chevron-up'} size=${16} />${previewCollapsed ? 'Mostrar pré-visualização' : 'Recolher pré-visualização'}</button>`}
+          <div id="editor-preview" class="preview-content" hidden=${mobile && previewCollapsed}>
+        ${!(mobile && previewCollapsed) && (carouselOn ? html`<${CarouselStage} project=${project} update=${update} P=${cP} mobile=${mobile} onField=${(key) => { setTab('sequencia'); setCFocus(carouselFocus(key)); }} />`
+        : video ? html`<${VideoStage} P=${vP} project=${project} format=${vFormat} setFormat=${setVFormat} mobile=${mobile} quiet=${exportOpen || productionOpen || reuseOpen || coverAt !== null} onCover=${setCoverAt} coverReady=${!!vFresh} pvLarge=${pvLarge} setPvLarge=${setPvLarge} guides=${guides} setGuides=${setGuides} />`
         : html`<${Workspace} project=${project} images=${images} update=${update} onSelect=${focusField}
           guides=${guides} setGuides=${setGuides} report=${report} onReport=${setReport} busy=${stageBusy}
           choosePhoto=${choosePhoto} chooseLogo=${chooseLogo} mobile=${mobile} pvLarge=${pvLarge} setPvLarge=${setPvLarge}
-          onConvert=${() => changeMode('video')} />`}
+          onConvert=${() => changeMode('video')} onCompare=${() => setComparisonOpen(true)} />`)}
+          </div>
+        </div>
       </div>
-      ${exportOpen && html`<${ExportDialog} project=${project} images=${images} saveFile=${saveFile} mobile=${mobile}
-        initialKind=${mode} videoFormat=${vFormat} prepared=${vFresh} onClose=${(to) => { setExportOpen(false); if (to === 'video') changeMode('video'); }} />`}
+      ${historyOpen && html`<${RecoveryDialog} projectId=${project.id} onClose=${() => setHistoryOpen(false)} onRestore=${restored} onSnapshot=${() => persist(true)} editorOptions=${() => ({ editorId: session.current.token, expectedRevision: session.current.revision })} />`}
+      ${organizationOpen && html`<${OrganizationDialog} project=${project} onClose=${() => setOrganizationOpen(false)} onSave=${(o) => update((p) => { p.organization = o; })} />`}
+      ${reviewLocale && html`<${TranslationDialog} project=${project} update=${update} initialLocale=${reviewLocale} onClose=${() => setReviewLocale(null)} onEditVideo=${(code) => { setReviewLocale(null); resolveCheck({ locale: code, videoTab: 'textos' }); }} />`}
+      ${reuseOpen && html`<${ReuseDialog} project=${project} images=${images} update=${update} onChange=${setBrand} onClose=${() => setReuseOpen(false)} />`}
+      ${productionOpen && html`<${ProductionDialog} project=${project} update=${update} images=${images} onClose=${() => setProductionOpen(false)} />`}
+      ${coverAt !== null && html`<${VideoCoverDialog} project=${project} update=${update} images=${images} prepared=${vFresh} initialTime=${coverAt} onClose=${() => setCoverAt(null)} />`}
+      ${comparisonOpen && html`<${FormatComparison} project=${project} images=${images} update=${update} onClose=${() => setComparisonOpen(false)} onEdit=${(format) => { update((p) => { p.format = format; }); setComparisonOpen(false); focusField('photo'); }} />`}
+      ${exportOpen && html`<${ExportDialog} project=${project} update=${update} images=${images} saveFile=${saveFile} fileSaving=${fileSaving} mobile=${mobile} onHistory=${openHistory} onResolve=${resolveCheck} onProduction=${() => { setExportOpen(false); setProductionOpen(true); }}
+        piece=${mode} videoFormat=${vFormat} prepared=${vFresh} onClose=${(to) => { setExportOpen(false); if (to === 'video') changeMode('video'); }} />`}
       ${meetOpen && html`<${MeetQR} whatsapp=${project.whatsapp} keptIn="neste anúncio" onClose=${() => setMeetOpen(false)}
         onNumber=${(w) => update((p) => { p.whatsapp = w; })} />`}
+      ${settingsOpen && html`<${SettingsSheet} onClose=${() => setSettingsOpen(false)} />`}
+    </div>`;
+  }
+
+  // ⋯ of a top bar (the editor's, the home's): items { label, icon, onClick, count?,
+  // cls?, title?, disabled? }; the button shows the sum of the counts (what waits
+  // for a review). where: 'editor' | 'home' (its classes: .<where>-more, .<where>-menu).
+  function MoreMenu({ items, where }) {
+    const [open, setOpen] = useState(false);
+    const pop = RS.ui.useLeaving(open, 140);
+    const ref = useRef();
+    const total = items.reduce((n, it) => n + (it.count || 0), 0);
+    useEffect(() => {
+      if (!open) return undefined;
+      const onDoc = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+      document.addEventListener('pointerdown', onDoc);
+      const first = ref.current && ref.current.querySelector('.more-menu [role="menuitem"]:not(:disabled)');
+      if (first && window.matchMedia('(hover: hover)').matches) first.focus();
+      return () => document.removeEventListener('pointerdown', onDoc);
+    }, [open]);
+    // ↑ ↓ Home End move between the items; Escape closes and gives the focus back to ⋯
+    const onKey = (e) => {
+      if (e.key === 'Escape') { e.preventDefault(); setOpen(false); const b = ref.current && ref.current.querySelector('.more-btn'); if (b) b.focus(); return; }
+      const all = [...ref.current.querySelectorAll('.more-menu [role="menuitem"]:not(:disabled)')];
+      const i = all.indexOf(document.activeElement);
+      const to = { ArrowDown: i + 1, ArrowUp: i - 1, Home: 0, End: all.length - 1 }[e.key];
+      if (to === undefined || !all.length) return;
+      e.preventDefault();
+      all[(to + all.length) % all.length].focus();
+    };
+    const label = total ? `Mais opções (${total} por rever)` : 'Mais opções';
+    return html`<div class=${`more-wrap ${where}-more-wrap`} ref=${ref} onKeyDown=${onKey}>
+      <button class=${`icon-btn more-btn ${where}-more`} aria-haspopup="menu" aria-expanded=${open} aria-label=${label} title=${label} onClick=${() => setOpen(!open)}>
+        <${Icon} name="ellipsis" />${total > 0 && html`<span class="more-count" aria-hidden="true">${total}</span>`}</button>
+      ${pop.mounted && html`<div class=${`menu right pop more-menu ${where}-menu` + (pop.leaving ? ' leaving' : '')} role="menu" aria-label="Mais opções">
+        ${items.map((it) => html`<button key=${it.key || it.label} role="menuitem" class=${it.cls || ''} disabled=${it.disabled} title=${it.title || ''}
+          onClick=${() => {
+            // the focus goes back to ⋯ first: a sheet the item opens returns it there when it closes
+            setOpen(false); const b = ref.current && ref.current.querySelector('.more-btn'); if (b) b.focus(); it.onClick();
+          }}><${Icon} name=${it.icon} /> ${it.label}</button>`)}
+      </div>`}
     </div>`;
   }
 
@@ -1237,8 +1673,10 @@
         ${project.locales.map((code) => {
           const l = M.localeInfo(code);
           const on = code === project.locale;
+          // a language with translations to review is marked (⋯ › «Rever traduções»)
+          const toReview = project.locales.length > 1 && RS.workflow.reviewRows(project, code).some((r) => r.status !== 'reviewed');
           return html`<span key=${code} class=${'chip' + (on ? ' on' : '')}>
-            <button class="chip-main" aria-pressed=${on} title=${`Editar em ${l.label}`} onClick=${() => update((p) => { p.locale = code; }, { coalesce: 'locale' })}>${l.short}</button>
+            <button class="chip-main" aria-pressed=${on} title=${`Editar em ${l.label}${toReview ? ' · traduções por rever' : ''}`} onClick=${() => update((p) => { p.locale = code; }, { coalesce: 'locale' })}>${l.short}${toReview && html`<span class="chip-dot"><span class="sr-only"> (traduções por rever)</span></span>`}</button>
             ${project.locales.length > 1 && on && html`<button class="chip-x" aria-label=${`Remover ${l.label}`} onClick=${() => removeLocale(code)}><${Icon} name="x" size=${12} stroke=${2.6} /></button>`}
           </span>`;
         })}
@@ -1597,7 +2035,7 @@
     }
     return html`<div class="panel-inner">
       <div class="panel-head">
-        <h2>Texto</h2>
+        <h2>Oferta</h2>
         <p>A escrever em <strong>${loc.label}</strong>. A pré-visualização acompanha cada letra e o texto ajusta-se sozinho ao espaço.</p>
       </div>
       <${Group} title="Profissões do anúncio" fold="texto:profissoes" closed summary=${project.trades.length ? tradesLabel(project.trades) : 'Nenhuma'}>
@@ -1627,7 +2065,7 @@
         <${ListEditor} items=${t.positions} onChange=${setList('positions')} prefix="f-position" coalesce="position" itemLabel="Vaga"
           addLabel="Adicionar vaga" placeholder="Ex.: Pedreiro com experiência" />
       <//>
-      <${Group} title="Salário e vagas (opcional)" hint="Aparecem no vídeo e no texto da publicação. A imagem do anúncio fica igual.">
+      <${Group} title="Ficha da oferta (opcional)" hint="Preencha uma vez para todas as línguas e escolha as peças onde aparece. Os rótulos e a data adaptam-se à língua.">
         <div class="offer-row">
           <div class="field">
             <label for="f-offer-salary">Salário</label>
@@ -1650,7 +2088,10 @@
           <label for="f-offer-vacancies">Número de vagas</label>
           <input id="f-offer-vacancies" type="text" inputmode="numeric" value=${offer.vacancies} placeholder="Ex.: 30" onInput=${setOffer('vacancies', true)} />
         </div>
-        ${offerLine && html`<small class="field-hint">No vídeo e na publicação: ${offerLine}</small>`}
+        <${Field} label="Localização pública" id="f-offer-location" value=${offer.location || ''} onInput=${setOffer('location', true)} placeholder="Ex.: Lausanne, Suíça" hint="Escreva a cidade ou região que quer divulgar." />
+        <div class="field"><label for="f-offer-startDate">Data de início</label><input id="f-offer-startDate" type="date" value=${offer.startDate || ''} onInput=${setOffer('startDate', true)} /></div>
+        <fieldset class="offer-visibility"><legend>Mostrar a ficha em</legend>${Object.entries(M.OFFER_OUTPUTS).map(([key, label]) => html`<label key=${key}><input type="checkbox" checked=${M.offerVisible(project, key)} onChange=${(e) => { const checked = e.target.checked; update((p) => { p.offer.visibility = { ...M.DEFAULT_OFFER.visibility, ...p.offer.visibility, [key]: checked }; }); }} />${label}</label>`)}</fieldset>
+        ${offerLine && html`<small class="field-hint">${offerLine}</small>`}
       <//>
       <${Group} title="Selo" show=${project.show.badge} onToggle=${show('badge')} hint="Um destaque curto num círculo sobre a fotografia.">
         <${Field} label="Texto do selo" id="f-badge" value=${t.badge} onInput=${set('badge')} placeholder="Ex.: Início imediato" />
@@ -1722,6 +2163,30 @@
   }
   const pct = (v) => `${Math.round(v * 100)}%`;
 
+  function PhotoDetails({ item, project, onSave, onClose }) {
+    const [draft, setDraft] = useState(() => ({ ...L.metadata(item), cat: item.cat || 'geral' })), [tags, setTags] = useState((item.tags || []).join(', '));
+    const [usage, setUsage] = useState(null), [busy, setBusy] = useState(false), [error, setError] = useState('');
+    const running = useRef(false);
+    useEffect(() => { let live = true; L.usage(item.asset, project).then((u) => { if (live) setUsage(u); }).catch((e) => { if (live) setError(e.message); }); return () => { live = false; }; }, []);
+    const save = async () => {
+      if (running.current) return; running.current = true; setBusy(true); setError('');
+      try { onSave(await L.saveMetadata(item.asset, { name: draft.name, description: draft.description, favorite: draft.favorite, cat: draft.cat, tags })); onClose(); }
+      catch (e) { setError(e.message || 'Não foi possível guardar.'); }
+      finally { setBusy(false); running.current = false; }
+    };
+    return html`<${Modal} title="Detalhes da fotografia" className="photo-details" busy=${busy} onClose=${onClose}><div class="library-body">
+      <img class="photo-details-image" src=${item.thumb} alt=${draft.description || L.label(item)} />
+      <fieldset disabled=${busy}><div class="field"><label for="asset-name">Nome</label><input id="asset-name" value=${draft.name} maxLength="120" onInput=${(e) => setDraft({ ...draft, name: e.target.value })} /></div>
+      <div class="field"><label for="asset-description">Descrição</label><textarea id="asset-description" value=${draft.description} rows="3" maxLength="600" onInput=${(e) => setDraft({ ...draft, description: e.target.value })} /></div>
+      <div class="field"><label for="asset-tags">Etiquetas (separadas por vírgulas)</label><input id="asset-tags" value=${tags} onInput=${(e) => setTags(e.target.value)} /></div>
+      <div class="field"><label for="asset-category">Profissão</label><select id="asset-category" value=${draft.cat} onChange=${(e) => setDraft({ ...draft, cat: e.target.value })}><option value="geral">Geral</option>${TR.list.map((t) => html`<option key=${t.id} value=${t.photo}>${t.label}</option>`)}</select></div>
+      <label class="check"><input type="checkbox" checked=${draft.favorite} onChange=${(e) => setDraft({ ...draft, favorite: e.target.checked })} /> Favorita</label>
+      <button class="btn primary" onClick=${save}>Guardar detalhes</button></fieldset>
+      ${draft.originalName && html`<p class="field-hint">Ficheiro original: ${draft.originalName}</p>`}
+      <section class="photo-usage"><h3>Utilização</h3>${usage ? html`${usage.projects.length || usage.templates.length ? html`<ul>${usage.projects.map((p) => html`<li key=${p.id}>${p.name} · ${p.trashed ? 'Reciclagem' : 'Anúncio'}${p.current ? '' : ' · só no histórico'}${p.current && p.history ? ' e histórico' : ''}</li>`)}${usage.templates.map((t) => html`<li key=${t.id}>${t.name} · Modelo pessoal</li>`)}</ul>` : html`<p>Não está usada em anúncios ou modelos guardados.</p>`}` : html`<p>A verificar utilização…</p>`}</section>
+      ${error && html`<p class="workflow-error" role="alert">${error}</p>`}
+    </div><//>`;
+  }
   function PhotoLibrary({ project, setPhotoAsset, choosePhoto, imgBusy }) {
     const [lib, setLib] = useState(null);
     const [mine, setMine] = useState([]);
@@ -1729,7 +2194,10 @@
     const [cat, setCat] = useState('auto');
     const [busy, setBusy] = useState(null);
     const [adding, setAdding] = useState(null); // { done, total }
-    useEffect(() => { L.index().then(setLib); L.userItems().then(setMine); }, []);
+    const [query, setQuery] = useState(''), [favorite, setFavorite] = useState(false), [tag, setTag] = useState('');
+    const [details, setDetails] = useState(null), [importResult, setImportResult] = useState(null), [libError, setLibError] = useState('');
+    const importPending = useRef(false);
+    useEffect(() => { L.index().then(setLib); L.userItems().then(setMine).catch((e) => setLibError(e.message)); }, []);
     const bundled = lib ? lib.items : [];
     const present = useMemo(() => new Set(bundled.map((i) => i.cat)), [lib]);
     // «Deste anúncio»: the library photos of every trade of the ad.
@@ -1743,9 +2211,9 @@
       ...(present.has('geral') ? [{ id: 'geral', label: 'Gerais' }] : []),
       { id: 'mine', label: `As minhas (${mine.length})` },
     ];
-    const items = effective === 'mine'
-      ? mine.map((m) => ({ key: m.asset, thumb: m.thumb, asset: m.asset }))
-      : bundled.filter((i) => effective === 'all' || (effective === 'ad' ? adCats.includes(i.cat) : i.cat === effective)).map((i) => ({ key: i.id, thumb: i.thumb, id: i.id }));
+    const items = L.filter(effective === 'mine'
+      ? mine.map((m) => ({ ...m, key: m.asset }))
+      : bundled.filter((i) => effective === 'all' || (effective === 'ad' ? adCats.includes(i.cat) : i.cat === effective)).map((i) => ({ ...i, key: i.id, name: `${TR.list.find((t) => t.photo === i.cat)?.label || 'Fotografia'} · ${i.id}` })), { query, favorite: effective === 'mine' && favorite, tag: effective === 'mine' ? tag : '' });
     const locked = !!(busy || imgBusy);
     const libWait = useDelayed(!lib, 300);
     async function pick(it) {
@@ -1762,73 +2230,75 @@
       }
     }
     async function addMine() {
-      if (locked) return;
-      const files = await pickFiles('image/*');
-      if (!files.length) return;
-      setBusy('adding');
-      setAdding({ done: 0, total: files.length });
+      if (locked || importPending.current) return;
+      importPending.current = true;
       try {
-        const n = await L.addUserPhotos(files, tradeCat || 'geral', (done) => setAdding({ done, total: files.length }));
+        const files = await pickFiles('image/*'); if (!files.length) return;
+        setBusy('adding'); setAdding({ done: 0, total: files.length }); setImportResult(null); setLibError('');
+        const result = await L.addUserPhotos(files, tradeCat || 'geral', (done) => setAdding({ done, total: files.length }));
         setMine(await L.userItems());
-        setCat('mine');
-        toast(n === 1 ? 'Fotografia adicionada à biblioteca' : `${n} fotografias adicionadas à biblioteca`);
+        setCat('mine'); setQuery(''); setFavorite(false); setTag(''); setImportResult(result);
       } catch (err) {
-        console.error(err);
-        toast('Não foi possível guardar as fotografias.', { kind: 'error' });
+        setLibError(err.message || 'Não foi possível guardar as fotografias.');
       } finally {
-        setBusy(null);
+        importPending.current = false; setBusy(null);
         setAdding(null);
       }
     }
     async function removeMine(it) {
       const ok = await confirmDialog({ title: 'Tirar da biblioteca?', body: 'A fotografia sai da biblioteca. Os anúncios que já a usam ficam iguais.', confirm: 'Tirar', danger: true });
       if (!ok) return;
-      await L.removeUser(it.asset);
-      setMine(await L.userItems());
+      try { await L.removeUser(it.asset); setMine(await L.userItems()); } catch (e) { setLibError(e.message); }
     }
     return html`<div class="library">
       <div class="chips-row small" role="radiogroup" aria-label="Categoria">
         ${cats.map((c) => html`<button key=${c.id} role="radio" aria-checked=${effective === c.id} class=${'tchip' + (effective === c.id ? ' on' : '')} onClick=${() => setCat(c.id)}>${c.label}</button>`)}
       </div>
+      <label class="lib-search">Pesquisar fotografias<input type="search" value=${query} placeholder="Nome, descrição, etiquetas…" onInput=${(e) => setQuery(e.target.value)} /></label>
+      ${effective === 'mine' && html`<div class="library-filters"><label class="check"><input type="checkbox" checked=${favorite} onChange=${(e) => setFavorite(e.target.checked)} /> Só favoritas</label><label>Etiqueta<select value=${tag} onChange=${(e) => setTag(e.target.value)}><option value="">Todas</option>${[...new Set(mine.flatMap((m) => m.tags || []))].sort().map((t) => html`<option key=${t} value=${t}>${t}</option>`)}</select></label></div>`}
       ${libWait && html`<${BrickLoader} label="A carregar a biblioteca…" />`}
       ${!lib ? html`<div class="lib-grid" aria-busy="true" aria-label="A carregar a biblioteca">
         ${[0, 1, 2, 3, 4, 5].map((i) => html`<span key=${i} class="lib-skel"></span>`)}
-      </div>` : items.length ? html`<div class=${'lib-grid' + (locked ? ' is-busy' : '')}>
+      </div>` : items.length ? html`<div class=${'lib-grid' + (effective === 'mine' ? ' own-photos' : '') + (locked ? ' is-busy' : '')}>
         ${items.map((it) => html`<div key=${it.key} class="lib-cell">
           <button class=${'lib-item' + (busy === it.key ? ' busy' : '')} onClick=${() => pick(it)} aria-busy=${busy === it.key}
-            aria-label=${busy === it.key ? 'A aplicar esta fotografia' : 'Usar esta fotografia'}>
+            aria-label=${busy === it.key ? 'A aplicar esta fotografia' : `Usar ${L.label(it)}${it.description ? ' — ' + it.description : ''}`}>
             <img src=${it.thumb} alt="" loading="lazy" />
           </button>
-          ${it.asset && html`<button class="lib-remove" aria-label="Tirar da biblioteca" onClick=${() => removeMine(it)}><${Icon} name="x" size=${13} stroke=${2.6} /></button>`}
+          ${it.asset && html`<span class="lib-name" title=${L.label(it)}>${L.label(it)}</span><div class="lib-meta-actions"><button class="btn ghost sm" aria-pressed=${!!it.favorite} aria-label=${`Favorita: ${L.label(it)}`} disabled=${locked} onClick=${async () => { try { setMine(await L.saveMetadata(it.asset, { favorite: !it.favorite })); } catch (e) { setLibError(e.message); } }}><${Icon} name="star" size=${15} /></button><button class="btn ghost sm" disabled=${locked} onClick=${() => setDetails(it)}>Detalhes</button></div>
+            <button class="lib-remove" aria-label=${`Tirar ${L.label(it)} da biblioteca`} onClick=${() => removeMine(it)}><${Icon} name="x" size=${13} stroke=${2.6} /></button>`}
         </div>`)}
-      </div>` : html`<p class="lib-empty">${effective === 'mine'
+      </div>` : html`<p class="lib-empty">${query || favorite || tag ? 'Não há fotografias para estes filtros.' : effective === 'mine'
         ? 'Ainda não guardou fotografias suas. Acrescente as que usa muitas vezes e ficam aqui para todos os anúncios.'
         : 'A biblioteca embutida ainda não tem fotografias.'}</p>`}
       <button class="btn ghost sm" onClick=${addMine} disabled=${locked} aria-busy=${!!adding}>
         ${adding ? html`<${Spinner} />` : html`<${Icon} name="image-plus" size=${16} />`}
         ${adding ? (adding.total > 1 ? `A adicionar ${Math.min(adding.done + 1, adding.total)} de ${adding.total}…` : 'A adicionar…') : 'Adicionar fotografias à biblioteca'}</button>
+      ${libError && html`<p class="workflow-error" role="alert">${libError}</p>`}
+      ${importResult && html`<div class="library-import-result"><p role="status">${importResult.added} adicionadas · ${importResult.duplicates} duplicadas · ${importResult.failed} rejeitadas.</p>${!importResult.duplicateCheck && html`<p>Este navegador não permite verificar duplicados. Os ficheiros válidos foram adicionados.</p>`}<details open=${importResult.failed > 0 || importResult.duplicates > 0}><summary>Resultado por ficheiro</summary><ul>${importResult.items.map((it, i) => html`<li key=${i}><strong>${it.name}</strong>: ${it.reason}</li>`)}</ul></details></div>`}
+      ${details && html`<${BodyLayer}><${PhotoDetails} item=${details} project=${project} onSave=${setMine} onClose=${() => setDetails(null)} /><//>`}
     </div>`;
   }
 
   function ImagesPanel({ project, update, images, choosePhoto, chooseLogo, setPhotoAsset, imgBusy }) {
-    const ph = project.photo;
+    const ph = M.photoForFormat(project.photo, project.format);
     const st = project.style;
     const adj = ph ? { ...M.DEFAULT_FX, ...(ph.adj || {}) } : M.DEFAULT_FX;
     const setAdj = (k) => (v) => update((p) => { p.photo.adj = { ...M.DEFAULT_FX, ...(p.photo.adj || {}), [k]: v }; }, { coalesce: `adj-${k}` });
     return html`<div class="panel-inner">
-      <div class="panel-head"><h2>Imagens</h2><p>Arraste ficheiros para aqui ou diretamente para o anúncio.</p></div>
+      <div class="panel-head"><h2>Fotos</h2><p>Arraste ficheiros para aqui ou diretamente para o anúncio.</p></div>
       <${Group} title="Fotografia">
         <${DropZone} id="f-photo" kind="photo" label="Escolher fotografia" sub="JPG, PNG ou WebP. No telemóvel pode tirar uma na hora." img=${images.photo} onFile=${choosePhoto}
           busy=${imgBusy === 'photo'} busyLabel="A preparar a fotografia…" />
         ${ph && html`<div class="photo-tools">
           <${Slider} id="photo-zoom" label="Aproximar" value=${ph.zoom} min=${1} max=${3} step=${0.01} format=${pct}
-            onInput=${(v) => update((p) => { p.photo.zoom = v; }, { coalesce: 'zoom' })} />
+            onInput=${(v) => update((p) => M.setPhotoFrame(p, p.format, { zoom: v }), { coalesce: 'zoom' })} />
           <div class="row-btns">
-            <button class="btn ghost sm" onClick=${() => update((p) => { p.photo.zoom = 1; p.photo.fx = 0.5; p.photo.fy = 0.5; })}><${Icon} name="crosshair" size=${16} /> Centrar</button>
+            <button class="btn ghost sm" onClick=${() => update((p) => M.setPhotoFrame(p, p.format, { zoom: 1, fx: .5, fy: .5 }))}><${Icon} name="crosshair" size=${16} /> Centrar</button>
             <button class="btn ghost sm" aria-pressed=${!!ph.flip} onClick=${() => update((p) => { p.photo.flip = !p.photo.flip; })}><${Icon} name="flip-horizontal-2" size=${16} /> Espelhar</button>
             <button class="btn ghost sm danger-text" onClick=${() => update((p) => { p.photo = null; })}><${Icon} name="trash-2" size=${16} /> Remover</button>
           </div>
-          <p class="tip"><${Icon} name="hand" size=${15} /> Arraste a fotografia no anúncio para a enquadrar. Ctrl + roda do rato, ou dois dedos, aproxima.</p>
+          <p class="tip"><${Icon} name="hand" size=${15} /> Enquadramento de ${M.FORMATS[project.format].label}. Arraste a fotografia para a enquadrar. Ctrl + roda do rato, ou dois dedos, aproxima. Use Comparar formatos para ajustar também pelo teclado.</p>
           <details class="adjust">
             <summary><${Icon} name="sliders-horizontal" size=${16} /> Ajustar a fotografia</summary>
             <${Slider} id="adj-b" label="Brilho" value=${adj.b} min=${0.7} max=${1.35} step=${0.01} format=${pct} onInput=${setAdj('b')} />
@@ -1888,31 +2358,12 @@
   }
 
   // the template (folded, saying which one), then the colours, the letter, the sizes and the brand
-  function LookPanel({ project, update, images, brand, setBrand }) {
+  function LookPanel({ project, update, images, brand, setBrand, onReuse }) {
     const st = project.style;
     const tpl = T.get(project.template);
     const setColor = (key) => (v, live) => update((p) => { p.style[key] = v; if (key === 'primary' || key === 'accent') p.style.customColors = true; }, { coalesce: live ? `color:${key}` : undefined });
-    // Default WhatsApp message for new ads ({profissões} = the ad's trades).
-    const [waTemplate, setWaTemplate] = useState(() => (brand && brand.waTemplates && brand.waTemplates['pt-PT']) || '');
-    async function saveBrand() {
-      const t = project.texts[project.locale];
-      const tpl = waTemplate.trim();
-      const b = {
-        name: project.brand.name, tagline: project.brand.tagline,
-        logo: project.logo ? project.logo.asset : null,
-        primary: st.primary, accent: st.accent,
-        contacts: (t.contacts || []).filter((c) => c.text.trim()).map((c) => ({ icon: c.icon, text: c.text })),
-        // An incomplete number does not replace the brand's.
-        whatsapp: project.whatsapp && C.digits(project.whatsapp.country, project.whatsapp.number) ? { ...project.whatsapp } : (brand && brand.whatsapp) || null,
-        waTemplates: tpl ? { 'pt-PT': tpl } : {},
-        savedAt: Date.now(),
-      };
-      await S.setMeta('brand', b);
-      setBrand(b);
-      toast('Marca guardada. Os próximos anúncios começam com ela.');
-    }
     return html`<div class="panel-inner">
-      <div class="panel-head"><h2>Aspeto</h2><p>Modelo, cores, letra e tamanhos. O contraste é corrigido automaticamente para tudo se ler bem.</p></div>
+      <div class="panel-head"><h2>Estilo</h2><p>Modelo, cores, letra e tamanhos. O contraste é corrigido automaticamente para tudo se ler bem.</p></div>
       <${Group} title="Modelo" fold="aspeto:modelo" closed summary=${tpl.name} hint="Troque de composição. O texto, as imagens e as cores da marca mantêm-se.">
         <${TemplateGallery} project=${project} update=${update} images=${images} />
       <//>
@@ -1958,17 +2409,8 @@
         <${Slider} id="s-head" label="Título" value=${st.headScale} min=${0.6} max=${1.4} step=${0.01} format=${pct}
           onInput=${(v) => update((p) => { p.style.headScale = v; }, { coalesce: 'headScale' })} />
       <//>
-      <${Group} title="A minha marca" hint="Guarde o logótipo, o nome, as cores, os contactos e o WhatsApp para começar cada anúncio com eles.">
-        <div class="field">
-          <label for="f-brand-wa-template">Mensagem do WhatsApp por omissão</label>
-          <${AutoTextarea} id="f-brand-wa-template" value=${waTemplate} placeholder=${M.STOCK.waMsg['pt-PT']}
-            onInput=${(e) => setWaTemplate(e.target.value)} />
-          <small class="field-hint">Para os anúncios novos em português. {profissões} é trocado pelas profissões do anúncio. Vazio = a mensagem da app.</small>
-        </div>
-        <div class="row-btns">
-          <button class="btn ghost sm" onClick=${saveBrand}><${Icon} name="save" size=${16} /> Guardar como a minha marca</button>
-          ${brand && html`<button class="btn ghost sm" onClick=${() => { update((p) => { Object.assign(p, applyBrand(p, brand)); }); toast('Marca aplicada'); }}><${Icon} name="wand-sparkles" size=${16} /> Aplicar a minha marca</button>`}
-        </div>
+      <${Group} title="Marcas e modelos pessoais" hint="Guarde várias identidades e anúncios completos para reutilizar.">
+        <button class="btn ghost" onClick=${onReuse}><${Icon} name="copy" /> Abrir biblioteca pessoal</button>
       <//>
     </div>`;
   }
@@ -1989,7 +2431,7 @@
   }
 
   // ---------------------------------------------------------------- workspace (live preview)
-  function Workspace({ project, images, update, onSelect, guides, setGuides, report, onReport, choosePhoto, chooseLogo, mobile, pvLarge, setPvLarge, busy, onConvert }) {
+  function Workspace({ project, images, update, onSelect, guides, setGuides, report, onReport, choosePhoto, chooseLogo, mobile, pvLarge, setPvLarge, busy, onConvert, onCompare }) {
     const wrapRef = useRef();
     const canvasRef = useRef();
     const regionsRef = useRef([]);
@@ -2048,19 +2490,20 @@
       pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
       if (pointers.current.size === 2 && project.photo) {
         const [a, b] = [...pointers.current.values()];
-        pinch.current = { d0: dist(a, b), z0: project.photo.zoom };
+        pinch.current = { d0: dist(a, b), z0: M.photoForFormat(project.photo, project.format).zoom };
         dragRef.current = null;
         return;
       }
       const pt = toPoster(e);
-      dragRef.current = { start: pt, g: hitTest(pt), moved: false, fx: project.photo && project.photo.fx, fy: project.photo && project.photo.fy };
+      const frame = M.photoForFormat(project.photo, project.format);
+      dragRef.current = { start: pt, g: hitTest(pt), moved: false, fx: frame?.fx, fy: frame?.fy };
     }
     function onPointerMove(e) {
       if (pointers.current.has(e.pointerId)) pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
       if (pinch.current && pointers.current.size === 2) {
         const [a, b] = [...pointers.current.values()];
         const zoom = U.clamp(pinch.current.z0 * (dist(a, b) / pinch.current.d0), 1, 3);
-        update((p) => { p.photo.zoom = zoom; }, { coalesce: 'zoom' });
+        update((p) => M.setPhotoFrame(p, p.format, { zoom }), { coalesce: 'zoom' });
         return;
       }
       const pt = toPoster(e);
@@ -2073,7 +2516,7 @@
         const fxMin = rect.w / 2 / dw, fyMin = rect.h / 2 / dh;
         const fx = U.clamp(d.fx - dx / dw, fxMin, 1 - fxMin);
         const fy = U.clamp(d.fy - dy / dh, fyMin, 1 - fyMin);
-        update((p) => { p.photo.fx = fx; p.photo.fy = fy; }, { coalesce: 'photo-drag' });
+        update((p) => M.setPhotoFrame(p, p.format, { fx, fy }), { coalesce: 'photo-drag' });
         return;
       }
       if (e.pointerType !== 'mouse') return;
@@ -2096,7 +2539,7 @@
       const g = hitTest(toPoster(e));
       if (!g || g.key !== 'photo') return;
       e.preventDefault();
-      update((p) => { p.photo.zoom = U.clamp(p.photo.zoom * (e.deltaY < 0 ? 1.06 : 1 / 1.06), 1, 3); }, { coalesce: 'zoom' });
+      update((p) => M.setPhotoFrame(p, p.format, { zoom: M.photoForFormat(p.photo, p.format).zoom * (e.deltaY < 0 ? 1.06 : 1 / 1.06) }), { coalesce: 'zoom' });
     }
     function onDrop(e) {
       e.preventDefault();
@@ -2114,16 +2557,15 @@
       if (!project.photo) notes.push({ icon: 'image-plus', text: mobile ? 'Sem fotografia' : 'Sem fotografia: arraste uma para o anúncio.', kind: 'info' });
       if (report.shrink < 0.97) notes.push({ icon: 'scaling', text: html`<span>Texto reduzido para <${CountUp} value=${Math.round(report.shrink * 100)} />%</span>`, kind: report.shrink < 0.7 ? 'warn' : 'info', title: 'Para letra maior: encurte os textos, oculte um bloco ou experimente outro formato.' });
       if (report.photoUpscale > 1.6) notes.push({ icon: 'triangle-alert', text: 'Fotografia com pouca resolução', kind: 'warn' });
+      if (report.minTextSize > 0 && report.minTextSize < 26) notes.push({ icon: 'type', text: `Texto pequeno: ${Math.round(report.minTextSize)} px`, kind: 'warn', title: 'Confirme a leitura em Comparar formatos. Pode encurtar o texto ou aumentar o tamanho em Aspeto.' });
     }
     return html`<main class="workspace">
       <div class="ws-bar">
         <${FormatSwitch} value=${project.format} compact=${mobile} onChange=${(f) => transition(() => update((p) => { p.format = f; }, { coalesce: 'format' }))} />
+        <button class="btn ghost sm" onClick=${onCompare} aria-label="Comparar formatos">Comparar<span class="hide-sm"> formatos</span></button>
         ${project.format === 'story' && html`<label class="switch dark"><input type="checkbox" checked=${guides} onChange=${(e) => setGuides(e.target.checked)} /><span class="switch-ui"></span> <span class="hide-sm">Zonas do Instagram</span><span class="show-sm">Zonas</span></label>`}
         ${mobile && html`<button class="icon-btn ws-size" onClick=${() => transition(() => setPvLarge(!pvLarge))} aria-label=${pvLarge ? 'Reduzir pré-visualização' : 'Ampliar pré-visualização'}>
           <${Icon} name=${pvLarge ? 'zoom-out' : 'zoom-in'} size=${18} /></button>`}
-        <button class="btn sm ws-convert" onClick=${onConvert} aria-label="Converter em vídeo"
-          title="Fazer um vídeo com os textos desta imagem (pode mudá-los só para o vídeo)">
-          <${Icon} name="video" size=${15} /> <span class="hide-sm">Converter em vídeo</span><span class="show-sm">Vídeo</span></button>
       </div>
       <div class=${'stage' + (dropping ? ' dropping' : '')} ref=${wrapRef}
         onDragOver=${(e) => { e.preventDefault(); setDropping(true); }} onDragLeave=${(e) => { if (e.currentTarget === e.target) setDropping(false); }} onDrop=${onDrop}>
@@ -2153,21 +2595,28 @@
   // sound; a click pauses and resumes it. An edit keeps the time it was at.
   const SOUND_NAMES = { generated: 'música da app', own: 'som próprio', none: 'sem som' };
   // quiet: something else needs the attention (the export dialog): «Ouvir» stops.
-  function VideoStage({ P, project, format, setFormat, mobile, quiet }) {
+  function VideoStage({ P, project, format, setFormat, mobile, quiet, onCover, coverReady, pvLarge, setPvLarge, guides, setGuides }) {
     const wrapRef = useRef();
     const canvasRef = useRef();
     const at = useRef(0); // the time on screen
+    const playbackFrame = useRef(0);
+    const seekTarget = useRef(null);
     const size = useSize(wrapRef);
     const fmt = M.FORMATS[format];
     const margin = mobile ? 24 : 72;
-    const k = size.w ? Math.max(0.05, Math.min((size.w - margin) / fmt.w, (size.h - (mobile ? 16 : 48)) / fmt.h)) : 0;
+    const k = size.w ? Math.max(0, Math.min((size.w - margin) / fmt.w, (size.h - (mobile ? 16 : 48)) / fmt.h)) : 0;
     const cssW = Math.round(fmt.w * k), cssH = Math.round(fmt.h * k);
     const vid = project.video || M.DEFAULT_VIDEO;
     const [paused, setPaused] = useState(false);
     const [listening, setListening] = useState(false);
     const [clock, setClock] = useState(null);
+    const [position, setPosition] = useState(0), [seekTick, setSeekTick] = useState(0);
+    const lastPosition = useRef(0);
+    const seek = (value) => { cancelAnimationFrame(playbackFrame.current); at.current = seekTarget.current = RS.production.frameTime(P, Number(value)); setPosition(at.current); setListening(false); setPaused(true); setSeekTick((v) => v + 1); };
+    useEffect(() => { at.current = RS.production.frameTime(P, at.current); if (seekTarget.current !== null) seekTarget.current = RS.production.frameTime(P, seekTarget.current); setPosition(at.current); }, [P]);
     // «Ouvir» ends with the sound switched off, and while the export dialog is open
     useEffect(() => { if (vid.sound === 'none' || quiet) setListening(false); }, [vid.sound, quiet]);
+    useEffect(() => { if (quiet) setPaused(true); }, [quiet]);
     useEffect(() => {
       if (!listening || !P || vid.sound === 'none') { setClock(null); return undefined; }
       let pv = null, live = true;
@@ -2182,8 +2631,8 @@
             return;
           }
         }
-        if (!live) return;
-        pv = RS.sound.preview(src, 0);
+        if (!live || seekTarget.current !== null) return;
+        pv = RS.sound.preview(src, RS.production.frameTime(P, at.current));
         setPaused(false);
         setClock(() => pv.time);
       })();
@@ -2198,27 +2647,30 @@
       if (c.height !== ph) c.height = ph;
       const ctx = c.getContext('2d');
       const d = P.timeline.duration;
-      const draw = (t) => { at.current = t; RS.motion.render(ctx, P, { t, scale: (cssW / fmt.w) * dpr }); };
-      if (paused) { draw(Math.min(at.current, d - 0.01)); return undefined; }
+      const draw = (t) => { at.current = t; RS.motion.render(ctx, P, { t, scale: (cssW / fmt.w) * dpr }); if (performance.now() - lastPosition.current > 150) { lastPosition.current = performance.now(); setPosition(t); } };
+      if (paused) { draw(RS.production.frameTime(P, seekTarget.current ?? at.current)); return undefined; }
       // the loop keeps going from where it was, with a short pause on the last frame
       const start = performance.now() - at.current * 1000;
-      let raf = 0;
       const tick = (now) => {
-        raf = requestAnimationFrame(tick);
+        if (seekTarget.current !== null) return;
+        playbackFrame.current = requestAnimationFrame(tick);
         let t;
         if (clock) { t = clock(); if (t > d + 0.6) setListening(false); } else t = ((now - start) / 1000) % (d + 0.8);
         draw(Math.max(0, Math.min(t, d - 0.01)));
       };
-      raf = requestAnimationFrame(tick);
-      return () => cancelAnimationFrame(raf);
-    }, [P, k, cssW, cssH, paused, clock]);
-    const toggle = () => { if (listening) setListening(false); setPaused((p) => !p); };
+      playbackFrame.current = requestAnimationFrame(tick);
+      return () => cancelAnimationFrame(playbackFrame.current);
+    }, [P, k, cssW, cssH, paused, clock, seekTick]);
+    const toggle = () => { seekTarget.current = null; if (listening) setListening(false); setPaused((p) => !p); };
     return html`<main class=${'workspace video-stage' + (paused ? ' paused' : '')}>
       <div class="ws-bar">
         <${FormatSwitch} value=${format} compact=${mobile} onChange=${(f) => transition(() => setFormat(f))} />
-        ${vid.sound !== 'none' && html`<button class=${'btn sm ws-listen' + (listening ? ' on' : '')} aria-pressed=${listening} onClick=${() => setListening(!listening)}
+        ${format === 'story' && html`<button class="btn ghost sm" aria-pressed=${guides} onClick=${() => setGuides(!guides)} aria-label="Mostrar zonas de segurança do vídeo">Zonas</button>`}
+        <button class="btn sm ws-pause" onClick=${toggle} aria-label=${paused ? 'Continuar vídeo' : 'Pausar vídeo'} title=${paused ? 'Continuar vídeo' : 'Pausar vídeo'}><${Icon} name=${paused ? 'play' : 'pause'} size=${16} /></button>
+        ${mobile && html`<button class="btn sm ws-pause" aria-label=${pvLarge ? 'Reduzir pré-visualização do vídeo' : 'Ampliar pré-visualização do vídeo'} onClick=${() => setPvLarge(!pvLarge)}><${Icon} name=${pvLarge ? 'minimize-2' : 'maximize-2'} size=${16} /></button>`}
+        ${vid.sound !== 'none' && html`<button class=${'btn sm ws-listen' + (listening ? ' on' : '')} aria-pressed=${listening} aria-label=${listening ? 'Parar o som' : 'Ouvir o vídeo'} onClick=${() => { seekTarget.current = null; setListening(!listening); }}
           title=${listening ? 'Parar o som' : 'Ver o vídeo com o som'}>
-          <${Icon} name=${listening ? 'square' : 'volume-2'} size=${15} /> ${listening ? 'Parar' : 'Ouvir'}</button>`}
+          <${Icon} name=${listening ? 'square' : 'volume-2'} size=${15} /><span class="hide-sm">${listening ? 'Parar' : 'Ouvir'}</span></button>`}
       </div>
       <div class="stage" ref=${wrapRef}>
         ${k > 0 && P && html`<div class="poster-wrap" style=${`width:${cssW}px;height:${cssH}px`}>
@@ -2226,11 +2678,13 @@
             role="img" aria-label=${`Vídeo ${P.style.name}, formato ${fmt.label}. Clique para ${paused ? 'continuar' : 'pausar'}.`}
             onPointerDown=${(e) => { if (e.pointerType === 'mouse' && e.button !== 0) return; toggle(); }}></canvas>
           ${paused && html`<span class="stage-paused" aria-hidden="true"><${Icon} name="play" size=${30} /></span>`}
+          ${guides && format === 'story' && html`<div class="video-safe-guides" aria-hidden="true" style=${`top:${100 * E.SAFE.top / fmt.h}%;bottom:${100 * E.SAFE.bottom / fmt.h}%`}><span>Zona de segurança</span></div>`}
         </div>`}
       </div>
+      <${VideoTimeline} prepared=${P} position=${position} onSeek=${seek} />
       <div class="ws-notes" aria-live="polite">
         <span class="note info"><${Icon} name="video" size=${15} /> <span>${P ? html`${P.style.name} · <${CountUp} value=${P.timeline.duration} /> s · ${SOUND_NAMES[vid.sound] || ''}` : 'A preparar o vídeo…'}</span></span>
-        <span class="ws-tip hide-sm"><${Icon} name="mouse-pointer-click" size=${15} /> Clique no vídeo para ${paused ? 'continuar' : 'pausar'}.</span>
+        <button class="btn sm ws-pause" disabled=${!coverReady} title=${coverReady ? 'Escolher o fotograma da capa' : 'A preparar as imagens e o vídeo…'} onClick=${() => onCover(at.current)}>Escolher capa</button>
       </div>
     </main>`;
   }
@@ -2285,16 +2739,19 @@
   // back to the default point. Every change is saved and reaches the stage: a
   // drag when it ends, the arrow keys once they stop (the video is prepared once).
   const FOCUS_KEYS_SAVE = 280;
-  function FramePhoto({ project, update, photo, onClose }) {
+  // piece: whose point it is ('video': video.photos.focus; 'carousel': carousel.photos.focus)
+  function FramePhoto({ project, update, photo, onClose, piece = 'video' }) {
     const [closing, close] = useClosing(onClose);
-    const stored = RS.motion.photoFocus(project, photo.img) || { x: 0.5, y: 0.4 };
+    const view = piece === 'carousel' ? M.carouselFocusView(project) : project;
+    const setFocus = (p, f) => (piece === 'carousel' ? M.setCarouselPhotoFocus(p, photo.id, f) : M.setVideoPhotoFocus(p, photo.id, f));
+    const stored = RS.motion.photoFocus(view, photo.img) || { x: 0.5, y: 0.4 };
     const [pt, setPt] = useState(stored);
     const cur = useRef(pt);
     const canvasRef = useRef();
     const dotRef = useRef();
     const held = useRef(false);
     const later = useRef(0); // the arrow keys' move, saved once they stop
-    const save = (f) => update((p) => { M.setVideoPhotoFocus(p, photo.id, f); }, { coalesce: 'video-focus' });
+    const save = (f) => update((p) => { setFocus(p, f); }, { coalesce: `${piece}-focus` });
     const wait = () => { clearTimeout(later.current); later.current = 0; };
     const flush = () => { if (later.current) { wait(); save(cur.current); } };
     useEffect(() => flush, []); // closed before the keys' move was saved
@@ -2346,7 +2803,7 @@
     // «Centrar»: the photo's own default (the ad's framing, a library photo's, a little above the middle)
     const centre = () => {
       wait();
-      update((p) => { M.setVideoPhotoFocus(p, photo.id, null); });
+      update((p) => { setFocus(p, null); });
       place(RS.motion.photoFocus({ photo: project.photo }, photo.img) || { x: 0.5, y: 0.4 }, false);
     };
     const pc = (v) => Math.round(v * 100);
@@ -2397,42 +2854,40 @@
     </div>`;
   }
   // Photos the person picks for the video (library and «As minhas», up to eight,
-  // in the order picked).
-  function VideoPhotos({ project, ids, onChange }) {
+  // in the order picked). The carousel uses it too: max = its style's photos,
+  // where = 'carrossel' (with one photo, another tap replaces it).
+  function VideoPhotos({ project, ids, onChange, max = M.MAX_VIDEO_PHOTOS, where = 'vídeo' }) {
     const [lib, setLib] = useState(null);
     const [mine, setMine] = useState([]);
+    const [query, setQuery] = useState(''), [favorite, setFavorite] = useState(false);
     useEffect(() => {
       L.index().then(setLib).catch(() => setLib({ items: [] }));
       L.userItems().then(setMine).catch(() => {});
     }, []);
     const adCats = (project.trades || []).map((id) => TR.get(id) && TR.get(id).photo).filter(Boolean);
     const bundled = lib ? lib.items : [];
-    const list = [...bundled.filter((i) => adCats.includes(i.cat)), ...bundled.filter((i) => !adCats.includes(i.cat))]
-      .map((i) => ({ key: i.id, thumb: i.thumb }))
-      .concat(mine.map((m) => ({ key: m.asset, thumb: m.thumb })));
-    const full = ids.length >= M.MAX_VIDEO_PHOTOS;
-    const toggle = (key) => onChange(ids.includes(key) ? ids.filter((x) => x !== key) : [...ids, key]);
+    const list = L.filter([...bundled.filter((i) => adCats.includes(i.cat)), ...bundled.filter((i) => !adCats.includes(i.cat))]
+      .map((i) => ({ ...i, key: i.id, name: `${TR.list.find((t) => t.photo === i.cat)?.label || 'Fotografia'} · ${i.id}` }))
+      .concat(mine.map((m) => ({ ...m, key: m.asset }))), { query, favorite });
+    const full = max > 1 && ids.length >= max;
+    const toggle = (key) => onChange(ids.includes(key) ? ids.filter((x) => x !== key) : max === 1 ? [key] : [...ids, key]);
     return html`<div class="video-photos">
+      <label class="lib-search">Pesquisar fotografias do ${where}<input type="search" value=${query} onInput=${(e) => setQuery(e.target.value)} /></label><label class="check"><input type="checkbox" checked=${favorite} onChange=${(e) => setFavorite(e.target.checked)} /> Só as minhas favoritas</label>
       ${!lib ? html`<div class="lib-grid" aria-busy="true" aria-label="A carregar a biblioteca">${[0, 1, 2, 3, 4, 5].map((i) => html`<span key=${i} class="lib-skel"></span>`)}</div>`
       : html`<div class="lib-grid">${list.map((it) => {
         const n = ids.indexOf(it.key) + 1;
         return html`<button key=${it.key} type="button" class=${'lib-item' + (n ? ' picked' : '')} aria-pressed=${n > 0} disabled=${!n && full}
-          aria-label=${n ? `Fotografia ${n} do vídeo (tocar para tirar)` : 'Usar no vídeo'} onClick=${() => toggle(it.key)}>
+          aria-label=${n ? `${L.label(it)}, fotografia ${n} do ${where} (tocar para tirar)` : `Usar ${L.label(it)} no ${where}`} onClick=${() => toggle(it.key)}>
           <img src=${it.thumb} alt="" loading="lazy" />${n > 0 && html`<span class="pick-n" aria-hidden="true">${n}</span>`}</button>`;
       })}</div>`}
-      <small class="field-hint"><${CountUp} value=${ids.length} duration=${300} /> de ${M.MAX_VIDEO_PHOTOS}. Entram no vídeo por esta ordem.</small>
+      ${lib && !list.length && html`<p class="lib-empty">Não há fotografias para estes filtros.</p>`}
+      <small class="field-hint"><${CountUp} value=${ids.length} duration=${300} /> de ${max}. ${max > 1 ? `Entram no ${where} por esta ordem. ` : 'Outro toque troca-a. '}A pesquisa não retira fotografias já escolhidas.</small>
     </div>`;
   }
-  // The «Vídeo» panel in four tabs; the open one is kept by the Editor. Modelo:
-  // the recipes and styles, the photos («Enquadrar») and the length; Textos;
-  // Aspeto: colours, letters, background; Som e fim.
-  const VIDEO_TABS = [
-    { id: 'modelo', label: 'Modelo', icon: 'layout-template' },
-    { id: 'textos', label: 'Textos', icon: 'type' },
-    { id: 'aspeto', label: 'Aspeto', icon: 'palette' },
-    { id: 'fim', label: 'Som e fim', icon: 'music' },
-  ];
-  function VideoPanel({ project, update, images, photos, P, vKey, tab, setTab, onEditImage }) {
+  // The video's sections of the rail: «Estilo» (the recipes and styles, colours,
+  // letters, background), «Sequência» (the length, «Textos do vídeo», sound and
+  // ending) and «Fotos» (the photos and «Enquadrar»). onSection: go to another one.
+  function VideoPanel({ project, update, images, photos, P, vKey, section, onSection, onEditImage }) {
     const vid = project.video || M.DEFAULT_VIDEO;
     const style = RS.motion.styleOf(vid.motion);
     const recipe = !!style.recipe;
@@ -2509,7 +2964,7 @@
     const longest = Math.max(...style.durations);
     const advice = style.durations.length === 1 ? 'Escolha outro modelo, com mais tempo.'
       : vid.duration !== 'auto' && P && P.timeline.duration < longest ? 'Escolha «Automática» ou uma duração maior.'
-      : 'Tire algumas linhas em «Textos» ou escolha outro modelo.';
+      : 'Tire algumas linhas dos textos, mais abaixo, ou escolha outro modelo.';
     const lostNote = lostText && lostText.length > 0 && html`<p class="video-note"><${Icon} name="info" size=${15} /> <span>Não cabe tudo em ${P.timeline.duration} s: ${several ? 'ficam' : 'fica'} de fora ${listed}. ${advice}</span></p>`;
     const gallery = (list, label) => html`<${MotionPicker} project=${project} images=${images} photos=${photos} value=${vid.motion} onChange=${pick} list=${list} label=${label} />`;
     // «Receitas» and «Estilos» fold: when the tab opens, the one holding the chosen model is open
@@ -2522,46 +2977,30 @@
       <${VideoFraming} project=${project} update=${update} photos=${photos} style=${style} />
       ${choosing && html`<${VideoPhotos} project=${project} ids=${picked} onChange=${(ids) => setPhotoList(ids.length ? 'chosen' : 'trades', ids)} />`}
     <//>`;
-    // the tabs: arrows, Home and End move between them (WAI-ARIA tabs)
-    const tabsRef = useRef();
-    const onTabKey = (e) => {
-      const i = VIDEO_TABS.findIndex((t) => t.id === tab);
-      const n = VIDEO_TABS.length;
-      const to = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: n - 1 }[e.key];
-      if (to === undefined) return;
-      e.preventDefault();
-      const next = VIDEO_TABS[(to + n) % n];
-      setTab(next.id);
-      requestAnimationFrame(() => { const b = document.getElementById(`vtab-${next.id}`); if (b) b.focus(); });
-    };
-    // a new tab opens at its top (the tabs stay pinned above it)
-    useLayoutEffect(() => {
-      const sc = tabsRef.current && tabsRef.current.closest('.panel');
-      const head = sc && sc.querySelector('.panel-head');
-      if (!head) return;
-      const natural = head.getBoundingClientRect().bottom - sc.getBoundingClientRect().top + sc.scrollTop;
-      if (sc.scrollTop > natural) sc.scrollTop = natural;
-    }, [tab]);
     const vs = vid.show || M.DEFAULT_VIDEO_SHOW;
+    const [title, intro] = { estilo: ['Estilo', 'O modelo do vídeo, as cores e a letra.'], sequencia: ['Sequência', 'A duração, os textos e o som do vídeo.'],
+      fotos: ['Fotos', 'As fotografias do vídeo e o enquadramento de cada uma.'] }[section] || ['Vídeo', ''];
+    // «Fotos» of a model without photos says so and where to change it
+    const noPhotos = poster ? html`<div class="video-note"><${Icon} name="info" size=${15} />
+        <span>O Cartaz animado usa a fotografia da imagem. <button type="button" class="btn link sm" onClick=${onEditImage}>Editar a imagem</button></span></div>`
+      : html`<div class="video-note"><${Icon} name="info" size=${15} />
+        <span>Este estilo não usa fotografias. <button type="button" class="btn link sm" onClick=${() => onSection('estilo')}>Mudar de estilo</button></span></div>`;
     return html`<div class="panel-inner">
-      <div class="panel-head"><h2>Vídeo</h2>
-        <p>${style.name}${P ? html` · <${CountUp} value=${P.timeline.duration} /> s` : ''}. Cada alteração aparece logo no vídeo.</p></div>
-      <div class="video-tabs" role="tablist" aria-label="Partes do vídeo" ref=${tabsRef} onKeyDown=${onTabKey}>
-        ${VIDEO_TABS.map((t) => html`<button key=${t.id} id=${`vtab-${t.id}`} type="button" role="tab" aria-selected=${tab === t.id} aria-controls=${tab === t.id ? `vpanel-${t.id}` : undefined}
-          tabindex=${tab === t.id ? 0 : -1} class=${tab === t.id ? 'on' : ''} onClick=${() => setTab(t.id)}><${Icon} name=${t.icon} size=${16} /><span>${t.label}</span></button>`)}
-      </div>
-      <div key=${tab} class="video-tab" role="tabpanel" id=${`vpanel-${tab}`} aria-labelledby=${`vtab-${tab}`}>
-        ${tab === 'modelo' && html`
+      <div class="panel-head"><h2>${title}</h2>
+        <p>${style.name}${P ? html` · <${CountUp} value=${P.timeline.duration} /> s` : ''}. ${intro}</p></div>
+      <div class="video-section" data-section=${section}>
+        ${section === 'fotos' && (photosBlock || noPhotos)}
+        ${section === 'estilo' && html`
           ${galleryGroup('Receitas', recipe)}
           ${galleryGroup('Estilos', !recipe)}
-          <p class="field-hint">${style.concept || ''}</p>
-          ${photosBlock}
-          <${Group} where="vídeo" title="Duração">
+          <p class="field-hint">${style.concept || ''}</p>`}
+        ${section === 'sequencia' && html`
+          <${Group} id="video-duration" where="vídeo" title="Duração">
             <${VideoLengths} project=${project} P=${P} vKey=${vKey} onPick=${(d) => setVideo({ duration: d })} />
             ${lostNote}
-          <//>`}
-        ${tab === 'textos' && html`<${VideoTexts} project=${project} update=${update} style=${style} lostNote=${lostNote} onEditImage=${onEditImage} />`}
-        ${tab === 'aspeto' && html`
+          <//>
+          <${VideoTexts} project=${project} update=${update} style=${style} onEditImage=${onEditImage} />`}
+        ${section === 'estilo' && html`
           ${poster ? html`<${Group} where="vídeo" title="Animação">
             ${seg([['dynamic', 'Dinâmico', 'Entradas rápidas, selo a carimbar e contacto a pulsar'], ['soft', 'Suave', 'Só aparições suaves e movimentos curtos']], vid.style, (s) => setVideo({ style: s }), 'Animação do cartaz')}
           <//>` : html`<${Group} where="vídeo" title="Cores">
@@ -2590,7 +3029,7 @@
           ${style.bgModes.length > 1 && html`<${Group} where="vídeo" title="Fundo">
             ${seg([['light', 'Claro'], ['dark', 'Escuro']], style.bgModes.includes(vid.bg) ? vid.bg : style.bgModes[0], (b) => setVideo({ bg: b }), 'Fundo do vídeo')}
           <//>`}`}
-        ${tab === 'fim' && html`
+        ${section === 'sequencia' && html`
           <${Group} where="vídeo" title="Som">
             ${seg(SOUND_OPTIONS, vid.sound, pickSound, 'Som do vídeo')}
             ${vid.sound === 'own' && soundInfo && html`<p class="sound-file"><${Icon} name="music" size=${15} /> <span>${soundInfo.name} · ${Math.round(soundInfo.duration)} s</span>
@@ -2662,24 +3101,33 @@
     stamp: 'Carimbo', benefits: 'Palavra «vantagens»',
   };
   const VIDEO_LISTS = ['benefits', 'highlights', 'positions', 'contacts'];
-  function VideoTexts({ project, update, style, lostNote, onEditImage }) {
+  // piece: 'video' or 'carousel' (each has its own texts and eyes, following the
+  // ad until changed); only: the blocks to show (a carousel slide's own texts).
+  function VideoTexts({ project, update, style, lostNote, onEditImage, piece = 'video', only = null }) {
+    const isVideo = piece === 'video';
     if (style.poster) {
       return html`<div class="video-note"><${Icon} name="info" size=${15} />
         <span>O Cartaz animado mostra a imagem tal como está: mude os textos na imagem. <button type="button" class="btn link sm" onClick=${onEditImage}>Editar a imagem</button></span></div>`;
     }
     const code = project.locale;
     const loc = M.localeInfo(code);
-    const vid = project.video || M.DEFAULT_VIDEO;
-    const vs = vid.show || M.DEFAULT_VIDEO_SHOW;
+    const vid = isVideo ? project.video || M.DEFAULT_VIDEO : M.cleanCarousel(project.carousel, project);
+    const vs = vid.show || (isVideo ? M.DEFAULT_VIDEO_SHOW : {});
     const vt = (vid.texts || {})[code] || {};
-    const img = RS.motionTimeline.imageTexts(project, code);
+    // the piece's own record, ready to be changed
+    const ownOf = (p) => {
+      const o = isVideo ? { ...M.DEFAULT_VIDEO, ...(p.video || {}) } : { ...M.cleanCarousel(p.carousel, p) };
+      o.show = isVideo ? { ...M.DEFAULT_VIDEO_SHOW, ...(o.show || {}) } : { ...(o.show || {}) };
+      p[piece] = o;
+      return o;
+    };
+    const img = RS.motionTimeline.imageTexts(project, code, piece);
     const def = style.recipe;
     // a change to this language's texts; an emptied text stays (it blanks the
     // field in the video), lists and model words left with nothing are dropped
     const edit = (fn, coalesce) => update((p) => {
-      p.video = { ...M.DEFAULT_VIDEO, ...(p.video || {}) };
-      p.video.show = { ...M.DEFAULT_VIDEO_SHOW, ...(p.video.show || {}) };
-      const all = { ...(p.video.texts || {}) };
+      const rec = ownOf(p);
+      const all = { ...(rec.texts || {}) };
       const cur = { ...(all[code] || {}) };
       fn(cur, p);
       for (const k of VIDEO_LISTS) {
@@ -2691,28 +3139,32 @@
         if (!Object.keys(cur.model).length) delete cur.model;
       }
       if (Object.keys(cur).length) all[code] = cur; else delete all[code];
-      p.video.texts = all;
+      rec.texts = all;
     }, coalesce ? { coalesce } : {});
     const eyeOn = (key) => (typeof vs[key] === 'boolean' ? vs[key] : (project.show || {})[key] !== false);
-    const setEye = (key, on) => update((p) => {
-      p.video = { ...M.DEFAULT_VIDEO, ...(p.video || {}) };
-      p.video.show = { ...M.DEFAULT_VIDEO_SHOW, ...(p.video.show || {}), [key]: on };
-    });
+    const setEye = (key, on) => update((p) => { const rec = ownOf(p); rec.show = { ...rec.show, [key]: on }; });
     const own = (key) => typeof vt[key] === 'string';
-    const text = (key, label, o = {}) => html`<${VtField} id=${`vt-${key}`} label=${label} solo=${o.solo} multiline=${o.multiline} blank=${o.blank}
-      value=${own(key) ? vt[key] : img[key]} edited=${own(key) && o.reset !== false} placeholder=${o.placeholder || ''} hint=${o.hint}
+    const word = isVideo ? 'vídeo' : 'carrossel'; // the piece these texts belong to, in the sentences
+    const text = (key, label, o = {}) => html`<${VtField} id=${`vt-${key}`} label=${label} solo=${o.solo} multiline=${o.multiline} blank=${o.blank || `Fica em branco no ${word}.`}
+      value=${own(key) ? vt[key] : !isVideo && key === 'closing' ? RS.motionTimeline.carouselClosing(project, code) : img[key]} edited=${own(key) && o.reset !== false} placeholder=${o.placeholder || ''} hint=${o.hint}
+      ownLabel=${isVideo ? 'Só no vídeo' : 'Só no carrossel'}
       onInput=${(v) => edit((c, p) => { if (o.onType) o.onType(c, p, v); c[key] = v; }, `vt:${code}:${key}`)}
       onReset=${() => edit((c) => { delete c[key]; })} />`;
     // a style shows the salary and the vacancies only (its counter): no highlights of his own there
     const fixedHl = !def;
     const listItems = (kind) => (kind === 'highlights' && fixedHl ? img.highlights.filter((x) => x.role === 'salary' || x.role === 'vacancies') : img[kind]);
-    const list = (kind, addLabel, itemLabel, placeholder) => html`<${VtList} kind=${kind} items=${listItems(kind)} override=${vt[kind]} hl=${kind === 'highlights'}
+    const list = (kind, addLabel, itemLabel, placeholder) => html`<${VtList} where=${word} kind=${kind} items=${listItems(kind)} override=${vt[kind]} hl=${kind === 'highlights'}
       own=${!(kind === 'highlights' && fixedHl)} addLabel=${addLabel} itemLabel=${itemLabel} placeholder=${placeholder} onChange=${(fn, coalesce) => edit((c) => { c[kind] = fn(c[kind]); }, coalesce)} />`;
-    const block = (key, title, eye, body, hint) => html`<${Group} id=${`vt-block-${key}`} title=${title} where="vídeo" hint=${hint}
-      show=${eye ? eyeOn(eye) : undefined} onToggle=${eye ? (on) => setEye(eye, on) : undefined}>${body}<//>`;
+    // in «Sequência» (only) the row's eye is the block's: the cover's «Chamada» keeps its own
+    const block = (key, title, eyeKey, body, hint) => {
+      if (only && !only.includes(key)) return null;
+      const eye = only && eyeKey !== 'kicker' ? null : eyeKey;
+      return html`<${Group} id=${`vt-block-${key}`} title=${title} where=${isVideo ? 'vídeo' : 'carrossel'} hint=${hint}
+        show=${eye ? eyeOn(eye) : undefined} onToggle=${eye ? (on) => setEye(eye, on) : undefined}>${body}<//>`;
+    };
     // the closing line shows once he writes it (it has no image text)
     const showClosing = (c, p, v) => {
-      if (v.trim() && !String(vt.closing || '').trim()) p.video.show.closing = true;
+      if (isVideo && v.trim() && !String(vt.closing || '').trim()) p.video.show.closing = true;
     };
     const words = def && def.labels ? Object.keys(def.labels) : [];
     const mine = (vt.model || {})[def ? def.id : ''] || {};
@@ -2727,7 +3179,7 @@
       toast(`Os textos do vídeo em ${loc.label} voltaram a ser os da imagem. Pode desfazer com Ctrl+Z.`);
     };
     return html`<div class="vt-panel">
-      <div class="vt-top">
+      ${!only && html`<div class="vt-top">
         <div class="vt-langs">
           <span class="vt-langs-label">Língua</span>
           <div class="texts-locales chips-row small" role="radiogroup" aria-label="Língua dos textos do vídeo">
@@ -2739,12 +3191,12 @@
           </div>
         </div>
         <button type="button" class="btn link sm vt-reset-all" disabled=${!Object.keys(vt).length} onClick=${resetAll}
-          title=${`Todos os textos do vídeo em ${loc.label} voltam a ser os da imagem`}><${Icon} name="rotate-ccw" size=${14} /> Repor tudo da imagem</button>
-      </div>
-      <p class="group-hint vt-intro">Começam iguais aos da imagem. O que mudar aqui fica só no vídeo em ${loc.label}.</p>
+          title=${`Todos os textos do vídeo em ${loc.label} voltam a ser os do anúncio`}><${Icon} name="rotate-ccw" size=${14} /> Repor tudo do anúncio</button>
+      </div>`}
+      ${!only && html`<p class="group-hint vt-intro">Começam iguais aos da imagem. O que mudar aqui fica só no vídeo em ${loc.label}.</p>`}
       ${lostNote}
       ${block('kicker', 'Chamada', 'kicker', text('kicker', 'Chamada', { solo: true }))}
-      ${block('headline', 'Título', null, text('headline', 'Título', { solo: true, multiline: true, blank: 'Em branco: o vídeo mostra o nome da empresa ou a primeira vantagem.' }))}
+      ${block('headline', 'Título', null, text('headline', 'Título', { solo: true, multiline: true, blank: `Em branco: o ${word} mostra o nome da empresa ou a primeira vantagem.` }))}
       ${def && block('intro', 'Introdução', 'intro', text('intro', 'Introdução', { solo: true, multiline: true }))}
       ${block('benefits', 'Vantagens', 'benefits', list('benefits', 'Adicionar vantagem', 'Vantagem', 'Ex.: Carrinha da empresa'))}
       ${block('highlights', 'Destaques', 'highlights', list('highlights', 'Adicionar destaque', 'Destaque'),
@@ -2754,9 +3206,9 @@
         ${text('positionsTitle', 'Título da lista', { placeholder: (M.STOCK.positionsTitle || {})[code] || '' })}
         ${list('positions', 'Adicionar vaga', 'Vaga', 'Ex.: Pintor de construção civil')}`)}
       ${def && block('chat', 'Conversa no WhatsApp', 'chat', text('message', 'Mensagem', { solo: true, multiline: true }),
-        'A mensagem que aparece a ser escrita e enviada no vídeo.')}
+        isVideo ? 'A mensagem que aparece a ser escrita e enviada no vídeo.' : 'A mensagem que aparece na conversa do carrossel.')}
       ${block('contacts', 'Contactos', 'contacts', list('contacts', 'Adicionar contacto', 'Contacto', 'Ex.: emprego@empresa.pt'),
-        'Oculto, o vídeo também acaba sem o cartão do WhatsApp.')}
+        `Oculto, o ${word} também acaba sem o cartão do WhatsApp.`)}
       ${block('button', 'Botão e dica', null, html`
         ${text('cta', 'Botão do WhatsApp')}
         ${text('hint', 'Dica do código QR')}`)}
@@ -2773,10 +3225,10 @@
   }
   // One text of the video: the image's until he writes his own («Repor da imagem»).
   // blank: what an emptied text does in the video (said under the field)
-  function VtField({ id, label, value, edited, onInput, onReset, multiline, placeholder, hint, solo, resetLabel = 'Repor da imagem', blank = 'Fica em branco no vídeo.' }) {
+  function VtField({ id, label, value, edited, onInput, onReset, multiline, placeholder, hint, solo, resetLabel = 'Repor do anúncio', ownLabel = 'Só no vídeo', blank = 'Fica em branco no vídeo.' }) {
     return html`<div class=${'field vt-field' + (edited ? ' edited' : '') + (solo ? ' solo' : '')}>
       <div class="vt-label"><label for=${id} class=${solo ? 'sr-only' : ''}>${label}</label>
-        ${edited && html`<span class="vt-own">Só no vídeo</span>`}
+        ${edited && html`<span class="vt-own">${ownLabel}</span>`}
         ${edited && onReset && html`<button type="button" class="btn link sm vt-reset" onClick=${onReset} title="Voltar ao texto de origem"><${Icon} name="rotate-ccw" size=${13} /> ${resetLabel}</button>`}</div>
       ${multiline ? html`<${AutoTextarea} id=${id} value=${value} placeholder=${placeholder} onInput=${(e) => onInput(e.target.value)} />`
         : html`<input id=${id} type="text" value=${value} placeholder=${placeholder} onInput=${(e) => onInput(e.target.value)} />`}
@@ -2790,7 +3242,8 @@
   // examples in the empty fields: value · label of each kind of highlight
   const HL_EXAMPLES = { salary: ['1900 €', 'por mês'], vacancies: ['12', 'vagas'], badge: ['Início imediato', 'opcional'], own: ['40 h', 'por semana'] };
   // own: his own items can be added (and are shown)
-  function VtList({ kind, items, override, onChange, hl, addLabel, itemLabel, placeholder, own = true }) {
+  // where: the piece the list belongs to ('vídeo' | 'carrossel'), in its words
+  function VtList({ kind, items, override, onChange, hl, addLabel, itemLabel, placeholder, own = true, where = 'vídeo' }) {
     const ov = override || {};
     const edits = ov.edits || {};
     const added = ov.added || [];
@@ -2846,9 +3299,9 @@
         return html`<div key=${it.id} data-flip=${it.id} class=${'vt-row' + (arrived(it.id) ? ' fresh' : '') + (e !== undefined ? ' edited' : '') + (hl ? ' vt-hl' : '')}>
           ${hl && HL_ROLES[it.role] && html`<span class="vt-origin">${HL_ROLES[it.role]}</span>`}
           ${fields(it, cur, (patch, f) => editImage(it.id, patch, `vt:${kind}:${it.id}:${f}`))}
-          ${e !== undefined && html`<button type="button" class="icon-btn subtle vt-reset" aria-label=${`Repor da imagem: ${name(it)}`} title="Repor da imagem"
+          ${e !== undefined && html`<button type="button" class="icon-btn subtle vt-reset" aria-label=${`Repor do anúncio: ${name(it)}`} title="Repor do anúncio"
             onClick=${() => resetImage(it.id)}><${Icon} name="rotate-ccw" size=${15} /></button>`}
-          <button type="button" class="icon-btn subtle vt-remove" aria-label=${`Tirar do vídeo: ${name(cur)}`} title="Tirar do vídeo (fica na imagem)"
+          <button type="button" class="icon-btn subtle vt-remove" aria-label=${`Tirar do ${where}: ${name(cur)}`} title=${`Tirar do ${where} (fica na imagem)`}
             onClick=${() => editImage(it.id, null)}><${Icon} name="x" size=${16} /></button>
         </div>`;
       })}
@@ -2864,19 +3317,34 @@
   const SOUND_OPTIONS = [['generated', 'Música da app', 'Ritmo e efeitos criados pela app, sem direitos de autor'], ['own', 'Um som meu', 'Um ficheiro MP3 ou M4A seu'], ['none', 'Sem som', 'Junte a música depois, na app do Instagram']];
 
   // ---------------------------------------------------------------- export
-  const EXPORT_NAMES = { square: 'quadrado', portrait: 'retrato', story: 'story' };
+  const EXPORT_NAMES = { square: 'quadrado', portrait: 'retrato', story: 'story', feed34: '3x4' };
+  // one slide of the export preview (the carousel's own drawing, small)
+  function SlideThumb({ P, index, width }) {
+    const ref = useRef();
+    useEffect(() => { try { drawSlide(ref.current, P, index, width); } catch (err) { console.error(err); } }, [P, index, width]);
+    return html`<canvas ref=${ref} class="export-slide" aria-hidden="true"></canvas>`;
+  }
 
   // The dialog opens on the editor's tab; the video itself is shaped in «Vídeo»
   // («Mudar o vídeo» goes there: onClose('video')).
-  function ExportDialog({ project, images, onClose, saveFile, mobile, initialKind, videoFormat, prepared }) {
-    const [kind, setKind] = useState(initialKind === 'video' ? 'video' : 'image'); // 'image' | 'video'
+  // The export of the piece on screen (piece: 'image' | 'carousel' | 'video'). It starts
+  // from where it goes («Para onde?», RS.production.DESTINATIONS); «Escolher formatos»
+  // opens the formats one by one. «Pacote completo» (below) is the campaign package.
+  function ExportDialog({ project, update, images, onClose, saveFile, fileSaving, mobile, piece, videoFormat, prepared, onHistory, onResolve, onProduction }) {
+    const kind = piece === 'video' || piece === 'carousel' ? piece : 'image';
     // the previews are drawn once the dialog has arrived: drawing them during its
     // entrance stalled the sheet on a phone (half a second while it rose)
     const [entered, setEntered] = useState(false);
     useEffect(() => { const id = setTimeout(() => setEntered(true), 520); return () => clearTimeout(id); }, []);
     const arrived = (e) => { if (e.target === e.currentTarget) setEntered(true); };
-    const [imgFormats, setImgFormats] = useState([project.format]);
-    const [vidFormats, setVidFormats] = useState([videoFormat || 'story']); // Reels and Stories are 9:16
+    const DESTS = RS.production.DESTINATIONS[kind];
+    const carouselFormat = M.cleanCarousel(project.carousel, project).format;
+    const [dest, setDest] = useState(DESTS[0].id);
+    const destination = DESTS.find((d) => d.id === dest) || DESTS[0];
+    const destFormats = destination.formats.map((f) => (f === 'piece' ? carouselFormat : f));
+    // «Escolher formatos»: the formats one by one (starting from the destination's)
+    const [manual, setManual] = useState(null); // null = from the destination
+    const FORMAT_LIST = kind === 'carousel' ? M.CAROUSEL_FORMATS : M.FORMAT_ORDER;
     const [locales, setLocales] = useState([project.locale]);
     const [type, setType] = useState('png');
     const [busy, setBusy] = useState(null); // { action, label, pct }
@@ -2890,22 +3358,30 @@
     const abortRef = useRef(null);
     const [vSupport, setVSupport] = useState(null);
     useEffect(() => { RS.video.support().then(setVSupport).catch(() => setVSupport({ method: null })); }, []);
-    const video = kind === 'video';
-    const formats = video ? vidFormats : imgFormats;
-    const setFormats = video ? setVidFormats : setImgFormats;
+    const video = kind === 'video', carousel = kind === 'carousel';
+    const formats = manual || destFormats;
+    const setFormats = setManual;
     const vid = project.video || M.DEFAULT_VIDEO;
     const vStyle = RS.motion.styleOf(vid.motion);
     const vPhotos = useVideoPhotos(project, images, video);
     const [capLocale, setCapLocale] = useState(project.locale);
-    const [caption, setCaption] = useState(() => M.caption(project, project.locale));
+    const caption = M.publicationText(project, capLocale);
+    const customCaption = typeof (project.captions || {})[capLocale] === 'string';
+    const captionState = M.captionStatus(project, capLocale);
+    const setCaption = (text) => update((p) => M.setPublicationText(p, capLocale, text), { coalesce: `caption:${capLocale}` });
+    async function regenerateCaption() {
+      const code = capLocale;
+      const ok = await confirmDialog({ title: 'Regenerar o texto da publicação?', body: 'O texto desta língua volta a acompanhar o anúncio. Pode desfazer com Ctrl+Z.', confirm: 'Regenerar' });
+      if (ok) update((p) => M.setPublicationText(p, code, null));
+    }
     const [closing, close] = useClosing(onClose);
     const prevFocus = useRef(document.activeElement);
     const firstRef = useRef();
     useEffect(() => { if (firstRef.current && !mobile) firstRef.current.focus(); return () => { if (prevFocus.current && prevFocus.current.focus) prevFocus.current.focus(); }; }, []);
-    useEffect(() => setCaption(M.caption(project, capLocale)), [capLocale]);
-    const toggle = (list, set, v) => set(list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
+    // from the latest list (two quick ticks in a row both count); list: the one shown when none is kept yet
+    const toggle = (list, set, v) => set((cur) => { const l = Array.isArray(cur) ? cur : list; return l.includes(v) ? l.filter((x) => x !== v) : [...l, v]; });
     const combos = [];
-    for (const l of project.locales) if (locales.includes(l)) for (const f of M.FORMAT_ORDER) if (formats.includes(f)) combos.push({ l, f });
+    for (const l of project.locales) if (locales.includes(l)) for (const f of FORMAT_LIST) if (formats.includes(f)) combos.push({ l, f });
     const canShare = typeof navigator.canShare === 'function';
     const first = combos[0];
     // the stage's video when it is the same (format and language): preparing it again took two seconds on a phone
@@ -2913,19 +3389,45 @@
       if (!(video && first && entered)) return null;
       if (prepared && first.f === videoFormat && first.l === project.locale) return prepared;
       return RS.motion.prepare(project, { format: first.f, locale: first.l, images, photos: vPhotos || NO_PHOTOS });
-    }, [video, project, first && first.f, first && first.l, images, vPhotos, entered, prepared]);
+    }, [video, videoKey(project), first && first.f, first && first.l, images, vPhotos, entered, prepared]);
 
-    const checks = useMemo(() => {
-      const out = [];
-      if (!project.photo) out.push({ kind: 'warn', text: 'O anúncio não tem fotografia. Vai sair com a ilustração do modelo.' });
-      for (const c of combos) {
-        const r = E.renderToCanvas(project, { format: c.f, locale: c.l, images, scale: 0.12, mode: 'thumb' }).report;
-        const name = `${M.FORMATS[c.f].label} · ${M.localeInfo(c.l).short}`;
-        if (r.shrink < 0.7) out.push({ kind: 'warn', text: `${name}: o texto ficou bastante pequeno (${Math.round(r.shrink * 100)}%). Considere encurtar ou ocultar um bloco.` });
-        if (r.photoUpscale > 1.6) out.push({ kind: 'warn', text: `${name}: a fotografia tem pouca resolução e pode ficar desfocada.` });
-      }
-      return out;
-    }, [kind, formats.join(), locales.join()]);
+    const [cPrep, setCPrep] = useState(null); // { key, P }: the carousel shown and counted
+    const cKey = first ? `${first.f}:${first.l}:${JSON.stringify([videoKey(project), project.carousel])}` : '';
+    useEffect(() => {
+      if (!carousel || !first || !entered || !RS.slides) return undefined;
+      let live = true;
+      (async () => {
+        const full = await RS.slides.photos(project, images);
+        if (!live) return;
+        const P = RS.slides.prepare(project, { format: first.f, locale: first.l, images, photos: { hero: null, cards: [], full } });
+        if (live) setCPrep({ key: cKey, P });
+      })().catch((err) => console.error(err));
+      return () => { live = false; };
+    }, [carousel, entered, cKey, images]);
+    const cP = cPrep && cPrep.key === cKey ? cPrep.P : null;
+    const notes = RS.production.destinationNotes(kind, manual ? null : dest, cP ? cP.slides.length : Infinity);
+
+    const [checkState, setCheckState] = useState({ reports: [], pending: true, error: false });
+    const checkKey = JSON.stringify([kind, formats, locales, videoKey(project)]);
+    useEffect(() => {
+      let live = true;
+      setCheckState({ reports: [], pending: !!combos.length, error: false, key: checkKey });
+      if (entered) (async () => {
+        const reports = [];
+        for (const c of combos) {
+          await afterPaint(); if (!live) return;
+          reports.push(video && vid.motion !== 'poster'
+            ? { ...c, prepared: c.l === first.l && c.f === first.f && P0 ? P0 : RS.motion.prepare(project, { format: c.f, locale: c.l, images, photos: vPhotos || NO_PHOTOS }) }
+            : carousel ? { ...c } // the slides keep their texts in their frames by themselves
+            : { ...c, report: E.renderToCanvas(project, { format: c.f, locale: c.l, images, scale: 0.12, mode: 'thumb' }).report });
+          setCheckState({ reports: [...reports], pending: reports.length < combos.length, error: false, key: checkKey });
+        }
+      })().catch((err) => { console.error(err); if (live) setCheckState({ reports: [], pending: false, error: true, key: checkKey }); });
+      return () => { live = false; };
+    }, [entered, checkKey, images, vPhotos, P0]);
+    const checkReports = checkState.key === checkKey ? checkState.reports : [];
+    const checking = !!combos.length && (checkState.key !== checkKey || checkState.pending);
+    const checks = useMemo(() => W.preflight(project, { kind: video ? 'video' : 'image', combos: carousel ? [] : combos, reports: checkReports }), [project, kind, formats.join(), locales.join(), checkReports]);
 
     const ext = type === 'png' ? 'png' : 'jpg';
     const baseName = (c) => `${U.slug(project.name)}-${M.localeInfo(c.l).short.toLowerCase()}-${EXPORT_NAMES[c.f]}`;
@@ -3041,6 +3543,54 @@
     });
     const cancelVideo = () => { if (abortRef.current) abortRef.current.abort(); };
 
+    // The carousel: its slides numbered from 01, a folder per language (and per
+    // format, when more than one is chosen), with the publication text, in a ZIP.
+    async function carouselOut(step) {
+      const out = [];
+      for (const f of formats) {
+        const ls = combos.filter((c) => c.f === f).map((c) => c.l);
+        if (!ls.length) continue;
+        const files = await RS.production.carouselFiles(project, { locales: ls, format: f, type: ext, images,
+          onProgress: (label, x) => step(label, x != null ? Math.round(x * 100) : null), yieldUI: afterPaint });
+        for (const file of files) {
+          if (file.name.endsWith('/publicacao.txt')) { if (!out.some((x) => x.name === file.name)) out.push(file); }
+          else out.push(formats.length > 1 ? { ...file, name: file.name.replace('/carrossel/', `/carrossel-${EXPORT_NAMES[f] || f}/`) } : file);
+        }
+      }
+      return out;
+    }
+    const downloadCarousel = () => combos.length && busyRun('download', async (step) => {
+      try {
+        const files = await carouselOut(step);
+        step('A guardar…');
+        const zipName = `${U.slug(project.name)}-carrossel.zip`;
+        const ok = await U.saveBlob(U.zip(files), zipName, [{ description: 'Arquivo ZIP', accept: { 'application/zip': ['.zip'] } }]);
+        const n = files.filter((f) => !f.name.endsWith('.txt')).length;
+        if (ok) celebrate(zipName, () => toast(`Carrossel guardado: ${n} ${n === 1 ? 'imagem' : 'imagens'}, numeradas pela ordem de publicação.`));
+      } catch (err) {
+        console.error(err);
+        RS.haptics.error();
+        toast('Não foi possível criar o carrossel. Tente de novo.', { kind: 'error' });
+      }
+    });
+    // shares the slides of the first language and format (one post)
+    const shareCarousel = () => combos.length && busyRun('share', async (step) => {
+      try {
+        const files = (await RS.production.carouselFiles(project, { locales: [first.l], format: first.f, type: ext, images, onProgress: (label) => step(label), yieldUI: afterPaint }))
+          .filter((f) => !f.name.endsWith('.txt')).map((f) => new File([f.bytes], f.name.split('/').pop(), { type: ext === 'png' ? 'image/png' : 'image/jpeg' }));
+        if (!navigator.canShare({ files })) throw new Error('share');
+        step('A abrir a partilha…');
+        try { await navigator.clipboard.writeText(caption); } catch { /* optional */ }
+        await navigator.share({ files, text: caption });
+        toast('Partilhado. O texto da publicação também foi copiado.');
+      } catch (err) {
+        if (err && err.name === 'AbortError') return;
+        console.error(err);
+        RS.haptics.error();
+        toast('Este aparelho não deixou partilhar. Use «Descarregar».', { kind: 'error' });
+      }
+    });
+
     const download = () => combos.length && busyRun('download', async (step) => {
       try {
         const blobs = await encodeAll(step, 'A preparar');
@@ -3109,18 +3659,15 @@
     }
 
     const thumbW = mobile ? (combos.length > 1 ? 120 : 190) : combos.length > 2 ? 150 : 210;
-    const label = combos.length > 1 ? `Descarregar ${combos.length} imagens (ZIP)` : 'Descarregar imagem';
+    const label = carousel ? 'Descarregar carrossel (ZIP)' : combos.length > 1 ? `Descarregar ${combos.length} imagens (ZIP)` : 'Descarregar imagem';
+    const fmtName = (f) => `${M.FORMATS[f].label} ${M.FORMATS[f].w}×${M.FORMATS[f].h}`;
     const vLabel = combos.length > 1 ? `Criar ${combos.length} vídeos (ZIP)` : 'Criar vídeo';
     const noVideo = video && vSupport && !vSupport.method;
     return html`<div class=${'modal-back' + (closing ? ' closing' : '')} onMouseDown=${(e) => { if (e.target === e.currentTarget && !busy) close(); }}
       onKeyDown=${(e) => { if (e.key === 'Escape' && !busy) close(); }}>
       <div class="modal export" role="dialog" aria-modal="true" aria-labelledby="exp-title" onAnimationEnd=${arrived}>
         <header class="modal-head">
-          <h2 id="exp-title">${video ? 'Exportar vídeo' : 'Exportar imagem'}</h2>
-          <div class="seg kind-switch" role="radiogroup" aria-label="Imagem ou vídeo">
-            <button role="radio" aria-checked=${!video} class=${!video ? 'on' : ''} disabled=${!!busy || !!done} onClick=${() => setKind('image')}><${Icon} name="image" size=${16} /> Imagem</button>
-            <button role="radio" aria-checked=${video} class=${video ? 'on' : ''} disabled=${!!busy || !!done} onClick=${() => setKind('video')}><${Icon} name="video" size=${16} /> Vídeo</button>
-          </div>
+          <h2 id="exp-title">${video ? 'Exportar vídeo' : carousel ? 'Exportar carrossel' : 'Exportar imagem'}</h2>
           <div class="spacer"></div>
           <button class="icon-btn" aria-label="Fechar" onClick=${() => close()} disabled=${!!busy}><${Icon} name="x" /></button>
         </header>
@@ -3129,6 +3676,11 @@
             ${done ? html`<${Celebration} detail=${done.name} onDone=${() => { flush(); close(); }} />`
             : busy && (busy.action === 'download' || busy.action === 'share') ? html`<${CraneProgress} progress=${busy.pct != null ? busy.pct / 100 : null} label=${busy.label} />`
             : !combos.length ? html`<p class="muted">Escolha pelo menos um formato e uma língua.</p>`
+            : carousel ? html`<figure class="export-slides" key=${'c' + combos[0].l + combos[0].f}>
+                <div class="export-slide-row">${cP ? cP.slides.slice(0, mobile ? 4 : 6).map((_, i) => html`<${SlideThumb} key=${i} P=${cP} index=${i} width=${mobile ? 74 : 96} />`) : html`<span class="poster-thumb motion-wait" style=${`width:${mobile ? 74 : 96}px;height:${Math.round((mobile ? 74 : 96) * M.FORMATS[combos[0].f].h / M.FORMATS[combos[0].f].w)}px`}></span>`}</div>
+                <figcaption>${cP ? `${cP.slides.length} ${cP.slides.length === 1 ? 'diapositivo' : 'diapositivos'}` : 'A preparar…'} · ${M.FORMATS[combos[0].f].label} · ${M.localeInfo(combos[0].l).short}</figcaption>
+              </figure>
+              ${combos.length > 1 && html`<p class="muted">e mais ${combos.length - 1} ${combos.length - 1 === 1 ? 'carrossel' : 'carrosséis'} (outras línguas ou formatos)</p>`}`
             : video ? html`<figure key=${'v' + combos[0].l + combos[0].f}>
                 ${P0 && html`<${VideoPreview} prepared=${P0} width=${mobile ? 170 : 230} still=${busy ? P0.timeline.duration - 0.01 : null} />`}
                 <figcaption>${M.FORMATS[combos[0].f].label} · ${M.localeInfo(combos[0].l).short} · ${P0 ? P0.timeline.duration : vid.duration} s · ${vStyle.name}</figcaption>
@@ -3141,9 +3693,17 @@
             ${combos.length > 6 && html`<p class="muted">e mais ${combos.length - 6}…</p>`}`}
           </div>
           <div class="export-options">
-            <fieldset><legend>${video ? 'Formato' : 'Formatos'}</legend>
-              ${M.FORMAT_ORDER.map((f, i) => html`<label key=${f} class="check"><input ref=${i === 0 ? firstRef : null} type="checkbox" checked=${formats.includes(f)} disabled=${!!busy || !!done} onChange=${() => toggle(formats, setFormats, f)} />
-                <span><strong>${M.FORMATS[f].label}</strong> ${M.FORMATS[f].w}×${M.FORMATS[f].h} · ${video && f === 'story' ? 'Reels e Stories' : M.FORMATS[f].hint}</span></label>`)}
+            <fieldset class="export-dest"><legend>Para onde?</legend>
+              <div class="dest-list" role="radiogroup" aria-label="Para onde?">
+                ${DESTS.map((d, i) => html`<button key=${d.id} type="button" role="radio" ref=${i === 0 ? firstRef : null} aria-checked=${!manual && dest === d.id} class=${'dest' + (!manual && dest === d.id ? ' on' : '')}
+                  disabled=${!!busy || !!done} onClick=${() => { setDest(d.id); setManual(null); }}>
+                  <strong>${d.label}</strong><small>${d.formats.map((f) => fmtName(f === 'piece' ? carouselFormat : f)).join(' · ')}</small></button>`)}
+              </div>
+              ${notes.map((n) => html`<p key=${n} class=${'video-note' + (/pede pelo menos/.test(n) ? ' warn' : '')}><${Icon} name=${/pede pelo menos/.test(n) ? 'triangle-alert' : 'info'} size=${15} /> <span>${n}</span></p>`)}
+              <button type="button" class="btn link sm export-pick" aria-expanded=${!!manual} disabled=${!!busy || !!done} onClick=${() => setManual(manual ? null : [...destFormats])}>
+                <${Icon} name="sliders-horizontal" size=${14} /> Escolher formatos</button>
+              ${manual && html`<div class="export-formats">${FORMAT_LIST.map((f) => html`<label key=${f} class="check"><input type="checkbox" checked=${formats.includes(f)} disabled=${!!busy || !!done} onChange=${() => toggle(formats, setFormats, f)} />
+                <span><strong>${M.FORMATS[f].label}</strong> ${M.FORMATS[f].w}×${M.FORMATS[f].h} · ${video && f === 'story' ? 'Reels e Stories' : M.FORMATS[f].hint}</span></label>`)}</div>`}
             </fieldset>
             ${project.locales.length > 1 && html`<fieldset><legend>Línguas</legend>
               ${project.locales.map((l) => html`<label key=${l} class="check"><input type="checkbox" checked=${locales.includes(l)} disabled=${!!busy || !!done} onChange=${() => toggle(locales, setLocales, l)} />
@@ -3164,7 +3724,12 @@
                 <button role="radio" aria-checked=${type === 'jpg'} class=${type === 'jpg' ? 'on' : ''} onClick=${() => setType('jpg')}>JPG · mais leve</button>
               </div>
             </fieldset>`}
-            ${checks.length > 0 && html`<ul class="checks">${checks.map((c, i) => html`<li key=${i} class=${c.kind}><${Icon} name="triangle-alert" size=${15} /> ${c.text}</li>`)}</ul>`}
+            <section class="preflight" aria-label="Verificação antes de exportar">
+              ${checking && html`<p class="field-hint" role="status">A verificar a composição (${checkReports.length}/${combos.length})…</p>`}
+              ${checkState.error && html`<p class="field-hint" role="alert">Não foi possível verificar todas as composições. Confirme a pré-visualização antes de exportar.</p>`}
+              ${checks.length > 0 ? html`<details class="preflight-fold"><summary>${checks.length} ${checks.length === 1 ? 'ponto a confirmar' : 'pontos a confirmar'}</summary><p class="field-hint">Pode exportar mesmo assim.</p><ul class="checks">${checks.map((c) => html`<li key=${c.id} class=${c.kind}><${Icon} name="triangle-alert" size=${15} /><div><span>${c.text}</span><button class="btn link sm" disabled=${!!busy || !!done} onClick=${() => { if (c.caption) { setCapLocale(c.locale); requestAnimationFrame(() => document.querySelector('.caption-text')?.focus()); } else onResolve(c); }}>${c.review ? 'Rever tradução' : 'Verificar'}</button></div></li>`)}</ul></details>`
+                : !checking && !checkState.error && html`<p class="field-hint">${!combos.length ? 'Escolha um formato e uma língua.' : 'Sem avisos automáticos. Confirme o conteúdo na pré-visualização.'}</p>`}
+            </section>
             ${video ? html`<div class=${'export-actions' + (busy ? ' is-busy' : '')}>
               ${canShare && mobile && html`<button class=${'btn primary lg' + (doing('share') ? ' busy' : '')} disabled=${!!busy || !!done || !combos.length || noVideo} aria-busy=${doing('share')} onClick=${shareVideo}>
                 ${doing('share') ? html`<${Spinner} /> ${busyText()}` : html`<${Icon} name="external-link" /> Partilhar vídeo`}</button>`}
@@ -3173,7 +3738,14 @@
               ${canShare && !mobile && html`<button class=${'btn ghost' + (doing('share') ? ' busy' : '')} disabled=${!!busy || !!done || !combos.length || noVideo} aria-busy=${doing('share')} onClick=${shareVideo} title="Abre a partilha do Windows">
                 ${doing('share') ? html`<${Spinner} /> ${busyText()}` : html`<${Icon} name="external-link" /> Partilhar`}</button>`}
               ${busy && html`<button class="btn ghost danger-text" onClick=${cancelVideo}><${Icon} name="x" /> Cancelar</button>`}
-              ${mobile && !busy && html`<button class="btn ghost" onClick=${saveFile}><${Icon} name="save" /> Guardar projeto</button>`}
+              ${mobile && !busy && html`<button class="btn ghost" onClick=${saveFile} disabled=${fileSaving} aria-busy=${!!fileSaving}>${fileSaving ? html`<${Spinner} /> A preparar projeto…` : html`<${Icon} name="save" /> Guardar projeto`}</button>`}
+            </div>` : carousel ? html`<div class=${'export-actions' + (busy ? ' is-busy' : '')}>
+              ${canShare && mobile && html`<button class=${'btn primary lg' + (doing('share') ? ' busy' : '')} disabled=${!!busy || !!done || !combos.length} aria-busy=${doing('share')} onClick=${shareCarousel}>
+                ${doing('share') ? html`<${Spinner} /> ${busyText()}` : html`<${Icon} name="external-link" /> Partilhar`}</button>`}
+              <button class=${'btn lg ' + (canShare && mobile ? 'ghost' : 'primary') + (doing('download') ? ' busy' : '')} disabled=${!!busy || !!done || !combos.length} aria-busy=${doing('download')} onClick=${downloadCarousel}>
+                ${doing('download') ? html`<${Spinner} /> ${busyText()}` : html`<${Icon} name="download" /> ${label}`}</button>
+              ${canShare && !mobile && html`<button class=${'btn ghost' + (doing('share') ? ' busy' : '')} disabled=${!!busy || !!done || !combos.length} aria-busy=${doing('share')} onClick=${shareCarousel} title="Abre a partilha do Windows">
+                ${doing('share') ? html`<${Spinner} /> ${busyText()}` : html`<${Icon} name="external-link" /> Partilhar`}</button>`}
             </div>` : html`<div class=${'export-actions' + (busy ? ' is-busy' : '')}>
               ${canShare && mobile && html`<button class=${'btn primary lg' + (doing('share') ? ' busy' : '')} disabled=${!!busy || !!done || !combos.length} aria-busy=${doing('share')} onClick=${share}>
                 ${doing('share') ? html`<${Spinner} /> ${busyText()}` : html`<${Icon} name="external-link" /> Partilhar`}</button>`}
@@ -3183,20 +3755,25 @@
                 ${doing('share') ? html`<${Spinner} /> ${busyText()}` : html`<${Icon} name="external-link" /> Partilhar`}</button>`}
               ${!mobile && html`<button class=${'btn ghost' + (doing('copy') ? ' busy' : '')} disabled=${!!busy || !!done} aria-busy=${doing('copy')} onClick=${copyImage} title="Copia a imagem do formato e língua que está a ver">
                 ${doing('copy') ? html`<${Spinner} /> ${busyText()}` : html`<${Icon} name="clipboard-copy" /> Copiar imagem`}</button>`}
-              ${mobile && html`<button class="btn ghost" disabled=${!!busy || !!done} onClick=${saveFile}><${Icon} name="save" /> Guardar projeto</button>`}
+              ${mobile && html`<button class="btn ghost" disabled=${!!busy || !!done || fileSaving} aria-busy=${!!fileSaving} onClick=${saveFile}>${fileSaving ? html`<${Spinner} /> A preparar projeto…` : html`<${Icon} name="save" /> Guardar projeto`}</button>`}
             </div>`}
           </div>
         </div>
         <section class="caption">
           <div class="caption-head">
             <h3>Texto para a publicação</h3>
-            ${project.locales.length > 1 && html`<div class="seg small">${project.locales.map((l) => html`<button key=${l} class=${capLocale === l ? 'on' : ''} onClick=${() => setCapLocale(l)}>${M.localeInfo(l).short}</button>`)}</div>`}
+            ${project.locales.length > 1 && html`<div class="seg small caption-locales" role="group" aria-label="Língua do texto da publicação">${project.locales.map((l) => html`<button key=${l} class=${capLocale === l ? 'on' : ''} aria-pressed=${capLocale === l} title=${M.localeInfo(l).label} onClick=${() => setCapLocale(l)}>${M.localeInfo(l).short}</button>`)}</div>`}
             <div class="spacer"></div>
             ${waLink && html`<button class="btn ghost sm" onClick=${copyWaLink} title="Para o autocolante «Link» das Stories do Instagram"><${Icon} name="message-circle" size=${16} /> Copiar link do WhatsApp</button>`}
             <button class="btn ghost sm" onClick=${copyCaption}><${Icon} name="copy" size=${16} /> Copiar texto</button>
+            <button class="btn ghost sm" disabled=${!customCaption || !!busy} onClick=${regenerateCaption}><${Icon} name="rotate-ccw" size=${16} /> Regenerar</button>
           </div>
-          <textarea class="caption-text" name="caption" value=${caption} onInput=${(e) => setCaption(e.target.value)} aria-label="Texto para a publicação"></textarea>
+          ${['stale', 'unverified'].includes(captionState) && html`<div class="caption-warning" role="status"><p>${captionState === 'stale' ? 'A oferta ou os contactos mudaram desde a última edição deste texto. Confirme os dados antes de publicar.' : 'Este texto personalizado ainda não foi confirmado com os dados atuais.'} O seu texto foi mantido.</p><button class="btn ghost sm" disabled=${!!busy} onClick=${() => update((p) => M.confirmPublicationText(p, capLocale))}>Confirmo que o texto está atualizado</button></div>`}
+          <textarea class="caption-text" name="caption" value=${caption} onInput=${(e) => setCaption(e.target.value)} aria-label="Texto para a publicação" disabled=${!!busy}></textarea>
+          <div class="caption-footer"><small class="field-hint">${customCaption ? 'Texto personalizado guardado neste anúncio, nesta língua.' : 'Texto automático: acompanha as alterações do anúncio até o editar.'}</small>
+            <button class="btn ghost sm" disabled=${!!busy} onClick=${onHistory}><${Icon} name="clock" size=${16} /> Histórico de versões</button></div>
         </section>
+        <div class="production-entry"><button class="btn ghost" disabled=${!!busy || !!done} onClick=${onProduction}><${Icon} name="package" /> Pacote completo</button><span class="field-hint">Imagem, carrossel, vídeo e textos de todas as línguas num único ZIP.</span></div>
       </div>
     </div>`;
   }
@@ -3261,7 +3838,10 @@
         sessionStorage.setItem('rs-updated', String(Date.now()));
       } catch { /* private mode: still fine, controllerchange fires once */ }
       if (routeRef.current.name === 'editor') {
-        toast('Há uma versão nova da aplicação.', { action: 'Atualizar', onAction: () => location.reload() });
+        toast('Há uma versão nova da aplicação.', { action: 'Atualizar', onAction: async () => {
+          try { if (RS.beforeReload) await RS.beforeReload(); location.reload(); }
+          catch (err) { toast('Não foi possível guardar. A atualização fica para mais tarde.', { kind: 'error' }); }
+        } });
       } else {
         toast('Versão nova instalada. A atualizar…');
         setTimeout(() => location.reload(), 900);
@@ -3277,10 +3857,11 @@
       (async () => {
         await E.loadFonts();
         await S.open();
+        const catalog = await S.getCatalog();
         await S.housekeeping();
         // the home opens on its real contents (an empty profile: the building site, not the cards first)
         homeCache.recs = await listHome().catch(() => null);
-        setBrand((await S.getMeta('brand')) || null);
+        setBrand(RS.reuse.defaultBrand(catalog));
         setReady(true);
       })().catch((err) => { console.error(err); setReady(true); });
       // Installable and offline-capable when served over http(s) (e.g. on a phone).
@@ -3316,23 +3897,31 @@
 
     // The slow part (photo, saving) runs before the screen change, while the
     // card shows "A preparar o anúncio…"; the change itself is then instant.
-    const create = (template, format, useBrand, trades, photoId) => run(`create:${template.id}`, async () => {
+    // start: { piece, style (carousel), motion (video) } from the gallery's «Começar por»
+    const create = (template, format, selectedBrand, trades, photoId, start = {}) => run(`create:${start.style || start.motion || template.id}`, async () => {
       let p = M.newProject(template, { format, trades });
-      if (useBrand && brand) p = applyBrand(p, brand);
+      if (selectedBrand) p = applyBrand(p, selectedBrand);
+      if (start.piece === 'carousel' && start.style) p.carousel = M.cleanCarousel({ ...p.carousel, style: start.style }, p);
+      if (start.piece === 'video' && start.motion) {
+        const st = RS.motion.styleOf(start.motion);
+        p.video = { ...p.video, motion: st.id, duration: st.defaultDuration, bg: st.bgModes[0] };
+      }
       if (photoId) {
         try {
           const a = await A.importFile(await L.fileFor(photoId), 'photo');
           p.photo = { asset: a.id, zoom: 1, fx: 0.5, fy: a.h > a.w * 1.3 ? 0.36 : 0.5, flip: false, adj: { ...M.DEFAULT_FX } };
         } catch (err) { console.warn('Library photo not applied', err); }
       }
-      await S.putProject(p);
-      await transition(() => setRoute({ name: 'editor', project: p }));
+      const rec = await S.putProject(p);
+      await transition(() => setRoute({ name: 'editor', project: p, revision: rec.revision, piece: start.piece }));
     });
     // Photo and logo are decoded before the editor opens, so it opens complete.
-    const open = (data, key = 'open') => run(key, async () => {
-      const p = M.normalize(data);
+    const open = (data, key = 'open', piece) => run(key, async () => {
+      const rec = await S.getProject(data.id);
+      if (!rec || rec.deletedAt) throw new Error('Este anúncio já não está disponível. Atualize a lista de anúncios.');
+      const p = M.normalize(rec.data);
       await Promise.all([A.load(p.photo && p.photo.asset), A.load(p.logo && p.logo.asset)]).catch((err) => console.warn(err));
-      await transition(() => setRoute({ name: 'editor', project: p }));
+      await transition(() => setRoute({ name: 'editor', project: p, revision: rec.revision || 0, piece }));
     });
     const endIntro = useCallback(() => {
       try { sessionStorage.setItem('rs-intro', '1'); } catch { /* private mode */ }
@@ -3354,7 +3943,7 @@
     return html`
       ${route.name === 'home' && html`<${Home} busy=${busy} brand=${brand} setBrand=${setBrand} onNew=${() => go({ name: 'gallery' }, 'gallery')} onOpen=${open} />`}
       ${route.name === 'gallery' && html`<${Gallery} busy=${busy} brand=${brand} onBack=${() => go({ name: 'home' })} onCreate=${create} />`}
-      ${route.name === 'editor' && html`<${Editor} key=${route.project.id} initial=${route.project} brand=${brand} setBrand=${setBrand} onExit=${backFrom} />`}
+      ${route.name === 'editor' && html`<${Editor} key=${route.project.id} initial=${route.project} initialRevision=${route.revision} initialPiece=${route.piece} brand=${brand} setBrand=${setBrand} onExit=${backFrom} />`}
       <${TopProgress} busy=${busy} />
       <${Toasts} />
       <${DialogHost} />
@@ -3372,5 +3961,6 @@
   RS.ui.autoGlide(document);
   // pop-ups grow from the button that opened them
   RS.ui.autoOrigin(document);
+  U.installModalFocus(document);
   render(html`<${App} />`, document.getElementById('app'));
 })();

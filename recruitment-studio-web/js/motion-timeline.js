@@ -29,24 +29,38 @@ RS.motionTimeline = (() => {
 
   // The video's eye for a block: the person's choice (project.video.show),
   // else the image's own eye.
-  function eye(project, key) {
-    const vs = (project.video && project.video.show) || {};
+  function eye(project, key, piece = 'video') {
+    const vs = (project[piece] && project[piece].show) || {};
     if (typeof vs[key] === 'boolean') return vs[key];
     return (project.show || {})[key] !== false;
+  }
+
+  // The carousel's closing line: its own, else (while empty) the video's when
+  // the video shows one.
+  function carouselClosing(project, locale) {
+    const own = (((project.carousel || {}).texts || {})[locale] || {}).closing;
+    if (typeof own === 'string' && own.trim()) return own;
+    const v = project.video || {};
+    if (!(v.show && v.show.closing === true)) return '';
+    const line = ((v.texts || {})[locale] || {}).closing;
+    return typeof line === 'string' ? line : '';
   }
 
   // What the image says in one language: where every text of the video
   // starts («Textos do vídeo» shows these until he changes them). Lists keep
   // only filled items; highlights are the salary, the vacancies and the badge.
-  function imageTexts(project, locale) {
+  // piece: the offer sheet's switch that applies ('video' or 'carousel').
+  function imageTexts(project, locale, piece = 'video') {
     const t = project.texts[locale] || project.texts[project.locales[0]];
     const show = project.show || {};
     const S = RS.model.STOCK;
-    const o = RS.model.offerParts(project, locale);
+    const o = RS.model.offerParts(project, locale, piece === 'carousel' ? 'carousel' : 'video');
     const filled = (items) => (items || []).filter((x) => String(x.text || '').trim());
     const highlights = [];
     if (o.salary) highlights.push({ id: 'salary', role: 'salary', value: o.amount, label: o.period });
     if (o.count) highlights.push({ id: 'vacancies', role: 'vacancies', value: o.count, label: o.word });
+    if (o.location) highlights.push({ id: 'location', role: 'location', value: o.location, label: o.locationLabel });
+    if (o.startDate) highlights.push({ id: 'startDate', role: 'startDate', value: o.startDate, label: o.startLabel });
     if (show.badge !== false && String(t.badge || '').trim()) highlights.push({ id: 'badge', role: 'badge', value: t.badge, label: '' });
     return {
       kicker: t.kicker || '', headline: t.headline || '', intro: t.intro || '', positionsTitle: t.positionsTitle || '',
@@ -61,30 +75,40 @@ RS.motionTimeline = (() => {
   // («Textos do vídeo», project.video.texts) where he wrote them, else the
   // image's; lists follow the image item by item (RS.model.mergeList); the
   // eyes hide blocks. The app adds only the labels he can also change.
-  function content(project, locale) {
+  // piece: 'video' (default) or 'carousel' — each has its own texts and eyes
+  // (project[piece].texts / .show), both following the image until changed.
+  function content(project, locale, piece = 'video') {
     const show = project.show || {};
-    const vs = (project.video && project.video.show) || {};
-    const vt = ((project.video && project.video.texts) || {})[locale] || {};
-    const img = imageTexts(project, locale);
+    const own = project[piece] || {};
+    const vs = own.show || {};
+    const vt = (own.texts || {})[locale] || {};
+    const img = imageTexts(project, locale, piece);
     const pick = (key) => String(typeof vt[key] === 'string' ? vt[key] : img[key] || '').trim();
     const items = (key) => RS.model.mergeList(img[key], vt[key]).filter((x) => String(x.text || '').trim());
-    const link = eye(project, 'contacts') && RS.contact ? RS.contact.adLink(project, locale) : null;
+    const seen = (key) => eye(project, key, piece);
+    const link = seen('contacts') && RS.contact ? RS.contact.adLink(project, locale) : null;
     const w = project.whatsapp;
-    const benefits = eye(project, 'benefits') ? items('benefits') : [];
+    const benefits = seen('benefits') ? items('benefits') : [];
     // highlights: the salary, the vacancies and the badge of the image, then his own
     const highlights = vs.highlights === false ? [] : RS.model.mergeList(img.highlights, vt.highlights)
       .map((x) => highlight(x.id, x.role || 'own', x.value, x.label)).filter((x) => x.value || x.label);
     const salary = highlights.find((x) => x.role === 'salary' && x.value);
     const vacancies = highlights.find((x) => x.role === 'vacancies' && x.value);
+    // The older styles have a number-only counter; public location/date use
+    // their existing text cards, while recipes keep them in the highlights.
+    const commonCards = piece === 'video' && !RS.model.RECIPES.includes(project.video?.motion) && project.video?.motion !== 'poster'
+      ? highlights.filter((x) => ['location', 'startDate'].includes(x.role)).map((x) => ({ id: `offer:${x.id}`, text: `${x.label}: ${x.value}`, icon: x.role === 'location' ? 'map-pin' : 'calendar' })) : [];
+    benefits.push(...commonCards);
     const brandName = pick('brandName');
     let headline = pick('headline');
     if (!headline) headline = brandName || (benefits[0] && benefits[0].text.trim()) || (highlights[0] ? [highlights[0].value, highlights[0].label].filter(Boolean).join(' ') : '');
     const models = vt.model || {};
     return {
-      kicker: eye(project, 'kicker') ? pick('kicker') : '',
+      kicker: seen('kicker') ? pick('kicker') : '',
       headline,
-      intro: eye(project, 'intro') ? pick('intro') : '',
-      closing: vs.closing === true ? pick('closing') : '',
+      intro: seen('intro') ? pick('intro') : '',
+      // the carousel's closing line shows when written; the video's has its own switch
+      closing: piece === 'carousel' ? carouselClosing(project, locale).trim() : vs.closing === true ? pick('closing') : '',
       benefits: benefits.map((x) => String(x.text).trim()),
       benefitIds: benefits.map((x) => x.id),
       icons: benefits.map((x) => x.icon || 'check'),
@@ -92,9 +116,9 @@ RS.motionTimeline = (() => {
       offer: salary ? { salary: salary.count != null ? String(salary.count) : salary.value, currency: RS.model.offerParts(project, locale).currency, periodLabel: salary.label, amount: salary.value } : null,
       vacancies: vacancies ? { count: vacancies.value, word: vacancies.label } : null,
       positionsTitle: pick('positionsTitle'),
-      positions: eye(project, 'positions') ? items('positions').map((x) => String(x.text).trim()) : [],
+      positions: seen('positions') ? items('positions').map((x) => String(x.text).trim()) : [],
       // the ad's other contacts (for a card without a WhatsApp number), unless hidden
-      contacts: eye(project, 'contacts') ? items('contacts').map((x) => String(x.text).trim()) : [],
+      contacts: seen('contacts') ? items('contacts').map((x) => String(x.text).trim()) : [],
       message: pick('message'),
       qr: vs.qr !== false,
       chat: vs.chat !== false,
@@ -332,5 +356,5 @@ RS.motionTimeline = (() => {
     return { duration: T, auto, max, lengths, acts, left };
   }
 
-  return { content, imageTexts, build, range, acts, schedule, PHOTO_SCENES };
+  return { content, imageTexts, carouselClosing, eye, build, range, acts, schedule, PHOTO_SCENES };
 })();

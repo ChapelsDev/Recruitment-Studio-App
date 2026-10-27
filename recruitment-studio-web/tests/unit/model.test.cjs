@@ -80,7 +80,7 @@ test('caption: a contact with the WhatsApp number is not listed a second time', 
   assert.ok(!M.caption(p, 'pt-PT').includes('Candidate-se já:'), 'a heading with nothing under it');
 });
 
-test('applyTradeTexts: ready texts where the language has them; other languages keep their own', () => {
+test('applyTradeTexts: explicit replacement now includes Spanish while preserving contacts and WhatsApp', () => {
   let p = M.newProject(TPL, { trades: ['pedreiro'] });
   p = M.addLocale(p, 'es', 'pt-PT');
   p.texts.es.headline = 'Buscamos albañiles';
@@ -88,12 +88,12 @@ test('applyTradeTexts: ready texts where the language has them; other languages 
   p.texts['pt-PT'].waMessage = 'A minha mensagem';
   p.texts['pt-PT'].qr = 'https://exemplo.pt';
   const q = M.applyTradeTexts(M.setTrades(p, ['servente']));
-  assert.equal(q.texts.es.headline, 'Buscamos albañiles');
+  assert.equal(q.texts.es.headline, 'Peones y ayudantes de obra');
   assert.notEqual(q.texts['pt-PT'].headline, 'O meu título');
   assert.ok(q.texts['pt-PT'].positions.some((x) => /servente/i.test(x.text)));
   assert.equal(q.texts['pt-PT'].waMessage, 'A minha mensagem');
   assert.equal(q.texts['pt-PT'].qr, 'https://exemplo.pt');
-  assert.deepEqual(M.readyTextLocales(q), ['pt-PT']);
+  assert.deepEqual(M.readyTextLocales(q), ['pt-PT', 'es']);
 });
 
 test('addLocale: merged positions of every trade are translated', () => {

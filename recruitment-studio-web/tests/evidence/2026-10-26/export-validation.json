@@ -1,0 +1,203 @@
+{
+  "manifestFiles": 20,
+  "manifestByteMismatches": [],
+  "dimensions": [
+    {
+      "file": "carrossel-quadrado\\fr\\carrossel\\001.png",
+      "width": 1080,
+      "height": 1080
+    },
+    {
+      "file": "carrossel-quadrado\\fr\\carrossel\\002.png",
+      "width": 1080,
+      "height": 1080
+    },
+    {
+      "file": "carrossel-quadrado\\fr\\carrossel\\003.png",
+      "width": 1080,
+      "height": 1080
+    },
+    {
+      "file": "carrossel-quadrado\\fr\\carrossel\\004.png",
+      "width": 1080,
+      "height": 1080
+    },
+    {
+      "file": "carrossel-quadrado\\fr\\carrossel\\005.png",
+      "width": 1080,
+      "height": 1080
+    },
+    {
+      "file": "carrossel-quadrado\\pt-PT\\carrossel\\001.png",
+      "width": 1080,
+      "height": 1080
+    },
+    {
+      "file": "carrossel-quadrado\\pt-PT\\carrossel\\002.png",
+      "width": 1080,
+      "height": 1080
+    },
+    {
+      "file": "carrossel-quadrado\\pt-PT\\carrossel\\003.png",
+      "width": 1080,
+      "height": 1080
+    },
+    {
+      "file": "carrossel-quadrado\\pt-PT\\carrossel\\004.png",
+      "width": 1080,
+      "height": 1080
+    },
+    {
+      "file": "carrossel-retrato\\fr\\carrossel\\001.png",
+      "width": 1080,
+      "height": 1350
+    },
+    {
+      "file": "carrossel-retrato\\fr\\carrossel\\002.png",
+      "width": 1080,
+      "height": 1350
+    },
+    {
+      "file": "carrossel-retrato\\fr\\carrossel\\003.png",
+      "width": 1080,
+      "height": 1350
+    },
+    {
+      "file": "carrossel-retrato\\fr\\carrossel\\004.png",
+      "width": 1080,
+      "height": 1350
+    },
+    {
+      "file": "carrossel-retrato\\fr\\carrossel\\005.png",
+      "width": 1080,
+      "height": 1350
+    },
+    {
+      "file": "carrossel-retrato\\pt-PT\\carrossel\\001.png",
+      "width": 1080,
+      "height": 1350
+    },
+    {
+      "file": "carrossel-retrato\\pt-PT\\carrossel\\002.png",
+      "width": 1080,
+      "height": 1350
+    },
+    {
+      "file": "carrossel-retrato\\pt-PT\\carrossel\\003.png",
+      "width": 1080,
+      "height": 1350
+    },
+    {
+      "file": "carrossel-retrato\\pt-PT\\carrossel\\004.png",
+      "width": 1080,
+      "height": 1350
+    },
+    {
+      "file": "imagens-pt-fr\\teste-qa-26-10-pedreiros-e-masseiros-para-reabilitacao-de-ed-fr-quadrado.png",
+      "width": 1080,
+      "height": 1080
+    },
+    {
+      "file": "imagens-pt-fr\\teste-qa-26-10-pedreiros-e-masseiros-para-reabilitacao-de-ed-fr-retrato.png",
+      "width": 1080,
+      "height": 1350
+    },
+    {
+      "file": "imagens-pt-fr\\teste-qa-26-10-pedreiros-e-masseiros-para-reabilitacao-de-ed-fr-story.png",
+      "width": 1080,
+      "height": 1920
+    },
+    {
+      "file": "imagens-pt-fr\\teste-qa-26-10-pedreiros-e-masseiros-para-reabilitacao-de-ed-pt-quadrado.png",
+      "width": 1080,
+      "height": 1080
+    },
+    {
+      "file": "imagens-pt-fr\\teste-qa-26-10-pedreiros-e-masseiros-para-reabilitacao-de-ed-pt-retrato.png",
+      "width": 1080,
+      "height": 1350
+    },
+    {
+      "file": "imagens-pt-fr\\teste-qa-26-10-pedreiros-e-masseiros-para-reabilitacao-de-ed-pt-story.png",
+      "width": 1080,
+      "height": 1920
+    },
+    {
+      "file": "campanha-pt-fr\\fr\\carrossel\\001.png",
+      "width": 1080,
+      "height": 1080
+    },
+    {
+      "file": "campanha-pt-fr\\fr\\carrossel\\002.png",
+      "width": 1080,
+      "height": 1080
+    },
+    {
+      "file": "campanha-pt-fr\\fr\\carrossel\\003.png",
+      "width": 1080,
+      "height": 1080
+    },
+    {
+      "file": "campanha-pt-fr\\fr\\carrossel\\004.png",
+      "width": 1080,
+      "height": 1080
+    },
+    {
+      "file": "campanha-pt-fr\\fr\\carrossel\\005.png",
+      "width": 1080,
+      "height": 1080
+    },
+    {
+      "file": "campanha-pt-fr\\fr\\cover.png",
+      "width": 1080,
+      "height": 1920
+    },
+    {
+      "file": "campanha-pt-fr\\fr\\feed.png",
+      "width": 1080,
+      "height": 1350
+    },
+    {
+      "file": "campanha-pt-fr\\fr\\story.png",
+      "width": 1080,
+      "height": 1920
+    },
+    {
+      "file": "campanha-pt-fr\\pt-PT\\carrossel\\001.png",
+      "width": 1080,
+      "height": 1080
+    },
+    {
+      "file": "campanha-pt-fr\\pt-PT\\carrossel\\002.png",
+      "width": 1080,
+      "height": 1080
+    },
+    {
+      "file": "campanha-pt-fr\\pt-PT\\carrossel\\003.png",
+      "width": 1080,
+      "height": 1080
+    },
+    {
+      "file": "campanha-pt-fr\\pt-PT\\carrossel\\004.png",
+      "width": 1080,
+      "height": 1080
+    },
+    {
+      "file": "campanha-pt-fr\\pt-PT\\cover.png",
+      "width": 1080,
+      "height": 1920
+    },
+    {
+      "file": "campanha-pt-fr\\pt-PT\\feed.png",
+      "width": 1080,
+      "height": 1350
+    },
+    {
+      "file": "campanha-pt-fr\\pt-PT\\story.png",
+      "width": 1080,
+      "height": 1920
+    }
+  ],
+  "ptPublication": "TESTE PT — publicação personalizada para conferir preservação e revisão da oferta.",
+  "frPublication": "Nous recrutons: Maçons et aides-maçons Rénovation de bâtiments\n1900 € par mois · 12 postes · Lieu: Lisboa e região metropolitana — obras de reabilitação de edifícios históricos · Début: 16 nov. 2026\n\nOffre fictive de validation : nous recherchons des professionnels expérimentés, attentifs aux détails et appréciant le travail en équipe.\n\n✅ Très bon salaire\n✅ Début immédiat\n✅ Outils et EPI fournis\n✅ Missions de longue durée\n✅ Chantiers dans votre région\n\nPostes recherchés :\n• Maçon CFC\n• Manœuvre mortier\n• Aide-maçon\n\nPostulez dès maintenant:\n📞 +351 900 000 000\n✉️ emprego@aempresa.pt\n\n#emploi #chantier #construction #recrutement #macon"
+}

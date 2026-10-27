@@ -1,0 +1,72 @@
+{
+  "v": 1,
+  "project": "TESTE QA 26-10 — Pedreiros e masseiros para reabilitação de edifícios históricos em Lisboa e arredores — PT/FR",
+  "createdAt": "2026-10-26T13:17:27.391Z",
+  "locales": [
+    "pt-PT",
+    "fr"
+  ],
+  "parts": {
+    "carousel": true,
+    "text": true
+  },
+  "carouselFormat": "square",
+  "slides": {
+    "pt-PT": 4,
+    "fr": 5
+  },
+  "covers": {},
+  "files": [
+    {
+      "name": "pt-PT/carrossel/001.png",
+      "bytes": 152874
+    },
+    {
+      "name": "pt-PT/carrossel/002.png",
+      "bytes": 622473
+    },
+    {
+      "name": "pt-PT/carrossel/003.png",
+      "bytes": 101624
+    },
+    {
+      "name": "pt-PT/carrossel/004.png",
+      "bytes": 71218
+    },
+    {
+      "name": "pt-PT/publicacao.txt",
+      "bytes": 89
+    },
+    {
+      "name": "fr/carrossel/001.png",
+      "bytes": 610911
+    },
+    {
+      "name": "fr/carrossel/002.png",
+      "bytes": 150409
+    },
+    {
+      "name": "fr/carrossel/003.png",
+      "bytes": 93534
+    },
+    {
+      "name": "fr/carrossel/004.png",
+      "bytes": 66254
+    },
+    {
+      "name": "fr/carrossel/005.png",
+      "bytes": 73851
+    },
+    {
+      "name": "fr/publicacao.txt",
+      "bytes": 696
+    }
+  ],
+  "warnings": [
+    "PT: ainda há contactos de exemplo. Substitua-os pelos seus.",
+    "PT: não há um contacto utilizável visível. Confirme telefone, email ou link.",
+    "FR: ainda há contactos de exemplo. Substitua-os pelos seus.",
+    "FR: não há um contacto utilizável visível. Confirme telefone, email ou link.",
+    "FR: 10 blocos por rever na tradução, com alterações no original."
+  ]
+}

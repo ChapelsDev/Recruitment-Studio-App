@@ -40,7 +40,8 @@
   });
 
   test('editor: «Mostrar QR» without a number asks for it, then shows the QR', async () => {
-    $('.topbar button[aria-label="Mostrar QR"]').click();
+    $('.topbar .editor-more').click();
+    (await waitFor(() => byText('.editor-menu [role="menuitem"]', /Mostrar QR/), '«Mostrar QR» in ⋯')).click();
     const field = await waitFor(() => $('.meet #meet-number'), 'the number field');
     assert(!$('.meet .meet-qr'), 'QR shown without a number');
     type(field, '913000111');

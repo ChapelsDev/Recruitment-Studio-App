@@ -51,8 +51,15 @@
   homeWatch.observe(document.getElementById('app'), { childList: true, subtree: true });
   const section = async (label) => {
     byText('.editor .rail button', new RegExp(`^\\s*${label}\\s*$`)).click();
-    await waitFor(() => (label === 'Vídeo' ? $('.video-panel .video-tabs') : $(`.panel[aria-label="${label}"]`)), `the ${label} panel`);
+    await waitFor(() => $(`.panel[aria-label="${label}"]`), `the ${label} panel`);
     await sleep(350); // the panel's entrance
+  };
+  // the piece on screen (2026-10-27: Imagem · Carrossel · Vídeo in the top bar)
+  const piece = async (label) => {
+    const b = byText('.editor .topbar [aria-label="Peça"] [role="radio"]', new RegExp(`^\\s*${label}\\s*$`));
+    if (b.getAttribute('aria-checked') !== 'true') b.click();
+    await waitFor(() => (label === 'Vídeo' ? $('.video-stage') : label === 'Carrossel' ? $('.carousel-stage') : $('.workspace canvas.poster')), `the ${label} piece`);
+    await sleep(350);
   };
 
   test('home: no ads yet shows the building site and the button', async () => {
@@ -71,11 +78,13 @@
     assert(!homeSeen.includes('grid'), `the empty home showed the card grid first (${homeSeen.join(' → ')})`);
   });
 
+  // «Instalar» lives in the home's ⋯ (2026-10-27): opens ⋯ (once) and gives the item
+  const installBtn = () => { if (!$('.home-menu')) { const m = $('.home-top .home-more'); if (!m) return null; m.click(); } return $('.home-menu .install-item'); };
   test('mobile: the iPhone guide fits the phone', async () => {
     const realDetect = RS.install.detect;
     RS.install.detect = () => 'ios-safari';
     try {
-      const b = await waitFor(() => $('.home-top .install-btn'), 'the install button');
+      const b = await waitFor(installBtn, 'the install item');
       assert(rect(b).right <= innerWidth && $('.home-top').scrollWidth <= innerWidth, `the home bar is wider than the phone (${$('.home-top').scrollWidth} px)`);
       b.click();
       const steps = await waitFor(() => $$('.modal.install .install-step').length === 3 && $$('.modal.install .install-step'), 'the three steps');
@@ -103,45 +112,57 @@
     await waitFor(() => $('.editor') && idle(), 'editor');
     await sleep(400);
     checkBar();
-    assertEqual($$('.editor .rail button').map(name), ['Texto', 'Contactos', 'Imagens', 'Aspeto', 'Vídeo', 'Definições', 'Exportar']);
+    assertEqual($$('.editor .rail button').map(name), ['Oferta', 'Contactos', 'Fotos', 'Estilo', 'Exportar']);
   });
 
   test('mobile: the editor is never wider than the phone', async () => {
-    for (const mode of ['Imagem', 'Vídeo']) {
-      byText('.topbar .mode-switch button', new RegExp(mode)).click();
-      await sleep(400);
-      const wide = $$('.editor *').filter((e) => e.getClientRects().length && rect(e).right > screen.width + 0.5 && !e.closest('.video-tabs, .chips-row, .locales-chips'));
+    for (const mode of ['Imagem', 'Carrossel', 'Vídeo']) {
+      await piece(mode);
+      const wide = $$('.editor *').filter((e) => e.getClientRects().length && rect(e).right > screen.width + 0.5 && !e.closest('.chips-row, .locales-chips, .carousel-stage'));
       assert(document.documentElement.scrollWidth <= screen.width, `${mode}: the page is ${document.documentElement.scrollWidth} px wide on a ${screen.width} px phone (${wide.slice(0, 4).map((e) => e.className || e.tagName).join(', ')}; top bar: ${[...$('.topbar').children].map((e) => `${e.className || e.tagName} ${Math.round(rect(e).width)}`).join(' | ')})`);
     }
-    byText('.topbar .mode-switch button', /Imagem/).click();
+    await piece('Imagem');
   });
 
-  test('mobile: every panel scrolls clear of the bar', async () => {
-    for (const label of ['Texto', 'Contactos', 'Imagens', 'Aspeto']) {
+  test('mobile: every panel of the three pieces scrolls clear of the bar', async () => {
+    for (const label of ['Oferta', 'Contactos', 'Fotos', 'Estilo']) {
       await section(label);
       await clearOfBar(label);
     }
-    await section('Vídeo');
-    for (const tab of ['Modelo', 'Textos', 'Aspeto', 'Som e fim']) {
-      byText('.video-panel .video-tabs [role="tab"]', new RegExp(`^\\s*${tab}\\s*$`)).click();
-      await waitFor(() => byText('.video-panel .video-tabs [role="tab"]', new RegExp(`^\\s*${tab}\\s*$`)).getAttribute('aria-selected') === 'true', tab);
-      await sleep(250);
-      await clearOfBar(`Vídeo › ${tab}`);
+    for (const p of ['Carrossel', 'Vídeo']) {
+      await piece(p);
+      for (const label of ['Fotos', 'Estilo', 'Sequência']) {
+        await section(label);
+        await clearOfBar(`${p} › ${label}`);
+      }
     }
+    await piece('Imagem');
+    await section('Oferta');
   });
 
-  test('mobile: the four «Vídeo» tabs fit the phone, none cut at the edge', async () => {
-    await section('Vídeo');
-    const row = rect($('.video-panel .video-tabs'));
-    for (const t of $$('.video-panel .video-tabs [role="tab"]')) {
-      const q = rect(t);
-      assert(q.left >= row.left - 0.5 && q.right <= Math.min(row.right, innerWidth) + 0.5, `«${name(t)}» is cut (${Math.round(q.left)}–${Math.round(q.right)} of ${innerWidth})`);
-      assert(q.height >= 44, `«${name(t)}» is too small to touch`);
+  test('mobile: the top bar\'s two rows fit the phone; the floating bar holds at most six in every piece', async () => {
+    for (const p of ['Imagem', 'Carrossel', 'Vídeo']) {
+      await piece(p);
+      const back = rect($('.editor .topbar > .btn.ghost')), nameBox = rect($('.editor .topbar .name-wrap')), more = rect($('.editor .topbar .editor-more'));
+      const row2 = rect($('.editor .topbar .tb-row'));
+      // row 1: ‹ · name · ⋯ side by side; row 2 under it: piece · language · ↶ ↷
+      for (const [what, r] of [['‹', back], ['the name', nameBox], ['⋯', more], ['the second row', row2]]) {
+        assert(r.left >= -0.5 && r.right <= innerWidth + 0.5, `${p}: ${what} leaves the screen (${Math.round(r.left)}–${Math.round(r.right)} of ${innerWidth})`);
+      }
+      assert(Math.abs(back.top - more.top) < 12 && nameBox.left >= back.right - 1 && more.left >= nameBox.right - 1, `${p}: ‹, the name and ⋯ are not one row`);
+      assert(row2.top >= Math.max(back.bottom, more.bottom) - 1, `${p}: the piece switch is not under the first row`);
+      for (const el of $$('.editor .topbar .tb-row button')) {
+        const r = rect(el);
+        if (!el.closest('.locales-chips')) assert(r.left >= -0.5 && r.right <= innerWidth + 0.5, `${p}: «${name(el) || el.getAttribute('aria-label')}» leaves the screen`);
+      }
+      checkBar();
+      assert($$('.editor .rail button').length <= 6, `${p}: ${$$('.editor .rail button').length} buttons on the floating bar`);
     }
+    await piece('Imagem');
   });
 
   test('mobile: the bar steps aside while a text is typed and comes back', async () => {
-    await section('Texto');
+    await section('Oferta');
     const field = await waitFor(() => $('.panel input[type="text"], .panel textarea'), 'a text field');
     field.focus();
     await sleep(450);
@@ -159,27 +180,31 @@
     assert(w >= 48, `the name field is ${Math.round(w)} px wide (top bar: ${[...$('.editor .topbar').children].map((e) => `${e.className || e.tagName} ${Math.round(rect(e).width)}`).join(' | ')})`);
   });
 
-  test('mobile: «Definições» is a tab of the floating bar and a sheet of the home, and both fit the phone', async () => {
-    // the editor: a tab of the floating bar, whole and big enough to touch (checkBar)
-    const tab = await waitFor(() => byText('.editor .rail button', /Definições/), 'the «Definições» tab');
-    checkBar();
-    tab.click();
-    const panel = await waitFor(() => $('.editor .panel[aria-label="Definições"] .settings'), '«Definições» in the editor');
-    await sleep(350);
+  test('mobile: «Definições» is in the editor\'s ⋯ and a sheet of the home, and both fit the phone', async () => {
+    // the editor: ⋯ opens a menu inside the screen; «Definições» there opens the settings sheet
+    $('.editor .topbar .editor-more').click();
+    const menu = await waitFor(() => $('.editor .editor-menu'), 'the ⋯ menu');
+    await sleep(250);
+    const mr = rect(menu);
+    assert(mr.left >= 0 && mr.right <= innerWidth && mr.bottom <= innerHeight, `the ⋯ menu leaves the screen: ${Math.round(mr.left)}–${Math.round(mr.right)} × ${Math.round(mr.top)}–${Math.round(mr.bottom)}`);
+    for (const b of menu.querySelectorAll('[role="menuitem"]')) assert(rect(b).height >= 40, `«${name(b)}» is too small to touch`);
+    byText('.editor .editor-menu [role="menuitem"]', /Definições/).click();
+    const panel = await waitFor(() => $('.modal.settings .settings'), '«Definições» from the editor');
+    await sleep(500);
     for (const b of panel.querySelectorAll('[role="radio"], label.switch')) {
       const r = rect(b);
       assert(r.height >= 40 && r.left >= 0 && r.right <= innerWidth, `«${name(b)}» is too small to touch or leaves the screen`);
     }
     assert(document.documentElement.scrollWidth <= innerWidth, 'the page slides sideways');
-    await clearOfBar('Definições');
-    byText('.editor .rail button', /^\s*Texto\s*$/).click();
-    await waitFor(() => $('.editor .panel[aria-label="Texto"]'), 'back to «Texto»');
+    $('.modal.settings .modal-head .icon-btn').click();
+    await waitFor(() => !$('.modal.settings'), 'the sheet to close');
     // the home: a button of the top bar opening a sheet
     $('.editor .topbar .btn.ghost').click();
     await waitFor(() => $('.home') && idle(), 'home');
-    const btn = await waitFor(() => $('.home-top .settings-btn'), 'the «Definições» button');
+    const btn = await waitFor(() => $('.home-top .home-more'), 'the home ⋯');
     assert($('.home-top').scrollWidth <= innerWidth && rect(btn).right <= innerWidth, `the home bar is wider than the phone (${$('.home-top').scrollWidth} px)`);
     btn.click();
+    (await waitFor(() => byText('.home-menu [role="menuitem"]', /Definições/), '«Definições» in the home ⋯')).click();
     const sheet = await waitFor(() => $('.modal.settings'), 'the «Definições» sheet');
     await sleep(500);
     const r = rect(sheet);
@@ -224,5 +249,22 @@
     const t = await waitFor(() => $('.toast'), 'the message');
     await sleep(350);
     assert(rect(t).bottom <= rect($('.editor .rail')).top - 4, 'the message covers the bar');
+  });
+
+  test('mobile: with 2 ads the first one shows on the home without scrolling, and no search', async () => {
+    await H.goHome();
+    const q = RS.model.newProject(RS.templates.list[1]); q.name = 'Segundo anúncio';
+    await RS.store.putProject(q);
+    // the home lists it once it opens again
+    $('.new-card').click();
+    await waitFor(() => $$('.tpl-card').length && idle(), 'gallery');
+    $('.gallery .gal-head .btn.ghost').click();
+    await waitFor(() => $('.home') && idle() && $$('.proj-card').length >= 2, 'the home with 2 ads');
+    window.scrollTo(0, 0);
+    await sleep(400);
+    const first = rect($('.proj-card'));
+    assert(first.top < innerHeight - 60, `the first ad starts at ${Math.round(first.top)} px on a ${innerHeight} px screen`);
+    assert(!$('#project-search'), 'the search shows with 2 ads');
+    for (const b of $$('.proj-card .proj-pieces button')) assert(rect(b).height >= 44 && rect(b).width >= 44, `«${b.getAttribute('aria-label')}» is too small to touch`);
   });
 })();

@@ -13,7 +13,7 @@ test('normalize: an old ad gets an empty offer and keeps its animated poster vid
   delete raw.offer;
   raw.video = { duration: 6, style: 'soft' };
   const p = M.normalize(raw);
-  assert.deepEqual(p.offer, { salary: '', currency: '€', period: 'month', vacancies: '' });
+  assert.deepEqual(p.offer, { salary: '', currency: '€', period: 'month', vacancies: '', location: '', startDate: '', visibility: { image: false, video: true, carousel: true, caption: true } });
   assert.equal(p.video.motion, 'poster');
   assert.equal(p.video.duration, 6);
   assert.equal(p.video.style, 'soft');
@@ -33,7 +33,7 @@ test('normalize: unknown video values fall back; Curto is always 6 s', () => {
   raw.video = { duration: 7, style: 'x', motion: 'curto', colors: 'x', accent: 'red', bg: 'x', font: 'nope', sound: 'loud', ownSound: 5 };
   const v = M.normalize(raw).video;
   assert.deepEqual(v, { duration: 6, style: 'dynamic', motion: 'curto', colors: 'style', accent: null, bg: 'dark', font: null, sound: 'generated', ownSound: null,
-    show: { ...M.DEFAULT_VIDEO_SHOW }, texts: {}, hold: 2, photos: { mode: 'trades', ids: [] } });
+    show: { ...M.DEFAULT_VIDEO_SHOW }, texts: {}, hold: 2, photos: { mode: 'trades', ids: [] }, cover: {} });
   raw.video = { motion: 'neon', duration: 10, accent: '#C6F432', colors: 'brand', bg: 'light', font: 'bold', sound: 'own', ownSound: 'a1' };
   const w = M.normalize(raw).video;
   assert.equal(w.duration, 10);
@@ -58,14 +58,15 @@ test('normalize: own sound without a file falls back to the generated music', ()
   assert.equal(M.normalize(raw).video.sound, 'generated');
 });
 
-test('newProject: Néon, «Automática», generated sound, empty offer', () => {
+// 2026-10-27: a new ad shows its (empty) offer sheet on the image too
+test('newProject: Néon, «Automática», generated sound, empty offer shown everywhere', () => {
   const p = M.newProject(TPL, { trades: ['pedreiro'] });
   assert.equal(p.video.motion, 'neon');
   assert.equal(p.video.duration, 'auto');
   assert.equal(p.video.sound, 'generated');
   assert.equal(p.video.colors, 'style');
   assert.equal(p.video.bg, 'dark');
-  assert.deepEqual(p.offer, { salary: '', currency: '€', period: 'month', vacancies: '' });
+  assert.deepEqual(p.offer, { salary: '', currency: '€', period: 'month', vacancies: '', location: '', startDate: '', visibility: { image: true, video: true, carousel: true, caption: true } });
 });
 
 test('offerText: salary with its period and the vacancies, in the ad language', () => {

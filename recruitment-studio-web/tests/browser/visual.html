@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="pt-PT">
+<head><base href="../../">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Recruitment Studio · validação visual</title>
+  <meta name="description" content="Anúncios de recrutamento para Facebook e Instagram, feitos neste computador.">
+  <!-- «Balão a entrar»: the drawing for small sizes in the tab, PNGs where SVG is not taken -->
+  <link rel="icon" type="image/svg+xml" href="assets/brand/icon-small.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/icon-32.png">
+  <link rel="icon" type="image/png" sizes="64x64" href="assets/icons/icon-64.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/icon-180.png">
+  <!-- the bar colour of each theme (js/appearance.js then follows the choice made in «Aparência») -->
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0f1114" media="(prefers-color-scheme: dark)">
+  <!-- Theme on <html> before the first paint (no flash of the light theme) -->
+  <script src="js/appearance.js"></script>
+  <link rel="stylesheet" href="assets/app.css">
+  <!-- Embedded fonts (700 KB): loaded without blocking the start screen; the
+       engine waits for them (RS.engine.loadFonts) before drawing any poster. -->
+  <link id="fonts-css" rel="stylesheet" href="assets/fonts.css" media="print" onload="this.media='all'">
+</head>
+<body>
+  <!-- Start screen, painted before any script runs (CSS only, in the page's theme);
+       removed when the app is ready. The icon's bubble enters from its corner, the dots
+       type, the name rises; on a first opening RS.ui.Opening carries on from there. -->
+  <div id="boot" class="boot" role="status" aria-label="A abrir o Recruitment Studio">
+    <svg class="boot-icon" viewBox="0 0 512 512" aria-hidden="true" focusable="false">
+      <defs>
+        <linearGradient id="boot-or" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff8a3a"/><stop offset="1" stop-color="#dc4a00"/></linearGradient>
+        <radialGradient id="boot-glow" cx=".25" cy=".2" r=".8"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset=".6" stop-color="#fff" stop-opacity="0"/></radialGradient>
+        <clipPath id="boot-sq"><rect width="512" height="512" rx="114"/></clipPath>
+      </defs>
+      <rect width="512" height="512" rx="114" fill="url(#boot-or)"/>
+      <rect width="512" height="512" rx="114" fill="url(#boot-glow)"/>
+      <g clip-path="url(#boot-sq)"><g class="boot-bubble"><g transform="rotate(10 160 160)">
+        <rect x="-150" y="-110" width="530" height="410" rx="124" fill="#fff"/>
+        <path d="M250 270 L430 430 L330 240 Z" fill="#fff"/>
+        <circle class="boot-dot" cx="110" cy="150" r="32" fill="#111317"/>
+        <circle class="boot-dot" cx="205" cy="150" r="32" fill="#111317"/>
+        <circle class="boot-dot" cx="300" cy="150" r="32" fill="#111317"/>
+      </g></g></g>
+    </svg>
+    <span class="boot-name">Recruitment Studio</span>
+    <span class="boot-tag" aria-hidden="true"></span>
+  </div><!-- /boot -->
+  <div id="app"></div>
+  <noscript>O Recruitment Studio precisa de JavaScript. Abra-o no Microsoft Edge ou no Google Chrome.</noscript>
+  <!-- Classic scripts on purpose: ES modules do not load from file:// -->
+  <script src="vendor/htm-preact.umd.js"></script>
+  <script src="vendor/qrcode.js"></script>
+  <script src="vendor/mp4-muxer.js"></script>
+  <script src="js/icons.js"></script>
+  <script src="js/util.js"></script><script src="tests/browser/visual-download.js"></script>
+  <script src="js/trades.js"></script>
+  <script src="js/model.js"></script>
+  <script src="js/contact.js"></script>
+  <script src="js/workflow.js"></script>
+  <script src="js/motion-timeline.js"></script>
+  <script src="js/engine.js"></script>
+  <script src="js/templates.js"></script>
+  <script src="js/motion-kit.js"></script>
+  <script src="js/motion.js"></script>
+  <script src="js/recipes/tijolo.js"></script>
+  <script src="js/recipes/pixel.js"></script>
+  <script src="js/recipes/planta.js"></script>
+  <script src="js/recipes/apresentacao.js"></script>
+  <script src="js/recipes/colagem.js"></script>
+  <script src="js/recipes/numeros.js"></script>
+  <script src="js/recipes/partidas.js"></script>
+  <script src="js/recipes/notificacoes.js"></script>
+  <script src="js/recipes/grua.js"></script>
+  <script src="js/recipes/contrato.js"></script>
+  <script src="js/recipes/cracha.js"></script>
+  <script src="js/recipes/fita.js"></script>
+  <script src="js/recipes/esteira.js"></script>
+  <script src="js/slides.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/reuse.js"></script>
+  <script src="js/production.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/backup.js"></script>
+  <script src="js/video.js"></script>
+  <script src="js/install.js"></script>
+  <script src="js/haptics.js"></script>
+  <script src="js/ui-motion.js"></script>
+  <script src="js/workflow-ui.js"></script>
+  <script src="js/production-ui.js"></script>
+  <script src="js/carousel-ui.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
+

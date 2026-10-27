@@ -1,0 +1,11 @@
+{
+  "name": "recruitment-studio-web",
+  "private": true,
+  "scripts": {
+    "test": "node --test tests/unit/*.test.cjs"
+  },
+  "devDependencies": {
+    "fake-indexeddb": "6.2.6",
+    "happy-dom": "21.0.4"
+  }
+}
