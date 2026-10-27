@@ -1,0 +1,3735 @@
+// Interface: opening animation, home, template gallery, editor with live
+// preview, photo library, export. Works with mouse, keyboard and touch.
+(() => {
+  const { html, render, useState, useEffect, useLayoutEffect, useRef, useMemo, useCallback } = window.htmPreact;
+  const U = RS.util, M = RS.model, E = RS.engine, T = RS.templates, S = RS.store, A = RS.assets, L = RS.library, TR = RS.trades, C = RS.contact;
+  const { CountUp, CotaLoader, BrickLoader, CraneProgress, Celebration, useDelayed } = RS.ui;
+  const W = RS.workflow;
+  const { Modal, OrganizationDialog, HomeFilters, TranslationDialog, ProjectTools } = RS.workflowUI({ Icon, ListEditor });
+  const { ReuseDialog, ProductionDialog, BackupDialog, VideoCoverDialog, FormatComparison, VideoTimeline } = RS.productionUI({ Icon, Modal, PhotoLibrary, confirmDialog, toast, makeThumb, videoPhotos, afterPaint: () => afterPaint() });
+
+  // ============================================================== motion + small helpers
+  // «Calmo» (chosen in «Definições», or the device asks for reduced motion): no flights
+  const reducedMotion = () => document.documentElement.dataset.motion === 'calm';
+  // Resolves once the current state is on screen: a loading state is painted
+  // before slow work (decoding, saving, rendering) starts. A hidden or throttled
+  // window may draw one frame per second, so it never waits more than 50 ms.
+  const afterPaint = () => new Promise((r) => {
+    let done = false;
+    const go = () => { if (!done) { done = true; r(); } };
+    requestAnimationFrame(() => setTimeout(go, 0));
+    setTimeout(go, 50);
+  });
+  // Runs a state change inside a View Transition: screens cross-fade and the
+  // poster morphs between gallery, home and editor. Falls back to an instant change.
+  // Never wait for a frame inside the callback: the browser draws no frames while
+  // it runs, so requestAnimationFrame only fired at Chrome's 4-second timeout and
+  // every screen change froze for 4 s. One macrotask lets Preact write the DOM.
+  const domFlushed = () => new Promise((r) => setTimeout(r, 0));
+  // While a screen change animates, the wait before it is over: no loader then.
+  const navAnim = { on: false, subs: new Set() };
+  const setNavAnim = (on) => { navAnim.on = on; navAnim.subs.forEach((f) => f(on)); };
+  // the screen change animating now: a new tap makes it jump to its end (App.run)
+  let navVT = null;
+  function transition(fn) {
+    if (!document.startViewTransition || reducedMotion()) return Promise.resolve(fn());
+    setNavAnim(true);
+    // Ilustrativo: the crane's hook hangs over the poster and travels with it
+    const hook = RS.ui.illustrative() && posterNow() ? RS.ui.craneHook() : null;
+    if (hook) hook.place(posterNow());
+    const vt = document.startViewTransition(async () => { await fn(); await domFlushed(); if (hook && !hook.place(posterNow())) hook.el.remove(); });
+    navVT = vt;
+    vt.finished.catch(() => {}).then(() => { if (navVT === vt) navVT = null; });
+    vt.finished.catch(() => {}).then(() => setNavAnim(false));
+    // A transition the browser skips (a phone turned mid-way) rejects all three
+    // promises; the screen has changed anyway, so none of them is an error.
+    if (vt.ready) vt.ready.catch(() => {});
+    if (vt.updateCallbackDone) vt.updateCallbackDone.catch(() => {});
+    return vt.finished.catch(() => {}).then(() => { markPoster(null); if (hook && hook.el.isConnected) hook.leave(); });
+  }
+  // the element that is the poster in a screen change: a card marked by markPoster, or the editor's
+  const posterNow = () => document.querySelector('[style*="view-transition-name: poster"]') || document.querySelector('.poster-wrap');
+  function useMedia(query) {
+    const [match, setMatch] = useState(() => window.matchMedia(query).matches);
+    useEffect(() => {
+      const mq = window.matchMedia(query);
+      const on = () => setMatch(mq.matches);
+      mq.addEventListener('change', on);
+      return () => mq.removeEventListener('change', on);
+    }, [query]);
+    return match;
+  }
+  function pickFiles(accept) {
+    return new Promise((resolve) => {
+      const input = document.createElement('input');
+      input.type = 'file'; input.name = 'files'; input.accept = accept; input.multiple = true;
+      input.tabIndex = -1; input.style.cssText = 'position:fixed;left:-10000px;top:0;width:1px;height:1px;';
+      const finish = (files) => { input.remove(); resolve(files); };
+      input.onchange = () => finish([...(input.files || [])]);
+      input.addEventListener('cancel', () => finish([])); document.body.appendChild(input);
+      input.click();
+    });
+  }
+
+  // «Definições»: the gear (Lucide «settings», ISC) is not in the generated icon set
+  if (!RS.ICON_PATHS.settings) RS.ICON_PATHS.settings = 'M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2zM12 9a3 3 0 1 0 0 6a3 3 0 1 0 0-6z';
+  function Icon({ name, size = 18, stroke = 2 }) {
+    return html`<svg class="ico" width=${size} height=${size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width=${stroke} stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d=${RS.ICON_PATHS[name] || ''} /></svg>`;
+  }
+  if (!RS.ICON_PATHS.pause) RS.ICON_PATHS.pause = 'M8 5v14M16 5v14';
+  function Spinner({ large }) {
+    return html`<span class=${'spinner' + (large ? ' lg' : '')} aria-hidden="true"></span>`;
+  }
+  function useProjectFile() {
+    const [fileSaving, setFileSaving] = useState(false);
+    const pending = useRef(false);
+    const saveFile = async (project) => {
+      if (pending.current) return;
+      pending.current = true; setFileSaving(true);
+      try {
+        const snapshot = M.normalize(project);
+        await afterPaint();
+        const blob = await A.exportProjectFile(snapshot);
+        const ok = await U.saveBlob(blob, `${U.slug(snapshot.name)}.anuncio`, [{ description: 'Projeto Recruitment Studio', accept: { 'application/json': ['.anuncio'] } }]);
+        if (ok) toast('Projeto guardado com as imagens e o som. Pode abri-lo noutro aparelho.');
+      } catch (err) { toast(err.message || 'Não foi possível guardar o ficheiro.', { kind: 'error' }); }
+      finally { pending.current = false; setFileSaving(false); }
+    };
+    return { fileSaving, saveFile };
+  }
+  // In Ilustrativo the icon is drawn inline so its three dots can type now and then.
+  const WM_LIVE = html`<svg class="wm-mark wm-live" viewBox="0 0 512 512" width="26" height="26" aria-hidden="true" focusable="false">
+    <rect width="512" height="512" rx="104" fill="#f26a14" /><g clip-path="inset(0 round 104px)"><g transform="rotate(10 200 180)">
+      <rect x="-60" y="-40" width="500" height="370" rx="120" fill="#fff" /><path d="M290 300 L450 455 L390 290 Z" fill="#fff" />
+      <circle class="wm-dot" cx="105" cy="150" r="50" fill="#111317" /><circle class="wm-dot" cx="235" cy="150" r="50" fill="#111317" /><circle class="wm-dot" cx="365" cy="150" r="50" fill="#111317" />
+    </g></g></svg>`;
+  function Wordmark({ small }) {
+    const live = RS.ui.useMotionStyle() === 'illustrative';
+    return html`<span class=${'wordmark' + (small ? ' small' : '')}>${live ? WM_LIVE : html`<img class="wm-mark" src="assets/brand/icon-small.svg" alt="" width="26" height="26" />`}Recruitment Studio</span>`;
+  }
+  function useSize(ref) {
+    const [size, setSize] = useState({ w: 0, h: 0 });
+    useLayoutEffect(() => {
+      if (!ref.current) return undefined;
+      const ro = new ResizeObserver(([entry]) => {
+        const r = entry.contentRect;
+        setSize({ w: Math.round(r.width), h: Math.round(r.height) });
+      });
+      ro.observe(ref.current);
+      return () => ro.disconnect();
+    }, []);
+    return size;
+  }
+  // Delays unmounting so an element can play its exit animation.
+  function useClosing(onClose, ms = 170) {
+    const [closing, setClosing] = useState(false);
+    const close = useCallback((...args) => {
+      if (closing) return;
+      if (reducedMotion()) { onClose(...args); return; }
+      setClosing(true);
+      setTimeout(() => onClose(...args), ms);
+    }, [closing, onClose]);
+    return [closing, close];
+  }
+
+  // ---------------------------------------------------------------- toasts
+  const toastBus = { list: [], subs: new Set() };
+  const emitToasts = () => toastBus.subs.forEach((f) => f([...toastBus.list]));
+  function leaveToast(id) {
+    toastBus.list = toastBus.list.map((x) => (x.id === id ? { ...x, leaving: true } : x));
+    emitToasts();
+    setTimeout(() => { toastBus.list = toastBus.list.filter((x) => x.id !== id); emitToasts(); }, RS.ui.illustrative() ? 440 : 200);
+  }
+  function toast(message, opts = {}) {
+    const t = { id: U.uid(), message, ...opts };
+    toastBus.list = [...toastBus.list.slice(-2), t];
+    emitToasts();
+    setTimeout(() => leaveToast(t.id), opts.action ? 7000 : 4200);
+  }
+  function Toasts() {
+    const [list, setList] = useState([]);
+    useEffect(() => { toastBus.subs.add(setList); return () => toastBus.subs.delete(setList); }, []);
+    return html`<div class="toasts" role="status" aria-live="polite">
+      ${list.map((t) => html`<div key=${t.id} class=${'toast' + (t.kind === 'error' ? ' error' : '') + (t.leaving ? ' leave' : '')}>
+        <${Icon} name=${t.kind === 'error' ? 'circle-alert' : 'check'} size=${18} />
+        <span>${t.message}</span>
+        ${t.action && html`<button class="toast-action" onClick=${() => { t.onAction(); leaveToast(t.id); }}>${t.action}</button>`}
+      </div>`)}
+    </div>`;
+  }
+
+  // ---------------------------------------------------------------- confirm dialog
+  const dialogBus = { sub: null };
+  function confirmDialog(opts) {
+    return new Promise((resolve) => { if (dialogBus.sub) dialogBus.sub({ ...opts, resolve }); else resolve(false); });
+  }
+  function DialogHost() {
+    const [d, setD] = useState(null);
+    useEffect(() => { dialogBus.sub = setD; return () => { dialogBus.sub = null; }; }, []);
+    if (!d) return null;
+    return html`<${ConfirmBox} key=${d.title} d=${d} onDone=${() => setD(null)} />`;
+  }
+  function ConfirmBox({ d, onDone }) {
+    const okRef = useRef();
+    const prevFocus = useRef(document.activeElement);
+    const [closing, close] = useClosing((v) => { d.resolve(v); onDone(); if (prevFocus.current && prevFocus.current.focus) prevFocus.current.focus(); });
+    useEffect(() => { if (okRef.current) okRef.current.focus(); }, []);
+    return html`<div class=${'modal-back' + (closing ? ' closing' : '')} onMouseDown=${(e) => { if (e.target === e.currentTarget) close(false); }}
+      onKeyDown=${(e) => { if (e.key === 'Escape') close(false); }}>
+      <div class="modal small" role="alertdialog" aria-modal="true" aria-labelledby="dlg-title">
+        <h2 id="dlg-title">${d.title}</h2>
+        ${d.body && html`<p>${d.body}</p>`}
+        <div class="modal-actions">
+          <button class="btn ghost" onClick=${() => close(false)}>${d.cancel || 'Cancelar'}</button>
+          <button ref=${okRef} class=${'btn ' + (d.danger ? 'danger' : 'primary')} onClick=${() => close(true)}>${d.confirm || 'Confirmar'}</button>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // ---------------------------------------------------------------- poster thumbnail
+  // Heavy drawing (thumbnails, the video styles' previews) waits in one queue and
+  // runs one job per task at the browser's lowest priority: a screen full of them
+  // opens at once (each shimmers until drawn), and a tap between two jobs is
+  // answered before the next — on a slow phone one poster takes up to a second,
+  // and a queue run inside the frames kept a tap waiting for several of them.
+  const thumbJobs = new Map();
+  let thumbTask = false;
+  const later = (fn) => {
+    if (window.scheduler && typeof window.scheduler.postTask === 'function') window.scheduler.postTask(fn, { priority: 'background' }).catch(() => {});
+    else setTimeout(fn, 0);
+  };
+  function runThumbJob() {
+    thumbTask = false;
+    const next = thumbJobs.entries().next();
+    if (next.done) return;
+    const [key, job] = next.value;
+    thumbJobs.delete(key);
+    try { job(); } catch (err) { console.error(err); }
+    if (thumbJobs.size) { thumbTask = true; later(runThumbJob); }
+  }
+  function queueThumb(key, job) {
+    thumbJobs.delete(key);
+    thumbJobs.set(key, job);
+    if (!thumbTask) { thumbTask = true; later(runThumbJob); }
+  }
+  // `pending`: the images are still arriving; keep the shimmer instead of drawing
+  // the placeholder illustration for a moment.
+  function PosterThumb({ project, format, images, width, locale, vt, pending }) {
+    const ref = useRef();
+    const key = useRef(null);
+    if (!key.current) key.current = {};
+    const [drawn, setDrawn] = useState(false);
+    const fmt = M.FORMATS[format || project.format];
+    useEffect(() => {
+      if (!width || pending) return undefined;
+      const job = key.current;
+      queueThumb(job, () => {
+        const c = ref.current;
+        if (!c) return;
+        const dpr = Math.min(2, window.devicePixelRatio || 1);
+        const k = width / fmt.w;
+        c.width = Math.round(fmt.w * k * dpr);
+        c.height = Math.round(fmt.h * k * dpr);
+        const ctx = c.getContext('2d');
+        ctx.clearRect(0, 0, c.width, c.height);
+        E.render(ctx, project, { format: fmt.id, locale, images: images || {}, scale: k * dpr, mode: 'thumb' });
+        setDrawn(true);
+      });
+      return () => thumbJobs.delete(job);
+    }, [project, fmt.id, images, width, locale, pending]);
+    return html`<canvas ref=${ref} class=${'poster-thumb' + (drawn ? ' drawn' : '')} data-vt=${vt || ''}
+      style=${`width:${width}px;height:${Math.round(width * fmt.h / fmt.w)}px`} aria-hidden="true"></canvas>`;
+  }
+  // Photos for the motion styles: the ad's photo, then the library photos of
+  // its trades (RS.motion.photoSet); loaded once per ad look.
+  const photoSets = new Map();
+  function motionPhotos(project, images) {
+    const key = `${(project.trades || []).join(',')}|${project.photo ? project.photo.asset : ''}|${images && images.photo ? 'p' : ''}|${JSON.stringify(M.photoSnapshot(project))}`;
+    if (!photoSets.has(key)) {
+      if (photoSets.size > 6) photoSets.clear();
+      photoSets.set(key, (async () => {
+        const [lib, mine] = await Promise.all([L.index().catch(() => ({ items: [] })), L.userItems().catch(() => [])]);
+        return RS.motion.photoSet(project, images || {}, [...lib.items, ...mine]);
+      })().catch(() => ({ hero: null, cards: [] })));
+    }
+    return photoSets.get(key);
+  }
+  const NO_PHOTOS = { hero: null, cards: [] };
+  // Photos of a video: the styles' cards (the trades' library, or the photos
+  // chosen in «Fotografias») and up to eight full-size photos for the recipes.
+  const videoSets = new Map();
+  const chosenPhotos = (project) => {
+    const ph = project.video && project.video.photos;
+    return ph && ph.mode === 'chosen' ? ph.ids : null;
+  };
+  const videoPhotosKey = (project, images) => `${(project.trades || []).join(',')}|${project.photo ? project.photo.asset : ''}|${images && images.photo ? 'p' : ''}|${(chosenPhotos(project) || []).join(',')}|${JSON.stringify(M.photoSnapshot(project))}`;
+  function videoPhotos(project, images) {
+    const key = videoPhotosKey(project, images);
+    if (!videoSets.has(key)) {
+      if (videoSets.size > 6) videoSets.clear();
+      const chosen = !!chosenPhotos(project);
+      videoSets.set(key, (async () => {
+        const [set, full] = await Promise.all([chosen ? null : motionPhotos(project, images), RS.motion.recipePhotos(project, images || {}).catch(() => [])]);
+        return chosen ? { hero: full[0] || null, cards: full, full } : { ...set, full };
+      })().catch(() => NO_PHOTOS));
+    }
+    return videoSets.get(key);
+  }
+  // Everything the video reads from the ad (not its name, not the dates): a
+  // prepared video is only made again when this changes.
+  const videoKey = (p) => JSON.stringify([{ ...p.video, cover: undefined }, p.texts, p.offer, p.whatsapp, p.waTemplates, p.brand, p.logo, p.photo, p.style, p.show, p.locales, p.locale, p.trades, p.trade]);
+  // the gallery's cards are too small for «Enquadrar»: a framing does not prepare them again
+  const cardKey = (p) => {
+    const ph = p.video && p.video.photos;
+    return videoKey(ph && ph.focus ? { ...p, video: { ...p.video, photos: { ...ph, focus: undefined } } } : p); // left out as when none
+  };
+  function useVideoPhotos(project, images, on = true) {
+    const [set, setSet] = useState(null);
+    const key = videoPhotosKey(project, images);
+    useEffect(() => {
+      if (!on) return undefined;
+      let live = true;
+      videoPhotos(project, images).then((photos) => { if (live) setSet({ key, photos }); });
+      return () => { live = false; };
+    }, [key, on]);
+    return set?.key === key ? set.photos : null;
+  }
+  // Plays a prepared video (RS.motion) in a loop, with a short pause on the
+  // last frame, until the returned function is called. `clock` (seconds) drives
+  // it instead when its sound plays; `fps` limits small previews.
+  function playMotion(P, draw, { clock, onEnd, fps } = {}) {
+    let raf = 0, last = 0;
+    const t0 = performance.now();
+    const d = P.timeline.duration;
+    const tick = (now) => {
+      raf = requestAnimationFrame(tick);
+      if (fps && now - last < 1000 / fps) return;
+      last = now;
+      let t;
+      if (clock) { t = clock(); if (t > d + 0.6 && onEnd) onEnd(); } else t = ((now - t0) / 1000) % (d + 0.8);
+      draw(Math.max(0, Math.min(t, d - 0.01)));
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }
+  // Animated preview of a video (export dialog, style gallery). `prepared` is
+  // an RS.motion.prepare result; `still` (seconds) shows one frame instead.
+  function VideoPreview({ prepared: P, width, still, clock, onEnd, fps }) {
+    const ref = useRef();
+    const fmt = P.fmt;
+    useEffect(() => {
+      const c = ref.current;
+      if (!c || !width) return undefined;
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      const k = width / fmt.w;
+      c.width = Math.round(fmt.w * k * dpr);
+      c.height = Math.round(fmt.h * k * dpr);
+      const ctx = c.getContext('2d');
+      const draw = (t) => RS.motion.render(ctx, P, { t, scale: k * dpr });
+      if (still != null) { draw(still); return undefined; }
+      return playMotion(P, draw, { clock, onEnd, fps });
+    }, [P, width, still, clock]);
+    return html`<canvas ref=${ref} class="poster-thumb drawn" data-motion=${P.style.id} style=${`width:${width}px;height:${Math.round(width * fmt.h / fmt.w)}px`} aria-hidden="true"></canvas>`;
+  }
+  // The value, once it has stopped changing for `ms` (a colour being dragged).
+  function useSettled(value, ms) {
+    const [settled, setSettled] = useState(value);
+    useEffect(() => {
+      if (settled === value) return undefined;
+      const id = setTimeout(() => setSettled(value), ms);
+      return () => clearTimeout(id);
+    }, [value, ms]);
+    return settled;
+  }
+  // Gallery of the motion styles, each one moving while it is on screen. The
+  // cards follow what the video shows (not the ad's name) once the edits
+  // settle: every model is prepared again, so not on every key.
+  function MotionCard({ style, project: live, images, photos, on, onPick, disabled }) {
+    const project = useSettled(live, 300);
+    const ref = useRef();
+    const [visible, setVisible] = useState(false);
+    useEffect(() => {
+      if (!window.IntersectionObserver) { setVisible(true); return undefined; }
+      const io = new IntersectionObserver(([e]) => setVisible(e.isIntersecting), { threshold: 0.2 });
+      io.observe(ref.current);
+      return () => io.disconnect();
+    }, []);
+    // prepared in the drawing queue, one card per task: the panel shows at once and
+    // a tap is never kept waiting for twenty videos (the card shimmers until then)
+    const [P, setP] = useState(null);
+    useEffect(() => {
+      const job = {};
+      queueThumb(job, () => {
+        const v = project.video;
+        const p = { ...project, video: { ...v, motion: style.id, duration: style.durations.includes(v.duration) ? v.duration : style.defaultDuration, bg: style.bgModes.includes(v.bg) ? v.bg : style.bgModes[0] } };
+        setP(RS.motion.prepare(p, { format: 'story', locale: project.locale, images: images || {}, photos: photos || NO_PHOTOS, lite: true }));
+      });
+      return () => thumbJobs.delete(job);
+    }, [cardKey(project), style, images, photos]);
+    return html`<button ref=${ref} type="button" role="radio" aria-checked=${on} class=${'motion-card' + (on ? ' on' : '')} disabled=${disabled} onClick=${onPick}>
+      ${P ? html`<${VideoPreview} prepared=${P} width=${62} still=${visible ? null : 1.2} fps=${12} />`
+        : html`<span class="poster-thumb motion-wait" style="width:62px;height:110px" aria-hidden="true"></span>`}
+      <span>${style.name}</span>
+    </button>`;
+  }
+  function MotionPicker({ project, images, photos, value, onChange, disabled, list, label }) {
+    return html`<div class="motion-picker" role="radiogroup" aria-label=${label || 'Estilo do vídeo'}>
+      ${(list || RS.motion.STYLES).map((s) => html`<${MotionCard} key=${s.id} style=${s} project=${project} images=${images} photos=${photos}
+        on=${value === s.id} disabled=${disabled} onPick=${() => onChange(s)} />`)}
+    </div>`;
+  }
+  function makeThumb(project, images) {
+    const { canvas } = E.renderToCanvas(project, { format: 'portrait', images, scale: 300 / 1080, mode: 'thumb' });
+    return canvas.toDataURL('image/jpeg', 0.82);
+  }
+  function applyBrand(project, brand) {
+    return RS.reuse.applyBrand(project, brand);
+  }
+  // Marks one element as the poster that morphs into the next screen.
+  function markPoster(el) { document.querySelectorAll('[style*="view-transition-name"]').forEach((n) => { n.style.viewTransitionName = ''; }); if (el) el.style.viewTransitionName = 'poster'; }
+  // The home list as last seen: back from the editor, the cards are on screen at once
+  // (the poster shrinks into its card in the same View Transition).
+  const homeCache = { recs: null };
+  const listHome = async () => (await S.listProjects()).filter((r) => !r.deletedAt).sort((a, b) => b.updatedAt - a.updatedAt);
+  function keepInHome(rec) {
+    if (!homeCache.recs || !rec) return;
+    homeCache.recs = [rec, ...homeCache.recs.filter((r) => r.id !== rec.id)].sort((a, b) => b.updatedAt - a.updatedAt);
+  }
+
+  // ============================================================== «Definições»
+  // A new theme grows as a circle from the option tapped (a View Transition);
+  // in calm mode, or without View Transitions, it changes at once. Choosing what
+  // is already on screen changes nothing.
+  function changeTheme(patch, from) {
+    const AP = RS.appearance;
+    const root = document.documentElement;
+    const next = { ...AP.get(), ...patch };
+    const same = AP.resolve(next.theme, window.matchMedia('(prefers-color-scheme: dark)').matches) === root.dataset.theme;
+    if (same || reducedMotion()) { AP.set(patch); return; }
+    if (RS.ui.illustrative()) {
+      // under the sky the colours change at once (no ~200 colour transitions running there)
+      RS.ui.nightfall(AP.resolve(next.theme, window.matchMedia('(prefers-color-scheme: dark)').matches) === 'dark', () => {
+        root.classList.add('theme-switching');
+        AP.set(patch);
+        requestAnimationFrame(() => requestAnimationFrame(() => root.classList.remove('theme-switching')));
+      });
+      return;
+    }
+    if (!document.startViewTransition) { AP.set(patch); return; }
+    const r = from ? from.getBoundingClientRect() : { left: innerWidth / 2, top: 0, width: 0, height: 0 };
+    const x = r.left + r.width / 2, y = r.top + r.height / 2;
+    root.style.setProperty('--reveal-x', `${x}px`);
+    root.style.setProperty('--reveal-y', `${y}px`);
+    root.style.setProperty('--reveal-r', `${Math.ceil(Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y)))}px`);
+    root.classList.add('theme-switching');
+    const vt = document.startViewTransition(() => { AP.set(patch); });
+    if (vt.ready) vt.ready.catch(() => {});
+    if (vt.updateCallbackDone) vt.updateCallbackDone.catch(() => {});
+    vt.finished.catch(() => {}).then(() => root.classList.remove('theme-switching'));
+  }
+  const THEME_OPTIONS = [['auto', 'Automático', 'monitor-smartphone'], ['light', 'Claro', 'sun'], ['dark', 'Escuro', 'moon']];
+  const MOTION_OPTIONS = [
+    ['illustrative', 'Ilustrativo', 'A obra a acontecer em cada toque e em cada ecrã: a app viva, mesmo parada.'],
+    ['sober', 'Sóbrio', 'Rápido e discreto no dia a dia; a grua e os tijolos só nas esperas e nas vitórias.'],
+    ['calm', 'Calmo', 'Só esbatidos: nada voa, salta nem balança.'],
+  ];
+  // A small live picture of each style (decorative: the words say it).
+  const MOTION_PREVIEW = {
+    illustrative: html`<span class="ms-preview ms-illustrative" aria-hidden="true"><i class="ms-hook"></i><i class="ms-b b1"></i><i class="ms-b b2"></i><i class="ms-b b3"></i><i class="ms-b hop"></i></span>`,
+    sober: html`<span class="ms-preview ms-sober" aria-hidden="true"><i class="ms-slot s1"></i><i class="ms-slot s2"></i><i class="ms-pill"></i></span>`,
+    calm: html`<span class="ms-preview ms-calm" aria-hidden="true"><i class="ms-card-a"></i><i class="ms-card-b"></i></span>`,
+  };
+  // The motion style, the theme and the vibration — the home's «Definições» sheet
+  // and the editor's «Definições» tab. Every choice applies at once and is kept on
+  // this device (RS.appearance).
+  function OfflinePanel() {
+    const [state, setState] = useState(null), [working, setWorking] = useState(false);
+    useEffect(() => RS.offline.subscribe(setState), []);
+    const action = async (prepare) => { if (working) return; setWorking(true); try { await (prepare ? RS.offline.prepare() : RS.offline.check()); } finally { setWorking(false); } };
+    const running = working || state?.running;
+    return html`<section class="settings-group offline-panel"><h3>Disponível sem rede</h3>
+      ${!state ? html`<p role="status">A verificar recursos guardados…</p>` : state.mode === 'file' ? html`<p>Esta cópia abre diretamente da pasta do computador. Mantenha a pasta completa para usar a aplicação e as fotografias sem rede.</p>` : html`
+        <p role="status">${state.error || (state.appReady ? state.controlled ? 'Aplicação disponível offline.' : 'Aplicação preparada. Reabra para confirmar o funcionamento offline.' : 'A aplicação ainda não está totalmente preparada.')}</p>
+        ${state.mode === 'web' && html`<p>Fotografias: ${state.photosReady || 0} de ${state.photosTotal === null ? 'total por verificar' : state.photosTotal} disponíveis.</p>
+          <progress aria-label="Recursos disponíveis offline" value=${(state.coreReady || 0) + (state.photosReady || 0)} max=${(state.coreTotal || 0) + (state.photosTotal || 0) || 1}></progress>`}
+        <div class="row-btns"><button class="btn ghost sm" disabled=${running} onClick=${() => action(false)}>Verificar novamente</button><button class="btn primary sm" disabled=${running || state.mode !== 'web'} onClick=${() => action(true)}>${running ? 'A preparar…' : state.errors?.length ? 'Repetir recursos em falta' : 'Preparar todos os recursos'}</button></div>
+        ${state.errors?.length > 0 && html`<details class="offline-errors"><summary>${state.errors.length} recursos não foram guardados</summary><ul>${state.errors.slice(0, 8).map((e, i) => html`<li key=${i}>${e.url.includes('/photos/full/') ? `Fotografia ${e.url.split('/').pop().replace(/\.js$/, '')}` : 'Recurso da aplicação'}: ${e.reason}</li>`)}</ul>${state.errors.length > 8 && html`<p>E mais ${state.errors.length - 8}. A repetição tenta todos os recursos em falta.</p>`}</details>`}
+        <p class="settings-note">Prepare os recursos com ligação à rede antes de sair. A preparação explícita descarrega as fotografias mesmo com a poupança de dados ativa.</p>
+      `}
+      <p class="settings-note">Os anúncios e recursos próprios ficam no armazenamento deste navegador. Use também uma cópia de segurança externa.</p>
+    </section>`;
+  }
+  function SettingsPanel() {
+    const [s, setS] = useState(() => RS.appearance.get());
+    useEffect(() => RS.appearance.subscribe(setS), []);
+    const style = document.documentElement.dataset.motion; // as applied (a device asking for less motion: Calmo)
+    return html`<div class="settings">
+      <section class="settings-group">
+        <h3>Movimento</h3>
+        <div class="motion-styles" role="radiogroup" aria-label="Movimento">
+          ${MOTION_OPTIONS.map(([v, label, text]) => html`<button key=${v} type="button" role="radio" aria-checked=${style === v} class=${'ms-card' + (style === v ? ' on' : '')}
+            onClick=${() => RS.appearance.set({ motion: v })}>${MOTION_PREVIEW[v]}<span class="ms-words"><strong>${label}</strong><span>${text}</span></span></button>`)}
+        </div>
+        ${s.motion === null && style === 'calm' && html`<p class="settings-note">Este aparelho pede menos movimento: fica no Calmo até escolher outro.</p>`}
+      </section>
+      <section class="settings-group">
+        <h3>Tema</h3>
+        <div class="seg settings-themes" role="radiogroup" aria-label="Tema">
+          ${THEME_OPTIONS.map(([v, label, icon]) => html`<button key=${v} type="button" role="radio" aria-checked=${s.theme === v} class=${s.theme === v ? 'on' : ''}
+            onClick=${(e) => changeTheme({ theme: v }, e.currentTarget)}><${Icon} name=${icon} size=${18} /><span>${label}</span></button>`)}
+        </div>
+        <p class="settings-note">${s.theme === 'auto' ? 'Segue o telemóvel ou o computador, também quando muda à noite.' : 'Fica assim neste aparelho.'}</p>
+      </section>
+      <section class="settings-group">
+        <label class="switch settings-haptics"><input id="f-haptics" type="checkbox" checked=${s.haptics}
+          onChange=${(e) => RS.appearance.set({ haptics: e.target.checked })} /><span class="switch-ui"></span> Vibração</label>
+        <p class="settings-note">Um toque leve no telemóvel quando carrega nos botões.</p>
+      </section>
+      <${OfflinePanel} />
+    </div>`;
+  }
+  // The home's «Definições»: a dialog (a sheet rising from the bottom on a phone).
+  function SettingsSheet({ onClose }) {
+    const [closing, close] = useClosing(onClose);
+    const prevFocus = useRef(document.activeElement);
+    const boxRef = useRef();
+    useEffect(() => {
+      const x = boxRef.current && boxRef.current.querySelector('.modal-head .icon-btn');
+      if (x && window.matchMedia('(hover: hover)').matches) x.focus();
+      return () => { if (prevFocus.current && prevFocus.current.focus) prevFocus.current.focus(); };
+    }, []);
+    return html`<div class=${'modal-back' + (closing ? ' closing' : '')} onMouseDown=${(e) => { if (e.target === e.currentTarget) close(); }}
+      onKeyDown=${(e) => { if (e.key === 'Escape') close(); }}>
+      <div class="modal settings-sheet settings" role="dialog" aria-modal="true" aria-labelledby="settings-title" ref=${boxRef}>
+        <header class="modal-head">
+          <h2 id="settings-title">Definições</h2>
+          <button class="icon-btn" aria-label="Fechar" onClick=${() => close()}><${Icon} name="x" /></button>
+        </header>
+        <div class="settings-body"><${SettingsPanel} /></div>
+      </div>
+    </div>`;
+  }
+
+  // ============================================================== install as an app
+  // The browser's own install (Android, Chrome and Edge) and the «installed» moment.
+  const installBus = { evt: null, subs: new Set() };
+  const welcomeBus = { subs: new Set() };
+  window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installBus.evt = e; installBus.subs.forEach((f) => f(true)); });
+  window.addEventListener('appinstalled', () => { installBus.evt = null; installBus.subs.forEach((f) => f(false)); RS.install.markWelcomed(); welcomeBus.subs.forEach((f) => f(true)); });
+  const standalone = () => window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  const PHONES = new Set(['ios-safari', 'ios-other', 'ios-inapp', 'android-inapp', 'android', 'firefox-android', 'samsung']);
+  // «Instalar»: one tap where the browser installs by itself; otherwise the sheet
+  // with the steps of the browser in use and, on a computer, the QR for the phone.
+  // On the .exe (file://) and in an installed computer app: «Instalar no telemóvel».
+  function InstallButton() {
+    const [, setCan] = useState(!!installBus.evt);
+    const [sheet, setSheet] = useState(null);
+    useEffect(() => { installBus.subs.add(setCan); return () => installBus.subs.delete(setCan); }, []);
+    const p = RS.install.detect();
+    const phone = PHONES.has(p);
+    if (p === 'installed' && RS.install.phone(navigator.userAgent, { maxTouchPoints: navigator.maxTouchPoints })) return null;
+    const toPhone = p === 'file' || p === 'installed';
+    const label = toPhone ? 'Instalar no telemóvel' : 'Instalar';
+    async function install() {
+      const e = installBus.evt;
+      if (e && !toPhone) {
+        installBus.evt = null;
+        setCan(false);
+        e.prompt();
+        try { await e.userChoice; } catch { /* closed */ }
+        if (!phone) setSheet(RS.install.detect()); // then the phone, from the same sheet
+        return;
+      }
+      setSheet(RS.install.detect());
+    }
+    return html`<button class="btn primary install-btn" onClick=${install} aria-label=${label} title=${toPhone ? 'Um código QR para instalar a app no telemóvel' : 'Instalar o Recruitment Studio neste aparelho'}>
+        <${Icon} name=${toPhone ? 'smartphone' : 'download'} /> <span class="hide-sm">${label}</span></button>
+      ${sheet && html`<${InstallSheet} platform=${sheet} onClose=${() => setSheet(null)} />`}`;
+  }
+  // The guide's drawing (RS.install.DEMOS): the browser in use with its bar, the
+  // menu or the confirmation each step opens, and a finger (on a computer, the
+  // pointer) that goes to what to tap and taps it. Decorative: the steps beside it
+  // say the same in words.
+  function InstallDemo({ demo, step }) {
+    const [where, arg] = demo.taps[step] || ['none'];
+    const ref = useRef();
+    const placed = useRef(false);
+    const [finger, setFinger] = useState(null);
+    // Where the thing to tap is, from the layout (a menu still springing in has
+    // not reached its place on screen yet; the finger goes where it will be).
+    useLayoutEffect(() => {
+      const box = ref.current;
+      const hit = box && box.querySelector('.demo-hit');
+      if (!hit) { setFinger((f) => (f ? { ...f, off: true, first: false } : f)); return; }
+      let x = hit.offsetWidth / 2, y = hit.offsetHeight / 2;
+      for (let n = hit; n && n !== box; n = n.offsetParent) { x += n.offsetLeft; y += n.offsetTop; }
+      setFinger({ x: Math.round(x), y: Math.round(y), first: !placed.current });
+      placed.current = true;
+    }, [step]);
+    const hitIf = (on) => (on ? ' demo-hit' : '');
+    const menu = where === 'menu' && html`<span class=${'demo-menu demo-in ' + (demo.bar === 'bottom' ? 'from-bottom' : 'from-top')}>
+      ${demo.menu.map((row, i) => html`<span key=${i} class=${'demo-row' + hitIf(arg === i)}>${row}</span>`)}</span>`;
+    const tool = (name, i) => html`<span key=${i} class=${'demo-tool' + hitIf(where === 'tool' && arg === i)}>
+      ${demo.bar === 'menu' ? name : html`<${Icon} name=${name} size=${13} stroke=${2.2} />`}
+      ${demo.bar === 'menu' && demo.menuFrom === i && menu}</span>`;
+    const dialog = where === 'dialog' && html`<span class=${'demo-dialog demo-in' + (demo.device === 'computer' && demo.bar === 'top' ? ' anchored' : '')}>
+      <img src="assets/brand/icon-small.svg" alt="" width="22" height="22" />
+      <b>Recruitment Studio</b>
+      <span class="demo-btns"><span class="demo-btn">Cancelar</span><span class=${'demo-btn primary' + hitIf(true)}>${arg}</span></span></span>`;
+    const page = html`<span class="demo-page"><i class="demo-app"></i><i></i><i></i><i class="short"></i></span>`;
+    const bar = html`<span class="demo-bar">
+      ${demo.device === 'computer' && html`<span class="demo-dots"><i></i><i></i><i></i></span>`}
+      <span class="demo-url">….ts.net${demo.device === 'computer' && demo.bar === 'top' && html`<span class="demo-tools">${demo.tools.map(tool)}</span>`}</span>
+      ${demo.device === 'phone' && html`<span class="demo-tools">${demo.tools.map(tool)}</span>`}</span>`;
+    return html`<div class=${`install-demo ${demo.device} bar-${demo.bar}`} ref=${ref} aria-hidden="true">
+      ${demo.bar === 'menu' && html`<span class="demo-osbar">${demo.tools.map(tool)}</span>`}
+      <span class="demo-screen">
+        ${demo.bar !== 'bottom' && bar}
+        ${page}
+        ${demo.bar === 'bottom' && bar}
+        ${demo.bar !== 'menu' && menu}
+        ${demo.device === 'phone' && dialog}
+      </span>
+      ${demo.device === 'computer' && dialog}
+      ${finger && !finger.off && html`<span key=${`tap${step}`} class="demo-tap" style=${`transform:translate(${finger.x}px, ${finger.y}px)`}></span>`}
+      ${finger && html`<span class=${'demo-finger' + (finger.first ? ' first' : '') + (finger.off ? ' off' : '')} style=${`transform:translate(${finger.x}px, ${finger.y}px)`}>
+        <i key=${step}>${demo.device === 'computer' && html`<svg viewBox="0 0 16 20" width="16" height="20"><path d="M1 1v15l4-3.6L7.6 19l2.6-1.2-2.5-5.6H13z" /></svg>`}</i></span>`}
+    </div>`;
+  }
+  function InstallSheet({ platform: p, onClose }) {
+    const [closing, close] = useClosing(onClose);
+    const phone = PHONES.has(p);
+    const toPhone = p === 'file' || p === 'installed';
+    const steps = RS.install.STEPS[toPhone ? 'file' : p] || RS.install.STEPS.other;
+    const demo = toPhone ? null : RS.install.DEMOS[p] || null;
+    // the step being shown goes round, the finger tapping each button in turn
+    const [now, setNow] = useState(0);
+    useEffect(() => {
+      const id = setInterval(() => setNow((n) => (n + 1) % steps.length), 2000);
+      return () => clearInterval(id);
+    }, [steps.length]);
+    const [address, setAddress] = useState(() => (phone ? null : RS.install.appAddress()));
+    const [draft, setDraft] = useState('');
+    const [error, setError] = useState('');
+    const qrRef = useRef();
+    const fieldRef = useRef();
+    useEffect(() => {
+      const cv = qrRef.current;
+      if (!cv || !address) return;
+      cv.width = cv.height = 600;
+      const ctx = cv.getContext('2d');
+      ctx.clearRect(0, 0, 600, 600);
+      RS.engine.drawQR({ ctx, hit() {} }, address, 0, 0, 600, { dark: '#0B1220', light: '#FFFFFF' });
+    }, [address]);
+    function useAddress(e) {
+      e.preventDefault();
+      const r = RS.install.checkAddress(fieldRef.current ? fieldRef.current.value : draft);
+      if (!r.ok) { setError(r.error); return; }
+      RS.install.rememberAddress(r.url);
+      setError('');
+      setAddress(r.url);
+    }
+    const prevFocus = useRef(document.activeElement);
+    const boxRef = useRef();
+    useEffect(() => {
+      const f = boxRef.current && (boxRef.current.querySelector('#f-app-url') || boxRef.current.querySelector('.modal-head .icon-btn'));
+      if (f && window.matchMedia('(hover: hover)').matches) f.focus();
+      return () => { if (prevFocus.current && prevFocus.current.focus) prevFocus.current.focus(); };
+    }, []);
+    const list = (cls) => html`<ol class=${'install-steps ' + cls}>${steps.map((st, i) => html`<li key=${i} class=${'install-step' + (i === now ? ' now' : '')}>
+      <span class="install-ico" aria-hidden="true"><${Icon} name=${st.icon} size=${20} /></span><span>${st.text}</span></li>`)}</ol>`;
+    return html`<div class=${'modal-back' + (closing ? ' closing' : '')} onMouseDown=${(e) => { if (e.target === e.currentTarget) close(); }}
+      onKeyDown=${(e) => { if (e.key === 'Escape') close(); }}>
+      <div class="modal install" role="dialog" aria-modal="true" aria-labelledby="install-title" ref=${boxRef}>
+        <header class="modal-head">
+          <h2 id="install-title">${toPhone ? 'Instalar no telemóvel' : 'Instalar o Recruitment Studio'}</h2>
+          <button class="icon-btn" aria-label="Fechar" onClick=${() => close()}><${Icon} name="x" /></button>
+        </header>
+        <div class="install-body">
+          ${!toPhone && html`<section class="install-guide">
+            <h3>${phone ? 'Neste telemóvel' : 'Neste computador'}</h3>
+            ${demo && html`<${InstallDemo} demo=${demo} step=${now} />`}
+            ${list('guide')}
+            <p class="install-note">Depois abre como uma app, sem a barra do navegador, e funciona sem rede.</p>
+          </section>`}
+          ${!phone && html`<section class=${'install-phone' + (toPhone ? ' to-phone' : '')}>
+            <h3>No telemóvel</h3>
+            ${address ? html`<div class="install-qr-col"><figure class="install-qr" data-link=${address} role="img" aria-label=${`Código QR para abrir ${address} no telemóvel`}><canvas ref=${qrRef}></canvas></figure>
+              <p class="install-note"><${Icon} name="smartphone" size=${16} /> Aponte a câmara do telemóvel. O telemóvel precisa do Tailscale ligado.</p>
+              <p class="install-url">${address}${p === 'file' && html` <button type="button" class="btn link sm" onClick=${() => { setDraft(address); setAddress(null); }}>Mudar</button>`}</p></div>
+              ${toPhone && list('phone')}`
+            : html`<form class="install-ask" onSubmit=${useAddress}>
+              <label for="f-app-url">Endereço da app</label>
+              <input ref=${fieldRef} id="f-app-url" type="url" inputmode="url" autocomplete="url" spellcheck="false" placeholder="https://….ts.net" value=${draft}
+                onInput=${(e) => { setDraft(e.target.value); setError(''); }} />
+              ${error ? html`<small class="field-hint warn">${error}</small>`
+                : html`<small class="field-hint">O endereço da cópia publicada no seu Tailscale. Fica guardado neste computador.</small>`}
+              <button class="btn primary" type="submit"><${Icon} name="qr-code" /> Mostrar QR</button>
+            </form>`}
+          </section>`}
+        </div>
+      </div>
+    </div>`;
+  }
+  // The first opening as an installed app: the icon arrives and the app says hello.
+  function Welcome({ onDone }) {
+    useEffect(() => { RS.haptics.success(); }, []);
+    const btnRef = useRef();
+    useEffect(() => { if (btnRef.current) btnRef.current.focus(); }, []);
+    return html`<div class="welcome" role="dialog" aria-modal="true" aria-labelledby="welcome-title" onKeyDown=${(e) => { if (e.key === 'Escape') onDone(); }}>
+      <div class="welcome-card">
+        <img class="welcome-icon" src="assets/brand/icon.svg" alt="" width="88" height="88" />
+        <h2 id="welcome-title" class="sr-only">Bem-vindo ao Recruitment Studio</h2>
+        <${Celebration} title="BEM-VINDO" detail="O Recruitment Studio já está no seu ecrã principal." duration=${2400} />
+        <button ref=${btnRef} class="btn primary lg" onClick=${onDone}>Começar</button>
+      </div>
+    </div>`;
+  }
+
+  // ============================================================== home
+  // Recovery is available on the home screen (also on phones) and in the editor.
+  function RecoveryDialog({ projectId, onClose, onRestore, onSnapshot, editorOptions }) {
+    const trash = !projectId;
+    const [rows, setRows] = useState(null);
+    const [working, setWorking] = useState(false);
+    const [error, setError] = useState('');
+    const [notice, setNotice] = useState('');
+    const pending = useRef(false), modal = useRef();
+    const previousFocus = useRef(document.activeElement);
+    const date = (ts) => new Date(ts).toLocaleString('pt-PT', { dateStyle: 'short', timeStyle: 'short' });
+    const read = async () => trash
+      ? (await S.listProjects()).filter((r) => r.deletedAt).sort((a, b) => b.deletedAt - a.deletedAt)
+      : S.listVersions(projectId);
+    useEffect(() => {
+      let live = true;
+      read().then((r) => { if (live) setRows(r); }).catch((err) => { if (live) setError(err.message); });
+      if (modal.current) modal.current.focus();
+      return () => { live = false; if (previousFocus.current && previousFocus.current.isConnected) previousFocus.current.focus(); };
+    }, [projectId]);
+    const close = () => { if (!pending.current) onClose(); };
+    async function action(fn) {
+      if (pending.current) return;
+      pending.current = true; setWorking(true); setError(''); setNotice('');
+      try { await fn(); setRows(await read()); }
+      catch (err) { setError(err.message || 'Não foi possível concluir. Tente de novo.'); }
+      finally { pending.current = false; setWorking(false); }
+    }
+    const restore = (row) => action(async () => {
+      const rec = trash ? await S.setDeleted(row.id, null) : await S.restoreVersion(projectId, row.id, editorOptions ? editorOptions() : {});
+      if (onRestore) await onRestore(rec);
+      setNotice(trash ? 'Anúncio restaurado' : 'Versão restaurada. A versão anterior continua no histórico.');
+    });
+    const snapshot = () => action(async () => {
+      if (onSnapshot) await onSnapshot();
+      else {
+        const rec = await S.getProject(projectId);
+        if (!rec) throw new Error('O anúncio já não está disponível.');
+        await S.saveVersion(rec.data, rec.thumb);
+      }
+      setNotice('Versão guardada no histórico');
+    });
+    const keys = (e) => {
+      e.stopPropagation();
+      if (e.key === 'Escape') { e.preventDefault(); close(); }
+      if (e.key !== 'Tab') return;
+      const nodes = [...modal.current.querySelectorAll('button:not(:disabled), [href], input:not(:disabled), [tabindex="0"]')];
+      const first = nodes[0], last = nodes[nodes.length - 1];
+      if (!first) { e.preventDefault(); return; }
+      if (e.shiftKey && (document.activeElement === first || document.activeElement === modal.current)) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && (document.activeElement === last || document.activeElement === modal.current)) { e.preventDefault(); first.focus(); }
+    };
+    return html`<div class="modal-back" onMouseDown=${(e) => { if (e.target === e.currentTarget) close(); }} onKeyDown=${keys}>
+      <section ref=${modal} class="modal recovery" role="dialog" aria-modal="true" aria-labelledby="recovery-title" tabIndex="-1" aria-busy=${working}>
+        <header class="modal-head"><h2 id="recovery-title">${trash ? 'Reciclagem' : 'Histórico de versões'}</h2>
+          <button class="icon-btn" aria-label="Fechar recuperação" disabled=${working} onClick=${close}><${Icon} name="x" /></button></header>
+        <div class="recovery-body">
+          <p>${trash ? `Os anúncios ficam aqui durante ${S.TRASH_DAYS} dias, com as imagens, o som e as versões.`
+            : `Até ${S.HISTORY_LIMIT} versões por anúncio. As alterações automáticas são agrupadas por minuto. Restaurar conserva a versão atual no histórico.`}</p>
+          ${!trash && html`<button class="btn ghost recovery-save" disabled=${working} onClick=${snapshot}><${Icon} name="save" /> Guardar versão atual</button>`}
+          ${error && html`<p class="recovery-error" role="alert">${error}</p>`}
+          ${notice && html`<p class="recovery-notice" role="status">${notice}</p>`}
+          ${!rows && !error ? html`<p role="status">A carregar…</p>` : rows && !rows.length ? html`<p class="recovery-empty">${trash ? 'A reciclagem está vazia.' : 'Ainda não há versões anteriores. Pode guardar uma versão agora.'}</p>` : null}
+          <ul class="recovery-list">${(rows || []).map((r) => html`<li key=${r.id}>
+            ${r.thumb && html`<img class="recovery-thumb" src=${r.thumb} alt="" loading="lazy" />`}
+            <div class="recovery-info"><strong>${r.data.name || 'Sem título'}</strong>
+              <span>${date(trash ? r.deletedAt : r.savedAt)}</span>
+              <small>${trash ? `Disponível por mais ${Math.max(0, Math.ceil((r.deletedAt + S.TRASH_DAYS * 86400000 - Date.now()) / 86400000))} dias` : r.reason}</small>
+            </div>
+            <button class="btn ghost sm" disabled=${working} onClick=${() => restore(r)} aria-label=${`Restaurar ${trash ? 'anúncio' : 'versão'} ${r.data.name || ''} de ${date(trash ? r.deletedAt : r.savedAt)}`}><${Icon} name="rotate-ccw" size=${16} /> Restaurar</button>
+          </li>`)}</ul>
+        </div>
+      </section>
+    </div>`;
+  }
+
+  function Home({ onNew, onOpen, busy, brand, setBrand }) {
+    const { fileSaving, saveFile } = useProjectFile();
+    const [recs, setRecs] = useState(homeCache.recs);
+    const [menu, setMenu] = useState(null);
+    const [reading, setReading] = useState(false);
+    const [meet, setMeet] = useState(false);
+    const [settings, setSettings] = useState(false);
+    const [recovery, setRecovery] = useState(null);
+    const [organizing, setOrganizing] = useState(null);
+    const [reuseOpen, setReuseOpen] = useState(false);
+    const [backupOpen, setBackupOpen] = useState(false);
+    const [filters, setFilters] = useState(homeCache.filters || { ...W.DEFAULT_FILTERS });
+    const changeFilters = (next) => { homeCache.filters = next; setFilters(next); };
+    const shown = useMemo(() => W.selectProjects(recs || [], filters), [recs, filters]);
+    async function favorite(rec) {
+      try { await S.updateOrganization(rec.id, { favorite: !M.cleanOrganization(rec.data.organization).favorite }); await refresh(); }
+      catch (err) { toast(err.message, { kind: 'error' }); }
+    }
+    const live = RS.ui.useMotionStyle() === 'illustrative';
+    const gridRef = useRef();
+    RS.ui.useFlip(gridRef);
+    useEffect(() => (live ? RS.ui.leanCards(gridRef.current) : undefined), [live, recs && recs.length]);
+    // A number typed in «Mostrar QR» is kept in «A minha marca» (only the number).
+    async function keepNumber(whatsapp) {
+      const b = { ...(brand || {}), whatsapp };
+      setBrand(RS.reuse.defaultBrand(await S.saveDefaultBrand(b)));
+    }
+    // Version of the published copy (the offline cache name), to check an update arrived.
+    const [version, setVersion] = useState('');
+    useEffect(() => {
+      if (!window.caches || !/^https?:$/.test(location.protocol)) return;
+      caches.keys().then((keys) => {
+        const k = keys.filter((x) => x.startsWith('recruitment-studio-')).pop(); // newest last
+        if (k) setVersion(k.slice('recruitment-studio-'.length));
+      }).catch(() => {});
+    }, []);
+    const refresh = useCallback(async () => {
+      homeCache.recs = await listHome();
+      setRecs(homeCache.recs);
+    }, []);
+    useEffect(() => { refresh(); }, []);
+    useEffect(() => {
+      if (!menu) return undefined;
+      const close = () => setMenu(null);
+      document.addEventListener('click', close);
+      return () => document.removeEventListener('click', close);
+    }, [menu]);
+
+    async function openFile() {
+      if (reading || busy) return;
+      const f = await U.pickFile('.anuncio,application/json');
+      if (!f) return;
+      setReading(true);
+      try {
+        await afterPaint();
+        const p = await A.importProjectFile(f);
+        await S.putProject(p);
+        setReading(false);
+        onOpen(p, `open:${p.id}`);
+      } catch (err) {
+        setReading(false);
+        toast(err.message, { kind: 'error' });
+      }
+    }
+    async function duplicate(rec) {
+      const p = U.clone(rec.data);
+      p.id = U.uid(); p.name = `${rec.data.name} (cópia)`; p.nameAuto = false;
+      p.createdAt = p.updatedAt = Date.now();
+      p.organization = { ...M.cleanOrganization(p.organization), status: 'draft', favorite: false };
+      p.publication = M.cleanPublication();
+      await S.putProject(p, rec.thumb);
+      refresh();
+      toast('Anúncio duplicado');
+    }
+    async function remove(rec) {
+      // Ilustrativo: the card crumbles into bricks; the others glide into its place
+      const card = document.querySelector(`.proj-card[data-id="${CSS.escape(rec.id)}"]`);
+      if (card && RS.ui.illustrative()) { RS.ui.crumble(card.querySelector('.proj-thumb'), rec.thumb); card.classList.add('crumbling'); }
+      try {
+        await S.setDeleted(rec.id, Date.now());
+      } catch (err) {
+        console.error(err);
+        if (card) card.classList.remove('crumbling');
+        toast('Não foi possível eliminar o anúncio.', { kind: 'error' });
+        return;
+      }
+      refresh();
+      toast(`«${rec.name}» foi movido para a reciclagem`, { action: 'Anular', onAction: async () => {
+        try { await S.setDeleted(rec.id, null); await refresh(); } catch (err) { toast(err.message, { kind: 'error' }); }
+      } });
+    }
+
+    const newCard = html`<button class=${'new-card' + (busy === 'gallery' ? ' busy' : '')} onClick=${() => { if (!busy || navAnim.on) onNew(); }} style="--i:0" aria-busy=${busy === 'gallery'}>
+      <span class="new-plus">${busy === 'gallery' ? html`<${Spinner} large />` : html`<${Icon} name="plus" size=${30} stroke=${2.4} />`}</span>
+      <strong>${busy === 'gallery' ? 'A abrir os modelos…' : 'Criar anúncio'}</strong>
+      <span>Começar por escolher um modelo</span>
+    </button>`;
+    return html`<div class="home screen">
+      ${live && html`<div class="home-ambient" aria-hidden="true">
+        <svg class="amb-crane" viewBox="0 0 220 220"><path d="M40 220V22M56 220V22M40 38L56 54L40 70L56 86L40 102L56 118L40 134L56 150L40 166L56 182L40 198L56 214M40 22L48 2L56 22M48 2V22M4 22H216M56 32H206L216 22M48 2L216 22M48 2L4 22" /></svg>
+        <span class="amb-load"><i></i><b></b></span>
+      </div>`}
+      <header class="home-top">
+        <${Wordmark} />
+        <div class="spacer"></div>
+        <${InstallButton} />
+        <button class="btn ghost" onClick=${() => setMeet(true)} aria-label="Mostrar QR" title="Um QR do seu WhatsApp para mostrar cara a cara"><${Icon} name="qr-code" /> <span class="hide-sm">Mostrar QR</span></button>
+        <button class="btn ghost" onClick=${openFile} disabled=${reading} aria-busy=${reading} aria-label=${reading ? 'A abrir ficheiro' : 'Abrir ficheiro'}>
+          ${reading ? html`<${Spinner} />` : html`<${Icon} name="folder-open" />`} <span class="hide-sm">${reading ? 'A abrir…' : 'Abrir ficheiro'}</span></button>
+        <button class="icon-btn settings-btn" onClick=${() => setSettings(true)} aria-haspopup="dialog" aria-label="Definições" title="Definições: movimento, tema e vibração"><${Icon} name="settings" /></button>
+      </header>
+      ${settings && html`<${SettingsSheet} onClose=${() => setSettings(false)} />`}
+      ${backupOpen && html`<${BackupDialog} onClose=${() => setBackupOpen(false)} onRestore=${async () => { setBrand(RS.reuse.defaultBrand(await S.getCatalog())); await refresh(); }} />`}
+      ${reuseOpen && html`<${ReuseDialog} onChange=${setBrand} onClose=${() => setReuseOpen(false)} onUse=${async (p) => { await S.putProject(p); await onOpen(p); }} />`}
+      ${meet && html`<${MeetQR} whatsapp=${brand && brand.whatsapp} onNumber=${keepNumber} keptIn="na sua marca" onClose=${() => setMeet(false)} />`}
+      ${recovery && html`<${RecoveryDialog} projectId=${recovery.id} onClose=${() => setRecovery(null)} onRestore=${() => refresh()} />`}
+      ${organizing && html`<${OrganizationDialog} project=${organizing.data} onClose=${() => setOrganizing(null)} onSave=${async (o) => { await S.updateOrganization(organizing.id, o); await refresh(); }} />`}
+      <main class="home-main">
+        <div class="home-intro">
+          <h1>Os seus anúncios</h1>
+          <p>Escolha um modelo e a função, escreva a oferta e descarregue a imagem pronta para o Facebook e o Instagram. Tudo fica guardado neste aparelho.</p>
+          <div class="home-tools">${fileSaving && html`<span class="project-file-status" role="status"><${Spinner} /> A preparar projeto…</span>`}<button class="btn ghost" onClick=${() => setReuseOpen(true)}><${Icon} name="copy" /> Marcas e modelos pessoais</button><button class="btn ghost" onClick=${() => setRecovery({ id: null })}><${Icon} name="trash-2" /> Reciclagem</button><button class="btn ghost" onClick=${() => setBackupOpen(true)}><${Icon} name="save" /> Cópias de segurança</button></div>
+        </div>
+        ${recs && recs.length > 0 && html`<${HomeFilters} records=${recs} filters=${filters} onChange=${changeFilters} /><p class="filter-count" role="status">${shown.length} de ${recs.length} anúncios</p>`}
+        ${!recs ? null : !recs.length ? html`<${EmptySite}>${newCard}<//>` : html`<div ref=${gridRef} class=${'card-grid stagger' + (busy === 'gallery' || (busy && busy.startsWith('open:')) ? ' is-busy' : '')}>
+          ${newCard}
+          ${shown.map((r, i) => html`<div key=${r.id} data-id=${r.id} data-flip=${r.id} class=${'proj-card' + (busy === `open:${r.id}` ? ' busy' : '')} style=${`--i:${Math.min(i + 1, 10)}`}>
+            <button class="proj-open" onClick=${(e) => { if (busy && !navAnim.on) return; markPoster(e.currentTarget.querySelector('.proj-thumb')); onOpen(r.data, `open:${r.id}`); }}
+              aria-label=${`Abrir ${r.name}`} aria-busy=${busy === `open:${r.id}`}>
+              <span class="proj-thumb">${r.thumb ? html`<img src=${r.thumb} alt="" />` : html`<span class="proj-thumb-empty"><${Icon} name="image" size=${28} /></span>`}
+                ${busy === `open:${r.id}` && html`<span class="busy-veil"><${Spinner} large /> A abrir…</span>`}</span>
+              <span class="proj-name">${r.name || 'Sem título'}</span>
+              <span class="proj-meta">${T.get(r.template).name} · ${U.relativeTime(r.updatedAt)}</span>
+              <span class="proj-organization"><span class=${`project-status ${M.cleanOrganization(r.data.organization).status}`}>${M.STATUSES[M.cleanOrganization(r.data.organization).status]}</span>${r.data.organization && r.data.organization.campaign && html`<span class="project-campaign">${r.data.organization.campaign}</span>`}</span>
+            </button>
+            <button class="icon-btn proj-favorite" aria-label=${`Favorito: ${r.name}`} aria-pressed=${M.cleanOrganization(r.data.organization).favorite} onClick=${() => favorite(r)}><${Icon} name="star" size=${18} /></button>
+            <button class="icon-btn proj-more" aria-label=${`Mais ações para ${r.name}`} aria-expanded=${menu === r.id}
+              onClick=${(e) => { e.stopPropagation(); setMenu(menu === r.id ? null : r.id); }}><${Icon} name="ellipsis" /></button>
+            ${menu === r.id && html`<div class="menu pop" role="menu">
+              <button role="menuitem" onClick=${() => setOrganizing(r)}><${Icon} name="folder-open" /> Organizar anúncio</button>
+              <button role="menuitem" onClick=${() => duplicate(r)}><${Icon} name="copy" /> Duplicar</button>
+              <button role="menuitem" disabled=${fileSaving} onClick=${() => saveFile(r.data)}><${Icon} name="save" /> Guardar ficheiro do projeto</button>
+              <button role="menuitem" onClick=${() => setRecovery({ id: r.id })}><${Icon} name="clock" /> Histórico de versões</button>
+              <button role="menuitem" class="danger" onClick=${() => remove(r)}><${Icon} name="trash-2" /> Mover para a reciclagem</button>
+            </div>`}
+          </div>`)}
+        </div>`}
+        ${recs && recs.length > 0 && !shown.length && html`<p class="workflow-empty">Nenhum anúncio corresponde aos filtros. <button class="btn link" onClick=${() => changeFilters({ ...W.DEFAULT_FILTERS })}>Limpar filtros</button></p>`}
+        ${recs && !recs.length && html`<p class="home-empty">Ainda não há anúncios. O primeiro demora dois minutos.</p>`}
+        ${!S.isPersistent() && html`<p class="home-warn"><${Icon} name="triangle-alert" /> Este navegador não permite guardar dados. Use «Guardar ficheiro do projeto» para não perder o trabalho.</p>`}
+        ${version && html`<p class="home-version">Versão ${version}</p>`}
+      </main>
+    </div>`;
+  }
+
+  // No ads yet: a building site where the crane's hook holds the call to action.
+  function EmptySite({ children }) {
+    const zig = [];
+    for (let x = 68; x < 318; x += 10) zig.push(`L${x + 5} ${(x - 68) % 20 ? 34 : 24}`);
+    return html`<div class="empty-site">
+      <svg class="site-crane" viewBox="0 0 340 110" aria-hidden="true" focusable="false">
+        <path class="steel" d=${'M52 24V110M68 24V110M52 34L68 46L52 58L68 70L52 82L68 94L52 106M52 24L60 4L68 24M10 24H330M68 34H322L330 24M60 4L330 24M60 4L10 24M68 34' + zig.join('')} />
+        <rect class="signal" x="14" y="26" width="26" height="14" rx="2" />
+        <rect class="steel" x="70" y="36" width="14" height="12" rx="2" />
+        <rect class="signal" x="162" y="33" width="16" height="7" rx="2" />
+        <path class="steel thin" d="M170 40V110" />
+      </svg>
+      <div class="site-load">
+        <svg viewBox="0 0 220 40" aria-hidden="true" focusable="false">
+          <path class="hook" d="M110 0V10M110 10c-6 0-6 9 0 9s6-5 4-7" />
+          <path class="steel thin" d="M110 19L12 40M110 19L208 40" />
+        </svg>
+        ${children}
+      </div>
+    </div>`;
+  }
+
+  // ============================================================== template gallery
+  // The ad's trades: several can be chosen, the first is the main one (its ready
+  // texts are used). withTemplate adds «Do modelo» (none chosen: the template's trade).
+  function TradePicker({ value, onChange, withTemplate }) {
+    const list = value || [];
+    const toggle = (id) => onChange(list.includes(id) ? list.filter((x) => x !== id) : [...list, id]);
+    return html`<div class="chips-row" role="group" aria-label="Profissões">
+      ${withTemplate && html`<button aria-pressed=${!list.length} class=${'tchip' + (!list.length ? ' on' : '')} onClick=${() => onChange([])}>
+        <${Icon} name="layout-template" size=${15} /> Do modelo</button>`}
+      ${TR.list.map((t) => {
+        const i = list.indexOf(t.id);
+        return html`<button key=${t.id} aria-pressed=${i >= 0} class=${'tchip' + (i >= 0 ? ' on' : '')} onClick=${() => toggle(t.id)}
+          title=${i === 0 ? 'Profissão principal: os textos prontos vêm desta' : ''}>
+          <${Icon} name=${t.icon} size=${15} /> ${t.label}${i === 0 && list.length > 1 ? html` <small class="tchip-main">principal</small>` : ''}</button>`;
+      })}
+    </div>`;
+  }
+  const tradesLabel = (ids) => {
+    const first = TR.get(ids[0]);
+    return first ? `${first.label}${ids.length > 1 ? ` +${ids.length - 1}` : ''}` : '';
+  };
+
+  function Gallery({ brand: initialBrand, onBack, onCreate, busy }) {
+    useLayoutEffect(() => { window.scrollTo(0, 0); }, []);
+    const [brand, setBrand] = useState(initialBrand), [brands, setBrands] = useState([]);
+    useEffect(() => { let live = true; S.getCatalog().then((c) => { if (live) { setBrands(c.brands); const selected = c.brands.find((b) => b.id === initialBrand?.id) || RS.reuse.defaultBrand(c); setBrand(selected); setUseBrand(!!selected); } }).catch(() => {}); return () => { live = false; }; }, []);
+    const [format, setFormat] = useState('portrait');
+    const [trades, setTrades] = useState([]);
+    const trade = trades[0] || '';
+    const [useBrand, setUseBrand] = useState(!!brand);
+    // undefined = still loading; null = none.
+    const [logo, setLogo] = useState(brand && brand.logo ? undefined : null);
+    const [lib, setLib] = useState(null);
+    const [libPhoto, setLibPhoto] = useState(null);
+    const gridRef = useRef();
+    const size = useSize(gridRef);
+    const small = size.w && size.w < 700;
+    useEffect(() => {
+      if (!brand || !brand.logo) { setLogo(null); return; }
+      let live = true; setLogo(undefined);
+      A.load(brand.logo).then((img) => { if (live) setLogo(img || null); }).catch(() => { if (live) setLogo(null); });
+      return () => { live = false; };
+    }, [brand]);
+    useEffect(() => { L.index().then(setLib); }, []);
+    // With a bundled library, every preview shows a real photo of the chosen trade.
+    const pick = useMemo(() => {
+      if (!lib) return null;
+      const cat = trade ? TR.get(trade).photo : null;
+      return lib.items.find((it) => !cat || it.cat === cat) || (cat ? null : lib.items[0]) || null;
+    }, [trade, lib]);
+    useEffect(() => {
+      if (!pick) { setLibPhoto(null); return undefined; }
+      let alive = true;
+      // The small photo from the index shows at once; the full one replaces it.
+      U.dataURLToBlob(pick.thumb).then(A.decode)
+        .then((img) => { if (alive) setLibPhoto((cur) => (cur && cur.id === pick.id && cur.full ? cur : { id: pick.id, img })); })
+        .catch(() => { if (alive) setLibPhoto((cur) => cur || { id: pick.id, img: null }); });
+      L.fileFor(pick.id).then(A.decode)
+        .then((img) => { if (alive) setLibPhoto({ id: pick.id, img, full: true }); })
+        .catch(() => {});
+      return () => { alive = false; };
+    }, [pick]);
+    const waiting = !lib || (!!pick && !libPhoto) || (useBrand && logo === undefined);
+    const creating = !!busy && busy.startsWith('create:');
+    const samples = useMemo(() => T.list.map((t) => {
+      const p = M.newProject(t, { format, trades: trades.length ? trades : undefined });
+      return useBrand ? applyBrand(p, brand) : p;
+    }), [format, trades.join(), useBrand, brand]);
+    const cols = size.w > 1100 ? 4 : size.w > 760 ? 3 : 2;
+    const gap = small ? 12 : 24;
+    const pad = small ? 8 : 12;
+    const cardW = size.w ? Math.floor((size.w - (cols - 1) * gap) / cols) : 0;
+    const images = useMemo(() => ({ logo: useBrand ? logo || null : null, photo: libPhoto ? libPhoto.img : null }), [useBrand, logo, libPhoto]);
+    useEffect(() => {
+      const onKey = (e) => { if (e.key === 'Escape') onBack(); };
+      window.addEventListener('keydown', onKey);
+      return () => window.removeEventListener('keydown', onKey);
+    }, []);
+
+    return html`<div class="gallery screen">
+      <header class="gal-top">
+        <div class="gal-head">
+          <button class="btn ghost" onClick=${onBack} disabled=${creating} aria-label="Voltar aos anúncios"><${Icon} name="chevron-left" /> <span class="hide-sm">Anúncios</span></button>
+          <div class="gal-title">
+            <h1>Escolha um modelo</h1>
+            <p>Escolha também a função: os textos chegam prontos e pode mudar tudo depois.</p>
+          </div>
+          <div class="spacer"></div>
+          ${brand && html`<label class="switch"><input type="checkbox" checked=${useBrand} onChange=${(e) => setUseBrand(e.target.checked)} /><span class="switch-ui"></span> <span class="hide-sm">Usar a minha marca</span><span class="show-sm">Marca</span></label>`}
+          ${brands.length > 1 && html`<select class="gallery-brand" aria-label="Marca para o novo anúncio" disabled=${!useBrand || creating} value=${brand?.id || ''} onChange=${(e) => setBrand(brands.find((b) => b.id === e.target.value))}>${brands.map((b) => html`<option key=${b.id} value=${b.id}>${b.label}</option>`)}</select>`}
+          <${FormatSwitch} value=${format} onChange=${setFormat} compact=${small} />
+        </div>
+        <${TradePicker} value=${trades} onChange=${setTrades} withTemplate />
+      </header>
+      <div class=${'gal-grid stagger' + (creating ? ' is-busy' : '')} ref=${gridRef} style=${`grid-template-columns:repeat(${cols},1fr);gap:${gap}px`}>
+        ${T.list.map((t, i) => {
+          const mine = busy === `create:${t.id}`;
+          return html`<button key=${t.id} class=${'tpl-card' + (mine ? ' busy' : '')} style=${`--i:${i};padding:${pad}px`} aria-busy=${mine}
+          onClick=${(e) => { if (busy && !navAnim.on) return; markPoster(e.currentTarget.querySelector('canvas')); onCreate(t, format, useBrand ? brand : null, trades.length ? trades : [t.trade], pick && pick.id); }}>
+          <span class="tpl-canvas">${cardW > pad * 2 && html`<${PosterThumb} project=${samples[i]} format=${format} images=${images} pending=${waiting} width=${cardW - pad * 2 - 2} />`}
+            ${mine && html`<span class="busy-veil"><${Spinner} large /> A preparar o anúncio…</span>`}</span>
+          <span class="tpl-meta"><strong>${t.name}</strong><span>${t.description}</span></span>
+          <span class="tpl-trade"><${Icon} name=${TR.get(trade || t.trade).icon} size=${14} /> ${tradesLabel(trades.length ? trades : [t.trade])}</span>
+        </button>`;
+        })}
+      </div>
+    </div>`;
+  }
+
+  function FormatSwitch({ value, onChange, compact }) {
+    return html`<div class="seg" role="radiogroup" aria-label="Formato">
+      ${M.FORMAT_ORDER.map((id) => {
+        const f = M.FORMATS[id];
+        return html`<button key=${id} role="radio" aria-checked=${value === id} class=${value === id ? 'on' : ''}
+          onClick=${() => onChange(id)} title=${`${f.label} · ${f.w} × ${f.h} · ${f.hint}`} aria-label=${`${f.label} ${f.w} por ${f.h}`}>
+          <${Icon} name=${f.icon} size=${16} /> ${!compact && html`<span>${f.label}</span><small>${f.w}×${f.h}</small>`}
+        </button>`;
+      })}
+    </div>`;
+  }
+
+  // ============================================================== editor
+  const TABS = [
+    { id: 'texto', label: 'Texto', icon: 'type' },
+    { id: 'contactos', label: 'Contactos', icon: 'phone' },
+    { id: 'imagens', label: 'Imagens', icon: 'image' },
+    { id: 'aspeto', label: 'Aspeto', icon: 'palette' },
+  ];
+  const REGION_LABELS = {
+    kicker: 'Chamada', headline: 'Título', intro: 'Introdução', positionsTitle: 'Título das vagas',
+    badge: 'Selo', logo: 'Logótipo', photo: 'Fotografia · arraste para enquadrar', qr: 'Código QR',
+    benefit: 'Vantagem', position: 'Vaga', contact: 'Contacto',
+  };
+  const regionLabel = (key) => REGION_LABELS[key] || REGION_LABELS[key.split(':')[0]] || '';
+  const fieldId = (key) => 'f-' + key.replace(':', '-');
+
+  function Editor({ initial, initialRevision = 0, brand, setBrand, onExit }) {
+    const { fileSaving, saveFile: downloadProject } = useProjectFile();
+    const [project, setProject] = useState(initial);
+    const [tab, setTab] = useState('texto');
+    // Images preloaded before opening (App.open / create) are used straight away.
+    const cached = (ref) => (ref && A.cache.get(ref.asset)) || null;
+    const [images, setImages] = useState(() => ({ photo: cached(initial.photo), logo: cached(initial.logo) }));
+    const [imgLoading, setImgLoading] = useState(false);
+    const [imgBusy, setImgBusy] = useState(null); // 'photo' | 'logo' while a file is being prepared
+    const imgBusyRef = useRef(null);
+    const [leaving, setLeaving] = useState(false);
+    const [saveState, setSaveState] = useState('saved');
+    const [saveError, setSaveError] = useState('');
+    const [conflict, setConflict] = useState(null), [resolvingConflict, setResolvingConflict] = useState(false);
+    const session = useRef({ token: U.uid(), revision: initialRevision, ready: null, blocked: null, disposed: false, resolving: false });
+    const [saves, setSaves] = useState(0); // each save draws its check again
+    const [exportOpen, setExportOpen] = useState(false);
+    const [reuseOpen, setReuseOpen] = useState(false), [productionOpen, setProductionOpen] = useState(false);
+    const [historyOpen, setHistoryOpen] = useState(false);
+    const [coverAt, setCoverAt] = useState(null);
+    const [comparisonOpen, setComparisonOpen] = useState(false);
+    const [organizationOpen, setOrganizationOpen] = useState(false);
+    const [reviewLocale, setReviewLocale] = useState(null);
+    const [meetOpen, setMeetOpen] = useState(false);
+    const [guides, setGuides] = useState(true);
+    const [report, setReport] = useState(null);
+    const [pvLarge, setPvLarge] = useState(false);
+    const [previewCollapsed, setPreviewCollapsed] = useState(() => { try { return localStorage.getItem('rs-preview-collapsed') === 'true'; } catch { return false; } });
+    const [panelWidth, setPanelWidth] = useState(() => { try { return U.clamp(Number(localStorage.getItem('rs-panel-width')) || 410, 300, 580); } catch { return 410; } });
+    const [viewportWidth, setViewportWidth] = useState(window.innerWidth);
+    const panelDrag = useRef(null);
+    const panelMax = Math.min(580, Math.max(300, viewportWidth - 410));
+    const shownPanelWidth = Math.min(panelWidth, panelMax);
+    useEffect(() => { const resize = () => setViewportWidth(window.innerWidth); window.addEventListener('resize', resize); return () => window.removeEventListener('resize', resize); }, []);
+    useEffect(() => { try { localStorage.setItem('rs-panel-width', String(panelWidth)); localStorage.setItem('rs-preview-collapsed', String(previewCollapsed)); } catch {} }, [panelWidth, previewCollapsed]);
+    const resizePanel = (value) => setPanelWidth(U.clamp(Math.round(value), 300, panelMax));
+    const [mode, setMode] = useState('image'); // 'image' | 'video'
+    const [vFormat, setVFormat] = useState('story'); // the format the «Vídeo» stage plays (Reels and Stories are 9:16)
+    const [vTab, setVTab] = useState('modelo'); // the «Vídeo» panel's open tab, kept while the editor is open
+    const mobile = useMedia('(max-width: 860px)');
+    const hist = useRef({ past: [], future: [], lastKey: null, lastAt: 0 });
+    const projRef = useRef(project);
+    const imgRef = useRef(images);
+    const saveTimer = useRef(null), saveQueue = useRef(Promise.resolve());
+    const historyActive = useRef(false);
+    historyActive.current = historyOpen;
+    const checkpoint = useRef(true);
+    projRef.current = project;
+    imgRef.current = images;
+    function blockConflict(err) {
+      if (session.current.disposed) return;
+      session.current.blocked = err; clearTimeout(saveTimer.current); setConflict(err); setSaveState('error'); setSaveError(err.message);
+    }
+    function ensureSession() {
+      const s = session.current;
+      if (!s.ready) s.ready = S.claimEditor(projRef.current.id, s.token, s.revision).then((rec) => {
+        s.revision = rec.revision || 0; return rec;
+      }).catch((err) => {
+        s.ready = null;
+        if (err.code === 'EDITOR_CONFLICT') blockConflict(err);
+        else { setSaveState('error'); setSaveError(err.message); }
+        return null;
+      });
+      return s.ready;
+    }
+    useEffect(() => {
+      const s = session.current; s.disposed = false; ensureSession();
+      const verify = async () => {
+        if (s.blocked || s.resolving || historyActive.current || s.disposed) return;
+        await saveQueue.current.catch(() => {}); await ensureSession();
+        if (s.blocked || s.resolving || s.disposed) return;
+        try { await S.claimEditor(projRef.current.id, s.token, s.revision); }
+        catch (e) { if (e.reason === 'revision' && e.current?.editor?.id === s.token && e.current.revision === s.revision) return; if (e.code === 'EDITOR_CONFLICT') blockConflict(e); }
+      };
+      const stop = S.watchProjects((event) => { if (event.id === projRef.current.id && event.actor !== s.token) verify(); });
+      const timer = setInterval(verify, 10000);
+      window.addEventListener('focus', verify);
+      return () => { s.disposed = true; stop(); clearInterval(timer); window.removeEventListener('focus', verify); const id = projRef.current.id; saveQueue.current.catch(() => {}).then(() => s.ready).then(() => S.releaseEditor(id, s.token)).catch(() => {}); };
+    }, []);
+
+    const photoId = project.photo && project.photo.asset;
+    const logoId = project.logo && project.logo.asset;
+    useEffect(() => {
+      let alive = true;
+      if ((photoId && !A.cache.has(photoId)) || (logoId && !A.cache.has(logoId))) setImgLoading(true);
+      (async () => {
+        const [photo, logo] = await Promise.all([A.load(photoId), A.load(logoId)]);
+        if (alive) setImages({ photo, logo });
+      })().catch((err) => console.error(err)).finally(() => { if (alive) setImgLoading(false); });
+      return () => { alive = false; };
+    }, [photoId, logoId]);
+
+    const update = useCallback((fn, opts = {}) => {
+      if (session.current.resolving) return;
+      setProject((prev) => {
+        const next = U.clone(prev);
+        fn(next);
+        // an image item deleted takes its video edit with it (nothing left to «Repor»)
+        M.pruneVideoTexts(next);
+        next.updatedAt = Date.now();
+        const h = hist.current, now = Date.now();
+        if (!(opts.coalesce && h.lastKey === opts.coalesce && now - h.lastAt < 1200)) {
+          h.past.push(prev);
+          if (h.past.length > 150) h.past.shift();
+        }
+        h.future = [];
+        h.lastKey = opts.coalesce || null;
+        h.lastAt = now;
+        return next;
+      });
+    }, []);
+    const undo = useCallback(() => {
+      if (session.current.resolving) return;
+      const h = hist.current;
+      if (!h.past.length) return;
+      setProject((cur) => { h.future.push(cur); h.lastKey = null; return h.past.pop(); });
+    }, []);
+    const redo = useCallback(() => {
+      if (session.current.resolving) return;
+      const h = hist.current;
+      if (!h.future.length) return;
+      setProject((cur) => { h.past.push(cur); h.lastKey = null; return h.future.pop(); });
+    }, []);
+
+    const persist = useCallback((manual = false) => {
+      if (session.current.resolving) return Promise.reject(new Error('Aguarde a conclusão da escolha para voltar a guardar.'));
+      clearTimeout(saveTimer.current);
+      const p = projRef.current, imgs = imgRef.current;
+      setSaveState('saving');
+      const job = saveQueue.current.catch(() => {}).then(async () => {
+        const s = session.current;
+        if (s.blocked) throw s.blocked;
+        if (!await ensureSession()) throw s.blocked || new Error('Não foi possível confirmar a edição nesta janela. Tente guardar novamente.');
+        if (s.blocked) throw s.blocked;
+        const thumb = makeThumb(p, imgs);
+        const options = { checkpoint: checkpoint.current, editorId: s.token, expectedRevision: s.revision };
+        const rec = manual ? await S.saveVersion(p, thumb, options) : await S.putProject(p, thumb, options);
+        s.revision = rec.revision;
+        // The first changed save in each editing session preserves its baseline.
+        if (JSON.stringify(p) !== JSON.stringify(initial)) checkpoint.current = false;
+        if (projRef.current === p) { setSaveState('saved'); setSaveError(''); setSaves((n) => n + 1); }
+        return rec;
+      });
+      saveQueue.current = job;
+      return job.catch((err) => { if (err.code === 'EDITOR_CONFLICT') blockConflict(err); else { setSaveState('error'); setSaveError(err.message || 'Não foi possível guardar.'); } throw err; });
+    }, []);
+    useEffect(() => {
+      if (historyOpen || session.current.blocked) return undefined;
+      setSaveState('saving');
+      saveTimer.current = setTimeout(() => persist().catch((err) => { if (err.code !== 'EDITOR_CONFLICT') console.error(err); }), 700);
+      return () => clearTimeout(saveTimer.current);
+    }, [project, images, historyOpen]);
+    useEffect(() => {
+      const flush = () => { if (!historyActive.current && !session.current.blocked && !session.current.resolving) persist().catch((err) => { if (err.code !== 'EDITOR_CONFLICT') console.error(err); }); };
+      const hide = () => { if (document.visibilityState === 'hidden') flush(); };
+      document.addEventListener('visibilitychange', hide);
+      window.addEventListener('pagehide', flush);
+      RS.beforeReload = persist;
+      return () => {
+        document.removeEventListener('visibilitychange', hide);
+        window.removeEventListener('pagehide', flush);
+        if (RS.beforeReload === persist) delete RS.beforeReload;
+      };
+    }, []);
+    async function openHistory() {
+      try { await persist(); setExportOpen(false); setHistoryOpen(true); }
+      catch (err) { toast('Não foi possível guardar as alterações. Tente de novo antes de restaurar uma versão.', { kind: 'error' }); }
+    }
+    async function restored(rec) {
+      // Loading a version is already committed. Nothing from the old editor
+      // queue may overwrite it, and its images must be decoded for the preview.
+      clearTimeout(saveTimer.current);
+      const p = M.normalize(rec.data);
+      session.current.revision = rec.revision || 0;
+      hist.current = { past: [], future: [], lastKey: null, lastAt: 0 };
+      projRef.current = p;
+      setProject(p);
+      setSaveState('saved');
+      checkpoint.current = true;
+    }
+    async function resolveConflict(action) {
+      const s = session.current; if (s.resolving) return;
+      s.resolving = true; setResolvingConflict(true); clearTimeout(saveTimer.current);
+      try {
+        await saveQueue.current.catch(() => {});
+        const local = U.clone(projRef.current), remote = await S.getProject(local.id);
+        if (action === 'copy') {
+          const copy = U.clone(local); copy.id = U.uid(); copy.name = `${local.name} (cópia)`; copy.nameAuto = false;
+          copy.createdAt = copy.updatedAt = Date.now(); copy.deletedAt = null; copy.organization = { ...M.cleanOrganization(copy.organization), status: 'draft', favorite: false }; copy.publication = M.cleanPublication();
+          let rec = await S.putProject(copy, makeThumb(copy, imgRef.current));
+          rec = await S.claimEditor(copy.id, s.token, rec.revision);
+          await S.releaseEditor(local.id, s.token); s.blocked = null; s.ready = Promise.resolve(rec); setConflict(null); setSaveError('');
+          await restored(rec); keepInHome(rec); toast('As alterações desta janela foram guardadas numa cópia.');
+        } else if (action === 'reload') {
+          if (!remote || remote.deletedAt) throw S.editorConflict(remote, remote ? 'deleted' : 'missing');
+          if (!await confirmDialog({ title: 'Recarregar a versão guardada?', body: 'Os textos e ajustes desta janela serão substituídos. Para os conservar num anúncio separado, cancele e escolha Guardar como cópia.', confirm: 'Recarregar' })) return;
+          const latest = await S.getProject(local.id); if (!latest || latest.deletedAt) throw S.editorConflict(latest, latest ? 'deleted' : 'missing');
+          await restored(latest); s.blocked = null; s.ready = null; setConflict(null); setSaveError('');
+          await ensureSession();
+        } else {
+          if (!remote || remote.deletedAt) throw S.editorConflict(remote, remote ? 'deleted' : 'missing');
+          if (!await confirmDialog({ title: 'Continuar a edição nesta janela?', body: 'Esta janela passa a guardar as suas alterações. A versão atualmente guardada será conservada no histórico. A outra janela terá de recarregar ou guardar uma cópia.', confirm: 'Continuar nesta janela' })) return;
+          const rec = await S.putProject(local, makeThumb(local, imgRef.current), { editorId: s.token, expectedRevision: remote.revision || 0, takeover: true, checkpoint: true, reason: 'Antes da mudança de janela' });
+          s.blocked = null; s.ready = Promise.resolve(rec); setConflict(null); setSaveError(''); await restored(rec); keepInHome(rec);
+        }
+      } catch (e) { if (e.code === 'EDITOR_CONFLICT') blockConflict(e); else toast(e.message || 'Não foi possível resolver o conflito.', { kind: 'error' }); }
+      finally { s.resolving = false; setResolvingConflict(false); }
+    }
+
+    async function exit() {
+      if (leaving || session.current.resolving) return;
+      RS.ui.flushExits(); // a row still leaving goes before the ad is saved
+      setLeaving(true);
+      await afterPaint();
+      try {
+        if (session.current.blocked) {
+          if (!await confirmDialog({ title: 'Sair sem guardar esta edição?', body: 'As alterações desta janela serão descartadas. A versão guardada mantém-se. Para conservar esta edição, cancele e escolha Guardar como cópia ou Guardar ficheiro de segurança.', confirm: 'Sair sem guardar' })) { setLeaving(false); return; }
+          const latest = await S.getProject(projRef.current.id);
+          if (latest) keepInHome(latest);
+        } else keepInHome(await persist());
+      }
+      catch (err) { setLeaving(false); toast('Não foi possível guardar. O anúncio continua aberto; tente de novo ou guarde um ficheiro.', { kind: 'error' }); return; }
+      if ((await onExit(projRef.current.id)) === false) setLeaving(false);
+    }
+
+    useEffect(() => {
+      const onKey = (e) => {
+        const mod = e.ctrlKey || e.metaKey;
+        if (!mod) return;
+        const k = e.key.toLowerCase();
+        if (k === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
+        else if (k === 'y' || (k === 'z' && e.shiftKey)) { e.preventDefault(); redo(); }
+        else if (k === 's') { e.preventDefault(); persist().then(() => toast(S.isPersistent() ? 'Anúncio guardado neste aparelho.' : 'O anúncio está apenas nesta sessão. Guarde um ficheiro para o conservar.')).catch((err) => toast(err.message, { kind: 'error' })); }
+        else if (k === 'e') { e.preventDefault(); setExportOpen(true); }
+      };
+      window.addEventListener('keydown', onKey);
+      return () => window.removeEventListener('keydown', onKey);
+    }, []);
+
+    const focusField = useCallback((key) => {
+      // the photo and the logo live in «Imagens»; the WhatsApp button, the other contacts and the QR in «Contactos»
+      setTab(key === 'photo' || key === 'logo' ? 'imagens' : key === 'qr' || key.split(':')[0] === 'contact' ? 'contactos' : 'texto');
+      const go = (tries) => {
+        const el = document.getElementById(fieldId(key));
+        if (!el) { if (tries > 0) requestAnimationFrame(() => go(tries - 1)); return; }
+        // a folded block opens first, then the field is shown
+        if (el.closest('.group.folded')) { RS.ui.openField(el.id); if (tries > 0) requestAnimationFrame(() => go(tries - 1)); return; }
+        el.scrollIntoView({ block: 'center', behavior: reducedMotion() ? 'auto' : 'smooth' });
+        el.focus({ preventScroll: true });
+        if (el.select) el.select();
+        const row = el.closest('.field, .li') || el;
+        row.classList.remove('flash'); void row.offsetWidth; row.classList.add('flash');
+      };
+      requestAnimationFrame(() => go(8));
+    }, []);
+
+    // Upright photos: faces sit in the top third, so the default framing is higher.
+    const setPhotoAsset = useCallback((assetId, w, h) => {
+      update((p) => { p.photo = { asset: assetId, zoom: 1, fx: 0.5, fy: w && h > w * 1.3 ? 0.36 : 0.5, flip: false, adj: { ...M.DEFAULT_FX } }; });
+    }, []);
+    // One image at a time: a second click while one is being prepared is ignored.
+    const withImgBusy = async (kind, fn) => {
+      if (imgBusyRef.current) return;
+      imgBusyRef.current = kind;
+      setImgBusy(kind);
+      try {
+        await afterPaint();
+        await fn();
+      } catch (err) {
+        toast(err.message, { kind: 'error' });
+      } finally {
+        imgBusyRef.current = null;
+        setImgBusy(null);
+      }
+    };
+    const choosePhoto = useCallback(async (file) => {
+      if (imgBusyRef.current) return;
+      const f = file || await U.pickFile('image/*');
+      if (!f) return;
+      if (f.then) f.catch(() => {}); // handled below; avoids an "uncaught" warning meanwhile
+      await withImgBusy('photo', async () => {
+        // `f` may be a promise: a library photo still loading shows the busy state too.
+        const a = await A.importFile(await f, 'photo');
+        setPhotoAsset(a.id, a.w, a.h);
+        toast('Fotografia aplicada. Arraste-a no anúncio para a enquadrar.');
+      });
+    }, []);
+    const chooseLogo = useCallback(async (file) => {
+      if (imgBusyRef.current) return;
+      const f = file || await U.pickFile('image/*');
+      if (!f) return;
+      await withImgBusy('logo', async () => {
+        const a = await A.importFile(f, 'logo');
+        update((p) => { p.logo = { asset: a.id }; p.show.logo = true; });
+        toast('Logótipo adicionado');
+      });
+    }, []);
+
+    const saveFile = () => downloadProject(projRef.current);
+
+    const panelProps = { project, update, images, brand, setBrand, choosePhoto, chooseLogo, setPhotoAsset, imgBusy, onReuse: () => setReuseOpen(true) };
+    const stageBusy = imgBusy === 'photo' ? 'A preparar a fotografia…' : imgBusy === 'logo' ? 'A preparar o logótipo…' : imgLoading ? 'A carregar as imagens…' : null;
+    // «Vídeo»: the video of the ad, prepared once for the panel and the stage.
+    const video = mode === 'video';
+    const vPhotos = useVideoPhotos(project, images, video);
+    // prepared again only when something the video shows changes (not the ad's name)
+    const vKey = videoKey(project);
+    // Prepared in the next task, not while the tap is answered: a video takes half a
+    // second to prepare (two on a phone), so «Vídeo» shows its panel at once; the
+    // stage keeps the last video until the new one is ready (no flash, no wait per key).
+    const [vPrep, setVPrep] = useState(null); // { P, and what it was prepared from }
+    useEffect(() => {
+      if (!video) return undefined;
+      const from = { vKey, vFormat, images, vPhotos };
+      // after the panel has been painted (a timer alone could run before the frame and hide it)
+      let live = true;
+      afterPaint().then(() => { if (live) setVPrep({ ...from, P: RS.motion.prepare(project, { format: vFormat, locale: project.locale, images, photos: vPhotos || NO_PHOTOS }) }); });
+      return () => { live = false; };
+    }, [video, vKey, vFormat, images, vPhotos]);
+    const vP = vPrep && vPrep.P;
+    // the export may show the stage's video only if the ad has not changed since (an edit in «Imagem» does not prepare it)
+    const vFresh = !imgLoading && vPhotos && vPrep && vPrep.vKey === vKey && vPrep.vFormat === vFormat && vPrep.images === images && vPrep.vPhotos === vPhotos ? vPrep.P : null;
+    // «Definições» shows its panel and leaves the stage as it is (image or video)
+    const [settingsTab, setSettingsTab] = useState(false);
+    const changeMode = (m) => { setSettingsTab(false); setMode(m); };
+    const goTab = (id) => { changeMode('image'); setTab(id); };
+    const goVideo = () => changeMode('video');
+    const review = () => setReviewLocale(project.locale);
+    const resolveCheck = (check) => {
+      setExportOpen(false); setPvLarge(false);
+      if (check.review) { setReviewLocale(check.locale); return; }
+      update((p) => { if (check.locale) p.locale = check.locale; if (check.format && !check.videoTab) p.format = check.format; }, { coalesce: 'check-navigation' });
+      if (check.videoTab) {
+        changeMode('video'); setVTab(check.videoTab); if (check.format) setVFormat(check.format);
+        const reveal = (tries) => {
+          const id = check.videoTab === 'modelo' ? 'video-duration' : check.field === 'headline' ? 'vt-headline' : 'vt-block-contacts';
+          const el = document.getElementById(id);
+          if (!el) { if (tries) requestAnimationFrame(() => reveal(tries - 1)); return; }
+          RS.ui.openField(id);
+          el.scrollIntoView({ block: 'center', behavior: reducedMotion() ? 'auto' : 'smooth' });
+          const control = el.matches('input, textarea') ? el : el.querySelector('input, button[role="radio"], .add-row');
+          if (control) control.focus({ preventScroll: true });
+        };
+        requestAnimationFrame(() => reveal(8));
+      }
+      else { changeMode('image'); focusField(check.field || 'headline'); }
+    };
+    const projectTools = html`<${ProjectTools} project=${project} onOrganize=${() => setOrganizationOpen(true)} onReview=${review} onReuse=${() => setReuseOpen(true)} onCaption=${(l) => { update((p) => { p.locale = l; }); setExportOpen(true); }} />`;
+    return html`<div class=${'editor screen' + (pvLarge ? ' pv-large' : '') + (video ? ' video-mode' : '') + (mobile && previewCollapsed ? ' preview-collapsed' : '')} style=${{ '--editor-panel-width': `${shownPanelWidth}px` }}>
+      <header class=${'topbar' + (saveError || !S.isPersistent() ? ' has-save-warning' : '')}>
+        <button class="btn ghost" onClick=${exit} disabled=${leaving} aria-busy=${leaving} aria-label=${leaving ? 'A guardar e a voltar aos anúncios' : 'Voltar aos anúncios'}>
+          ${leaving ? html`<${Spinner} />` : html`<${Icon} name="chevron-left" />`} <span class="hide-sm">${leaving ? 'A guardar…' : 'Anúncios'}</span></button>
+        <div class="name-wrap">
+          <input class="name-input" name="project-name" value=${project.name} aria-label="Nome do anúncio (só para si, não aparece na imagem)"
+            title="Nome do anúncio (só para si, não aparece na imagem)"
+            onInput=${(e) => update((p) => { p.name = e.target.value; p.nameAuto = false; }, { coalesce: 'name' })} />
+          <span class=${'save-state ' + saveState} role="status" aria-live="polite" aria-atomic="true"><span class="save-dot" aria-hidden="true"></span>${saveState === 'saved' && saves > 0 && S.isPersistent() && html`<svg key=${saves} class="save-check" viewBox="0 0 22 14" aria-hidden="true" focusable="false"><path d="M2 7.5 L7 12 L15.5 2" pathLength="100" /><path class="save-trowel" d="M0 0 L7 0 L5 -4 Z" /></svg>`}${saveState === 'saving' ? 'A guardar…' : saveState === 'error' ? 'Não foi possível guardar' : S.isPersistent() ? 'Guardado' : 'Só nesta sessão'}</span>
+        </div>
+        <div class="seg mode-switch" role="radiogroup" aria-label="Imagem ou vídeo">
+          <button role="radio" aria-checked=${!video} class=${!video ? 'on' : ''} aria-label="Imagem" onClick=${() => changeMode('image')}><${Icon} name="image" size=${16} /><span class="hide-sm">Imagem</span></button>
+          <button role="radio" aria-checked=${video} class=${video ? 'on' : ''} aria-label="Vídeo" onClick=${() => changeMode('video')}><${Icon} name="video" size=${16} /><span class="hide-sm">Vídeo</span></button>
+        </div>
+        <div class="spacer"></div>
+        <${LocaleSwitcher} project=${project} update=${update} />
+        <div class="tb-group">
+          <button class="icon-btn" onClick=${undo} disabled=${!hist.current.past.length} aria-label="Desfazer (Ctrl+Z)" title="Desfazer (Ctrl+Z)"><${Icon} name="undo-2" /></button>
+          <button class="icon-btn" onClick=${redo} disabled=${!hist.current.future.length} aria-label="Refazer (Ctrl+Y)" title="Refazer (Ctrl+Y)"><${Icon} name="redo-2" /></button>
+        </div>
+        <button class="icon-btn" onClick=${() => setMeetOpen(true)} aria-label="Mostrar QR" title="Mostrar QR: o seu WhatsApp para mostrar cara a cara"><${Icon} name="qr-code" /></button>
+        <button class="icon-btn hide-sm" onClick=${openHistory} aria-label="Histórico de versões" title="Histórico de versões"><${Icon} name="clock" /></button>
+        <button class="btn ghost hide-md" onClick=${saveFile} disabled=${fileSaving} aria-busy=${fileSaving} title="Guardar uma cópia do projeto num ficheiro (.anuncio)">${fileSaving ? html`<${Spinner} /> A preparar projeto…` : html`<${Icon} name="save" /> Guardar ficheiro`}</button>
+        <button class="btn primary hide-sm" onClick=${() => setExportOpen(true)} title="Exportar (Ctrl+E)"><${Icon} name="download" /> Exportar</button>
+        ${!conflict && (saveError || !S.isPersistent()) && html`<div class="save-recovery" role="alert">
+          <span>${!S.isPersistent() ? 'Este navegador está a guardar apenas nesta sessão. Guarde um ficheiro antes de fechar.' : 'As alterações ainda não estão guardadas. ' + saveError}</span>
+          ${S.isPersistent() && html`<button class="btn ghost sm" disabled=${saveState === 'saving'} onClick=${() => persist().catch(() => {})}>Tentar guardar novamente</button>`}
+          <button class="btn ghost sm" disabled=${fileSaving} onClick=${saveFile}>Guardar ficheiro de segurança</button>
+        </div>`}
+        ${conflict && html`<div class="editor-conflict" role="alert"><strong>Gravação suspensa</strong><span>${conflict.message} As alterações desta janela continuam aqui.</span>
+          ${conflict.current && html`<small>Guardado: ${conflict.current.name} · ${new Date(conflict.current.savedAt || conflict.current.updatedAt).toLocaleString('pt-PT')}</small>`}
+          <div class="row-btns"><button class="btn ghost sm" disabled=${resolvingConflict || !conflict.current || !!conflict.current.deletedAt} onClick=${() => resolveConflict('reload')}>Recarregar guardada</button><button class="btn primary sm" disabled=${resolvingConflict} onClick=${() => resolveConflict('copy')}>Guardar como cópia</button><button class="btn ghost sm" disabled=${resolvingConflict || !conflict.current || !!conflict.current.deletedAt} onClick=${() => resolveConflict('takeover')}>Continuar nesta janela</button><button class="btn ghost sm" disabled=${fileSaving} onClick=${saveFile}>Guardar ficheiro de segurança</button></div>
+        </div>`}
+      </header>
+      <div class="editor-body" inert=${resolvingConflict ? '' : undefined}>
+        <nav class="rail" role="tablist" aria-label="Secções do editor">
+          ${TABS.map((t) => html`<button key=${t.id} role="tab" aria-selected=${!settingsTab && !video && tab === t.id} class=${!settingsTab && !video && tab === t.id ? 'on' : ''} onClick=${() => goTab(t.id)}>
+            <${Icon} name=${t.icon} size=${20} /><span>${t.label}</span>
+          </button>`)}
+          <button key="video" role="tab" aria-selected=${!settingsTab && video} class=${'rail-video' + (!settingsTab && video ? ' on' : '')} onClick=${goVideo}>
+            <${Icon} name="video" size=${20} /><span>Vídeo</span>
+          </button>
+          <button key="settings" role="tab" aria-selected=${settingsTab} class=${'rail-settings' + (settingsTab ? ' on' : '')} onClick=${() => setSettingsTab(true)}>
+            <${Icon} name="settings" size=${20} /><span>Definições</span>
+          </button>
+          ${mobile && html`<button class="rail-export" onClick=${() => setExportOpen(true)}><${Icon} name="download" size=${20} /><span>Exportar</span></button>`}
+        </nav>
+        ${settingsTab ? html`<aside id="editor-panel" key="settings" class="panel settings-panel" role="tabpanel" aria-label="Definições">
+          <div class="panel-inner"><div class="panel-head"><h2>Definições</h2><p>O movimento, o tema e a vibração da app, guardados neste aparelho.</p></div><${SettingsPanel} /></div>
+        </aside>` : video ? html`<aside id="editor-panel" key="video" class="panel video-panel" role="tabpanel" aria-label="Vídeo">
+          ${projectTools}
+          <${VideoPanel} project=${project} update=${update} images=${images} photos=${vPhotos} P=${vP} vKey=${vKey}
+            tab=${vTab} setTab=${setVTab} onEditImage=${() => goTab('texto')} />
+        </aside>` : html`<aside id="editor-panel" key=${tab} class="panel" role="tabpanel" aria-label=${TABS.find((t) => t.id === tab).label}>
+          ${projectTools}
+          ${tab === 'texto' && html`<${TextPanel} ...${panelProps} />`}
+          ${tab === 'contactos' && html`<${ContactsPanel} ...${panelProps} />`}
+          ${tab === 'imagens' && html`<${ImagesPanel} ...${panelProps} />`}
+          ${tab === 'aspeto' && html`<${LookPanel} ...${panelProps} />`}
+        </aside>`}
+        ${!mobile && html`<div class="panel-divider" role="separator" tabIndex="0" aria-orientation="vertical" aria-label="Largura do painel de edição" aria-controls="editor-panel" aria-valuemin="300" aria-valuemax=${panelMax} aria-valuenow=${shownPanelWidth} aria-valuetext=${`${shownPanelWidth} píxeis`} title="Arraste ou use as setas para ajustar. Duplo clique para repor."
+          onPointerDown=${(e) => { if (e.button !== 0) return; panelDrag.current = { x: e.clientX, width: shownPanelWidth, id: e.pointerId }; e.currentTarget.setPointerCapture?.(e.pointerId); e.currentTarget.focus(); e.preventDefault(); }}
+          onPointerMove=${(e) => { const d = panelDrag.current; if (d && d.id === e.pointerId) resizePanel(d.width + e.clientX - d.x); }}
+          onPointerUp=${() => { panelDrag.current = null; }} onPointerCancel=${() => { panelDrag.current = null; }}
+          onDblClick=${() => resizePanel(410)} onKeyDown=${(e) => { const next = { ArrowLeft: shownPanelWidth - (e.shiftKey ? 10 : 20), ArrowRight: shownPanelWidth + (e.shiftKey ? 10 : 20), Home: 300, End: panelMax }[e.key]; if (next != null) { e.preventDefault(); resizePanel(next); } }}></div>`}
+        <div class="preview-shell">
+          ${mobile && html`<button class="preview-toggle" aria-expanded=${!previewCollapsed} aria-controls="editor-preview" onClick=${() => { setPreviewCollapsed(!previewCollapsed); setPvLarge(false); }}><${Icon} name=${previewCollapsed ? 'eye' : 'chevron-up'} size=${16} />${previewCollapsed ? 'Mostrar pré-visualização' : 'Recolher pré-visualização'}</button>`}
+          <div id="editor-preview" class="preview-content" hidden=${mobile && previewCollapsed}>
+        ${!(mobile && previewCollapsed) && (video ? html`<${VideoStage} P=${vP} project=${project} format=${vFormat} setFormat=${setVFormat} mobile=${mobile} quiet=${exportOpen || productionOpen || reuseOpen || coverAt !== null} onCover=${setCoverAt} coverReady=${!!vFresh} pvLarge=${pvLarge} setPvLarge=${setPvLarge} guides=${guides} setGuides=${setGuides} />`
+        : html`<${Workspace} project=${project} images=${images} update=${update} onSelect=${focusField}
+          guides=${guides} setGuides=${setGuides} report=${report} onReport=${setReport} busy=${stageBusy}
+          choosePhoto=${choosePhoto} chooseLogo=${chooseLogo} mobile=${mobile} pvLarge=${pvLarge} setPvLarge=${setPvLarge}
+          onConvert=${() => changeMode('video')} onCompare=${() => setComparisonOpen(true)} />`)}
+          </div>
+        </div>
+      </div>
+      ${historyOpen && html`<${RecoveryDialog} projectId=${project.id} onClose=${() => setHistoryOpen(false)} onRestore=${restored} onSnapshot=${() => persist(true)} editorOptions=${() => ({ editorId: session.current.token, expectedRevision: session.current.revision })} />`}
+      ${organizationOpen && html`<${OrganizationDialog} project=${project} onClose=${() => setOrganizationOpen(false)} onSave=${(o) => update((p) => { p.organization = o; })} />`}
+      ${reviewLocale && html`<${TranslationDialog} project=${project} update=${update} initialLocale=${reviewLocale} onClose=${() => setReviewLocale(null)} onEditVideo=${(code) => { setReviewLocale(null); resolveCheck({ locale: code, videoTab: 'textos' }); }} />`}
+      ${reuseOpen && html`<${ReuseDialog} project=${project} images=${images} update=${update} onChange=${setBrand} onClose=${() => setReuseOpen(false)} />`}
+      ${productionOpen && html`<${ProductionDialog} project=${project} update=${update} images=${images} onClose=${() => setProductionOpen(false)} />`}
+      ${coverAt !== null && html`<${VideoCoverDialog} project=${project} update=${update} images=${images} prepared=${vFresh} initialTime=${coverAt} onClose=${() => setCoverAt(null)} />`}
+      ${comparisonOpen && html`<${FormatComparison} project=${project} images=${images} update=${update} onClose=${() => setComparisonOpen(false)} onEdit=${(format) => { update((p) => { p.format = format; }); setComparisonOpen(false); focusField('photo'); }} />`}
+      ${exportOpen && html`<${ExportDialog} project=${project} update=${update} images=${images} saveFile=${saveFile} fileSaving=${fileSaving} mobile=${mobile} onHistory=${openHistory} onResolve=${resolveCheck} onProduction=${() => { setExportOpen(false); setProductionOpen(true); }}
+        initialKind=${mode} videoFormat=${vFormat} prepared=${vFresh} onClose=${(to) => { setExportOpen(false); if (to === 'video') changeMode('video'); }} />`}
+      ${meetOpen && html`<${MeetQR} whatsapp=${project.whatsapp} keptIn="neste anúncio" onClose=${() => setMeetOpen(false)}
+        onNumber=${(w) => update((p) => { p.whatsapp = w; })} />`}
+    </div>`;
+  }
+
+  // ---------------------------------------------------------------- languages
+  function LocaleSwitcher({ project, update }) {
+    const [open, setOpen] = useState(false);
+    const pop = RS.ui.useLeaving(open, 140);
+    const ref = useRef();
+    useEffect(() => {
+      if (!open) return undefined;
+      const onDoc = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+      document.addEventListener('pointerdown', onDoc);
+      return () => document.removeEventListener('pointerdown', onDoc);
+    }, [open]);
+    const missing = M.LOCALES.filter((l) => !project.locales.includes(l.code));
+    async function removeLocale(code) {
+      const ok = await confirmDialog({
+        title: `Remover ${M.localeInfo(code).label}?`,
+        body: 'Os textos desta língua são apagados deste anúncio. Pode desfazer com Ctrl+Z.',
+        confirm: 'Remover língua', danger: true,
+      });
+      if (ok) update((p) => { Object.assign(p, M.removeLocale(p, code)); });
+    }
+    return html`<div class="locales" ref=${ref}>
+      <span class="locales-label">Língua</span>
+      <div class="locales-chips">
+        ${project.locales.map((code) => {
+          const l = M.localeInfo(code);
+          const on = code === project.locale;
+          return html`<span key=${code} class=${'chip' + (on ? ' on' : '')}>
+            <button class="chip-main" aria-pressed=${on} title=${`Editar em ${l.label}`} onClick=${() => update((p) => { p.locale = code; }, { coalesce: 'locale' })}>${l.short}</button>
+            ${project.locales.length > 1 && on && html`<button class="chip-x" aria-label=${`Remover ${l.label}`} onClick=${() => removeLocale(code)}><${Icon} name="x" size=${12} stroke=${2.6} /></button>`}
+          </span>`;
+        })}
+      </div>
+      ${missing.length > 0 && html`<button class="chip add" aria-label="Adicionar língua" aria-expanded=${open} onClick=${() => setOpen(!open)}><${Icon} name="plus" size=${14} stroke=${2.4} /></button>`}
+      ${pop.mounted && html`<div class=${'menu right pop' + (pop.leaving ? ' leaving' : '')} role="menu">
+        <p class="menu-note">Os textos são traduzidos quando ainda são os textos prontos; o resto é copiado para traduzir.</p>
+        ${missing.map((l) => html`<button key=${l.code} role="menuitem" onClick=${() => {
+          setOpen(false);
+          update((p) => { Object.assign(p, M.addLocale(p, l.code, p.locale)); });
+          toast(`${l.label} adicionado. Confira e traduza os textos à esquerda.`);
+        }}><span class="menu-code">${l.short}</span> ${l.label}</button>`)}
+      </div>`}
+    </div>`;
+  }
+
+  // ---------------------------------------------------------------- form building blocks
+  // where: what the eye shows or hides the block in («anúncio» or «vídeo»).
+  // Blocks fold (accordions); which ones are folded is kept on this device
+  // ('rs-groups': { block: open }). A block is open unless it says `closed`.
+  const FOLD_KEY = 'rs-groups';
+  const folds = (() => {
+    let saved = {};
+    try { saved = JSON.parse(localStorage.getItem(FOLD_KEY) || '{}') || {}; } catch { saved = {}; }
+    const subs = new Set();
+    return {
+      open: (k, dflt) => (typeof saved[k] === 'boolean' ? saved[k] : dflt),
+      set(k, open) {
+        saved = { ...saved, [k]: open };
+        try { localStorage.setItem(FOLD_KEY, JSON.stringify(saved)); } catch { /* kept for this visit */ }
+        subs.forEach((f) => f());
+      },
+      sub(f) { subs.add(f); return () => subs.delete(f); },
+    };
+  })();
+  // Opens the folded block holding a field (a tap on the poster's text, say); returns the field.
+  RS.ui.openField = (fid) => {
+    const el = document.getElementById(fid);
+    const g = el && el.closest('.group.folded');
+    if (g) folds.set(g.dataset.fold, true);
+    return el;
+  };
+  let groupSeq = 0;
+  // fold: the block's name for the memory (default: its id or where + title); summary: shown while folded.
+  // `closed` is read when the block appears: a change later (a model picked) folds nothing under a tap.
+  function Group({ title, hint, show, onToggle, children, id, where = 'anúncio', fold, closed = false, summary }) {
+    const key = fold || id || `${where}:${title}`;
+    const [, redraw] = useState(0);
+    useEffect(() => folds.sub(() => redraw((n) => n + 1)), []);
+    const first = useRef(closed);
+    const open = folds.open(key, !first.current);
+    const bodyId = useRef(null);
+    if (!bodyId.current) bodyId.current = `grp-${++groupSeq}`;
+    return html`<section class=${'group' + (show === false ? ' hidden-block' : '') + (open ? '' : ' folded')} id=${id} data-fold=${key}>
+      <header class="group-head">
+        <h3><button type="button" class="group-toggle" aria-expanded=${open} aria-controls=${bodyId.current} onClick=${() => folds.set(key, !open)}>
+          <${Icon} name="chevron-down" size=${18} /><span>${title}</span></button></h3>
+        ${!open && summary && html`<span class="group-summary">${summary}</span>`}
+        ${onToggle && html`<button class="eye" aria-pressed=${show !== false} onClick=${() => onToggle(show === false)}
+          title=${show === false ? `Mostrar no ${where}` : `Ocultar do ${where} (o texto fica guardado)`}>
+          <${Icon} name=${show === false ? 'eye-off' : 'eye'} size=${17} /> <span>${show === false ? 'Oculto' : 'Visível'}</span>
+        </button>`}
+      </header>
+      <div class="group-fold" id=${bodyId.current} hidden=${!open}>
+        ${hint && html`<p class="group-hint">${hint}</p>`}
+        <div class="group-body">${children}</div>
+      </div>
+    </section>`;
+  }
+  function AutoTextarea({ id, value, onInput, onBlur, placeholder, rows = 1 }) {
+    const ref = useRef();
+    useLayoutEffect(() => {
+      const el = ref.current;
+      if (!el) return;
+      el.style.height = 'auto';
+      el.style.height = `${el.scrollHeight + 2}px`;
+    }, [value]);
+    return html`<textarea ref=${ref} id=${id} rows=${rows} value=${value} placeholder=${placeholder} onInput=${onInput} onBlur=${onBlur}></textarea>`;
+  }
+  function Field({ label, id, value, onInput, multiline, placeholder, hint, type = 'text' }) {
+    return html`<div class="field">
+      <label for=${id}>${label}</label>
+      ${multiline
+        ? html`<${AutoTextarea} id=${id} value=${value} onInput=${onInput} placeholder=${placeholder} />`
+        : html`<input id=${id} type=${type} value=${value} onInput=${onInput} placeholder=${placeholder} />`}
+      ${hint && html`<small class="field-hint">${hint}</small>`}
+    </div>`;
+  }
+  function EyeMini({ on, onClick, what }) {
+    return html`<button class="eye mini" aria-pressed=${on} onClick=${onClick} title=${on ? `Ocultar ${what}` : `Mostrar ${what}`} aria-label=${on ? `Ocultar ${what}` : `Mostrar ${what}`}>
+      <${Icon} name=${on ? 'eye' : 'eye-off'} size=${16} /></button>`;
+  }
+
+  function IconPicker({ value, onChange, label }) {
+    const [open, setOpen] = useState(false);
+    const pop = RS.ui.useLeaving(open, 140);
+    const [q, setQ] = useState('');
+    const ref = useRef();
+    const searchRef = useRef();
+    useEffect(() => {
+      if (!open) return undefined;
+      if (searchRef.current && window.matchMedia('(hover: hover)').matches) searchRef.current.focus();
+      const onDoc = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+      const onKey = (e) => { if (e.key === 'Escape') { e.stopPropagation(); setOpen(false); } };
+      document.addEventListener('pointerdown', onDoc);
+      document.addEventListener('keydown', onKey, true);
+      return () => { document.removeEventListener('pointerdown', onDoc); document.removeEventListener('keydown', onKey, true); };
+    }, [open]);
+    const norm = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+    const list = RS.ICON_CATALOG.filter((i) => !q || norm(`${i.label} ${i.tags}`).includes(norm(q)));
+    return html`<div class="ip" ref=${ref}>
+      <button class="ip-btn" aria-label=${`Mudar ícone de ${label}`} title="Mudar ícone" aria-expanded=${open} onClick=${() => setOpen(!open)}>
+        <${Icon} name=${value || 'circle-check'} size=${19} />
+      </button>
+      ${pop.mounted && html`<div class=${'ip-pop pop' + (pop.leaving ? ' leaving' : '')} role="dialog" aria-label="Escolher ícone">
+        <div class="ip-search"><${Icon} name="search" size=${16} />
+          <input ref=${searchRef} name="icon-search" aria-label="Procurar ícone" placeholder="Procurar: salário, carro, casa…" value=${q} onInput=${(e) => setQ(e.target.value)} />
+          <button class="icon-btn subtle show-sm" aria-label="Fechar" onClick=${() => setOpen(false)}><${Icon} name="x" size=${16} /></button>
+        </div>
+        <div class="ip-grid">
+          ${list.map((i) => html`<button key=${i.id} class=${'ip-item' + (i.id === value ? ' on' : '')} title=${i.label}
+            onClick=${() => { onChange(i.id); setOpen(false); }}><${Icon} name=${i.id} size=${22} /><span>${i.label}</span></button>`)}
+          ${!list.length && html`<p class="ip-empty">Nenhum ícone com «${q}».</p>`}
+        </div>
+      </div>`}
+    </div>`;
+  }
+
+  // Editable list. Reorder by dragging the handle (mouse or finger) or with Alt + arrows.
+  function ListEditor({ items, onChange, withIcon, addLabel, prefix, placeholder, coalesce, defaultIcon, itemLabel }) {
+    const [drag, setDrag] = useState(null);
+    const listRef = useRef();
+    const pendingFocus = useRef(null);
+    const exits = RS.ui.useExits();
+    const arrived = RS.ui.useArrivals(items.map((it) => it.id));
+    RS.ui.useFlip(listRef);
+    // the removal runs after the row's exit, on the list as it is then
+    const latest = useRef({ items, onChange });
+    latest.current = { items, onChange };
+    useEffect(() => {
+      if (!pendingFocus.current) return;
+      const el = document.getElementById(pendingFocus.current);
+      pendingFocus.current = null;
+      if (el) el.focus();
+    });
+    const move = (from, to) => {
+      if (to < 0 || to >= items.length || from === to) return;
+      const next = [...items];
+      next.splice(to, 0, next.splice(from, 1)[0]);
+      onChange(next);
+    };
+    const setItem = (i, patch, key) => onChange(items.map((it, j) => (j === i ? { ...it, ...patch } : it)), key);
+    const remove = (i) => {
+      const id = items[i].id;
+      exits.exit(id, () => latest.current.onChange(latest.current.items.filter((x) => x.id !== id)));
+    };
+    const add = () => {
+      const it = withIcon ? M.iconItem(defaultIcon || 'circle-check', '') : M.item('');
+      pendingFocus.current = `${prefix}-${it.id}`;
+      onChange([...items, it]);
+    };
+    const down = (i) => (e) => {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      e.preventDefault();
+      const rows = [...listRef.current.querySelectorAll(':scope > .li')];
+      const rects = rows.map((r) => r.getBoundingClientRect());
+      const step = rects.length > 1 ? rects[1].top - rects[0].top : rects[0].height + 8;
+      e.currentTarget.setPointerCapture(e.pointerId);
+      setDrag({ from: i, to: i, y0: e.clientY, dy: 0, mids: rects.map((r) => r.top + r.height / 2), step });
+    };
+    const moveDrag = (e) => {
+      if (!drag) return;
+      const dy = e.clientY - drag.y0;
+      const center = drag.mids[drag.from] + dy;
+      let to = 0;
+      drag.mids.forEach((m, j) => { if (j !== drag.from && center > m) to++; });
+      setDrag({ ...drag, dy, to });
+    };
+    const up = () => {
+      if (!drag) return;
+      const { from, to } = drag;
+      setDrag(null);
+      if (to !== from) move(from, to);
+    };
+    const shift = (i) => {
+      if (!drag) return '';
+      if (i === drag.from) return `transform:translateY(${drag.dy}px)`;
+      if (drag.from < drag.to && i > drag.from && i <= drag.to) return `transform:translateY(${-drag.step}px)`;
+      if (drag.from > drag.to && i >= drag.to && i < drag.from) return `transform:translateY(${drag.step}px)`;
+      return 'transform:none';
+    };
+    return html`<div class=${'list' + (drag ? ' sorting' : '')} ref=${listRef}>
+      ${items.map((it, i) => html`<div key=${it.id} data-flip=${it.id} class=${'li' + (arrived(it.id) ? ' fresh' : '') + (drag && drag.from === i ? ' lifted' : '') + (exits.leaving(it.id) ? ' leaving' : '')} style=${shift(i)}>
+        <button class="handle" aria-label=${`Mover ${itemLabel.toLowerCase()} ${i + 1} (Alt + setas)`} title="Arraste para reordenar"
+          onPointerDown=${down(i)} onPointerMove=${moveDrag} onPointerUp=${up} onPointerCancel=${up}
+          onKeyDown=${(e) => { if (e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) { e.preventDefault(); move(i, i + (e.key === 'ArrowUp' ? -1 : 1)); } }}>
+          <${Icon} name="grip-vertical" size=${16} />
+        </button>
+        ${withIcon && html`<${IconPicker} value=${it.icon} label=${it.text || itemLabel} onChange=${(icon) => setItem(i, { icon })} />`}
+        <input id=${`${prefix}-${it.id}`} type="text" value=${it.text} placeholder=${placeholder} aria-label=${`${itemLabel} ${i + 1}`}
+          onInput=${(e) => setItem(i, { text: e.target.value }, `${coalesce}:${it.id}`)}
+          onKeyDown=${(e) => { if (e.key === 'Enter') { e.preventDefault(); add(); } }} />
+        <button class="icon-btn subtle" aria-label=${`Remover ${itemLabel.toLowerCase()} ${i + 1}`} title="Remover" onClick=${() => remove(i)}><${Icon} name="x" size=${16} /></button>
+      </div>`)}
+      <button class="add-row" data-flip="end" onClick=${add}><${Icon} name="plus" size=${16} stroke=${2.4} /> ${addLabel}</button>
+    </div>`;
+  }
+
+  // «Fala comigo»: the recruiter's WhatsApp number, the pill switch and the message
+  // the candidate sends (generated until the person writes their own; «Repor»).
+  function WhatsAppFields({ project, update }) {
+    const w = project.whatsapp || { country: '351', number: '' };
+    const t = project.texts[project.locale];
+    const valid = !w.number.trim() || !!C.digits(w.country, w.number);
+    const setW = (patch, coalesce) => update((p) => { p.whatsapp = { country: '351', number: '', ...(p.whatsapp || {}), ...patch }; }, coalesce ? { coalesce } : {});
+    // An empty message means "generated", so an emptied field would snap back
+    // to the generated text while the person writes: until they leave the
+    // field (or change language) it stays as they left it.
+    const [draft, setDraft] = useState(null);
+    useEffect(() => setDraft(null), [project.locale]);
+    const blank = (s) => !(s || '').trim();
+    const message = draft !== null && blank(draft) && blank(t.waMessage) ? draft : C.adMessage(project, project.locale);
+    return html`<div class="wa-fields">
+      <div class="field">
+        <label for="f-contact-wa"><${Icon} name="message-circle" size=${15} /> O seu WhatsApp</label>
+        <div class="wa-number">
+          <select name="wa-country" aria-label="Indicativo do país" value=${w.country} onChange=${(e) => setW({ country: e.target.value })}>
+            ${C.COUNTRIES.map((c) => html`<option key=${c.code} value=${c.code}>${c.label}</option>`)}
+          </select>
+          <input id="f-contact-wa" type="tel" inputmode="tel" autocomplete="tel" value=${w.number} placeholder="912 345 678"
+            onInput=${(e) => { const v = e.target.value; setW({ number: v }, 'wa-number'); }} />
+        </div>
+        ${valid ? html`<small class="field-hint">Os candidatos falam consigo no WhatsApp com um toque.</small>`
+          : html`<small class="field-hint warn">Número incompleto: confirme o indicativo e os algarismos.</small>`}
+      </div>
+      <label class="switch"><input type="checkbox" checked=${project.show.waCta !== false} onChange=${(e) => { const on = e.target.checked; update((p) => { p.show.waCta = on; }); }} /><span class="switch-ui"></span> Botão WhatsApp no anúncio</label>
+      <div class="field">
+        <label for="f-wa-message">Mensagem que o candidato envia</label>
+        <${AutoTextarea} id="f-wa-message" value=${message}
+          onBlur=${() => setDraft(null)}
+          onInput=${(e) => { const v = e.target.value; setDraft(v); update((p) => { p.texts[p.locale].waMessage = v; }, { coalesce: 'wa-message' }); }} />
+        <div class="wa-msg-foot">
+          <small class="field-hint">${t.waMessage ? 'Escrita por si.' : 'Escrita pela app: acompanha as profissões e a língua.'}</small>
+          <button id="f-wa-reset" class="btn link sm" disabled=${!t.waMessage} onClick=${() => update((p) => { p.texts[p.locale].waMessage = ''; })}>
+            <${Icon} name="rotate-ccw" size=${14} /> Repor</button>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // ---------------------------------------------------------------- «Mostrar QR»
+  // Full screen, for face-to-face moments: the other person points the camera
+  // and WhatsApp opens with "Olá, falámos agora há pouco." in the chosen
+  // language. Without a number it asks for it first; onNumber keeps it
+  // (in the brand from the home screen, in the ad from the editor).
+  function MeetQR({ whatsapp, onNumber, keptIn, onClose }) {
+    const [locale, setLocale] = useState('pt-PT');
+    const [w, setW] = useState(() => ({ country: '351', number: '', ...(whatsapp || {}) }));
+    const [shown, setShown] = useState(() => !!(whatsapp && C.digits(whatsapp.country, whatsapp.number)));
+    const valid = !!C.digits(w.country, w.number);
+    const link = shown ? C.meetLink(w.country, w.number, locale) : null;
+    const [closing, close] = useClosing(onClose);
+    const boxRef = useRef();
+    const canvasRef = useRef();
+    const prevFocus = useRef(document.activeElement);
+    useEffect(() => {
+      const field = boxRef.current && boxRef.current.querySelector('#meet-number');
+      (field || boxRef.current).focus();
+      return () => { if (prevFocus.current && prevFocus.current.focus) prevFocus.current.focus(); };
+    }, []);
+    useEffect(() => {
+      const cv = canvasRef.current;
+      if (!cv || !link) return;
+      cv.width = cv.height = 1000;
+      const ctx = cv.getContext('2d');
+      ctx.clearRect(0, 0, 1000, 1000);
+      RS.engine.drawQR({ ctx, hit() {} }, link, 0, 0, 1000, { dark: '#0B1220', light: '#FFFFFF' });
+    }, [link]);
+    function submit(e) {
+      e.preventDefault();
+      if (!valid) return;
+      const kept = { country: w.country, number: w.number.trim() };
+      setW(kept);
+      onNumber(kept);
+      setShown(true);
+    }
+    return html`<div ref=${boxRef} class=${'meet' + (closing ? ' closing' : '')} role="dialog" aria-modal="true" aria-labelledby="meet-title" tabindex="-1"
+      onKeyDown=${(e) => { if (e.key === 'Escape') { e.stopPropagation(); close(); } }}>
+      <header class="meet-head">
+        <h2 id="meet-title"><${Icon} name="message-circle" size=${22} /> WhatsApp</h2>
+        <button class="icon-btn meet-close" aria-label="Fechar" onClick=${() => close()}><${Icon} name="x" /></button>
+      </header>
+      ${shown ? html`<div class="meet-body">
+        <div class="chips-row small meet-langs" role="radiogroup" aria-label="Língua da mensagem">
+          ${M.LOCALES.map((l) => html`<button key=${l.code} role="radio" aria-checked=${locale === l.code} title=${l.label}
+            class=${'tchip' + (locale === l.code ? ' on' : '')} onClick=${() => setLocale(l.code)}>${l.short}</button>`)}
+        </div>
+        <figure class="meet-qr" data-link=${link} role="img" aria-label=${`Código QR do WhatsApp ${C.display(w.country, w.number)}`}>
+          <canvas ref=${canvasRef}></canvas>
+        </figure>
+        <p class="meet-hint" lang=${locale}>${M.STOCK.scanHint[locale]}</p>
+        <p class="meet-number">${C.display(w.country, w.number)}</p>
+        <p class="meet-msg">O WhatsApp abre com: «${M.STOCK.waMeet[locale]}»</p>
+      </div>` : html`<form class="meet-body meet-ask" onSubmit=${submit}>
+        <p>Escreva o seu número de WhatsApp para mostrar o QR. Fica guardado ${keptIn}.</p>
+        <div class="wa-number">
+          <select name="meet-country" aria-label="Indicativo do país" value=${w.country} onChange=${(e) => { const v = e.target.value; setW((o) => ({ ...o, country: v })); }}>
+            ${C.COUNTRIES.map((c) => html`<option key=${c.code} value=${c.code}>${c.label}</option>`)}
+          </select>
+          <input id="meet-number" type="tel" inputmode="tel" autocomplete="tel" aria-label="Número de WhatsApp" placeholder="912 345 678" value=${w.number}
+            onInput=${(e) => { const v = e.target.value; setW((o) => ({ ...o, number: v })); }} />
+        </div>
+        <button class="btn primary lg" type="submit" disabled=${!valid}><${Icon} name="qr-code" /> Mostrar QR</button>
+      </form>`}
+    </div>`;
+  }
+
+  // ---------------------------------------------------------------- Texto
+  const PERIOD_LABELS = { hour: 'hora', day: 'dia', week: 'semana', month: 'mês' };
+  function TextPanel({ project, update }) {
+    const t = project.texts[project.locale];
+    const loc = M.localeInfo(project.locale);
+    const set = (key) => (e) => {
+      const value = e.target.value;
+      update((p) => {
+        p.texts[p.locale][key] = value;
+        if (key === 'headline' && p.nameAuto !== false && p.locale === p.locales[0]) p.name = value.replace(/\s*\n\s*/g, ' ').trim() || p.name;
+      }, { coalesce: `text:${key}` });
+    };
+    const show = (key) => (v) => update((p) => { p.show[key] = v; });
+    const setList = (key) => (items, coalesce) => update((p) => { p.texts[p.locale][key] = items; }, coalesce ? { coalesce } : {});
+    // Offer (salary, vacancies): one for every language of the ad.
+    const offer = project.offer || M.DEFAULT_OFFER;
+    const offerLine = M.offerText(project, project.locale);
+    const setOffer = (key, typing) => (e) => {
+      const value = e.target.value;
+      update((p) => { p.offer = { ...M.DEFAULT_OFFER, ...(p.offer || {}), [key]: value }; }, typing ? { coalesce: `offer:${key}` } : {});
+    };
+    // Ready texts of the chosen trades: the main trade's texts with every trade's
+    // positions; contacts, QR link and WhatsApp message stay.
+    async function useTradeTexts() {
+      const ids = project.trades || [];
+      if (!ids.length) return;
+      // Only the languages with ready texts change; the others keep the person's.
+      const short = (codes) => codes.map((c) => M.localeInfo(c).short).join(', ');
+      const ready = M.readyTextLocales(project);
+      const others = project.locales.filter((c) => !ready.includes(c));
+      const ok = await confirmDialog({
+        title: `Usar os textos prontos de «${tradesLabel(ids)}»?`,
+        body: `Substitui título, introdução, vantagens, vagas e selo em ${short(ready)}.${others.length ? ` ${short(others)} não ${others.length > 1 ? 'têm' : 'tem'} textos prontos e fica como está.` : ''} Os contactos, o QR e a mensagem do WhatsApp ficam. Pode desfazer com Ctrl+Z.`,
+        confirm: 'Usar estes textos',
+      });
+      if (!ok) return;
+      update((p) => { Object.assign(p, M.applyTradeTexts(p)); });
+      toast('Textos prontos aplicados');
+    }
+    return html`<div class="panel-inner">
+      <div class="panel-head">
+        <h2>Texto</h2>
+        <p>A escrever em <strong>${loc.label}</strong>. A pré-visualização acompanha cada letra e o texto ajusta-se sozinho ao espaço.</p>
+      </div>
+      <${Group} title="Profissões do anúncio" fold="texto:profissoes" closed summary=${project.trades.length ? tradesLabel(project.trades) : 'Nenhuma'}>
+        <div class="preset">
+          <${TradePicker} value=${project.trades} onChange=${(ids) => update((p) => { Object.assign(p, M.setTrades(p, ids)); })} />
+          ${project.trades.length > 0 && html`<button class="btn ghost sm" onClick=${useTradeTexts}><${Icon} name="wand-sparkles" size=${15} /> Usar os textos prontos destas profissões</button>`}
+        </div>
+      <//>
+      <${Group} title="Título">
+        <div class="field-with-eye">
+          <${Field} label="Chamada" id="f-kicker" value=${t.kicker} onInput=${set('kicker')} placeholder="Ex.: Estamos a recrutar" />
+          <${EyeMini} on=${project.show.kicker} onClick=${() => show('kicker')(!project.show.kicker)} what="chamada" />
+        </div>
+        <${Field} label="Título principal" id="f-headline" multiline value=${t.headline} onInput=${set('headline')}
+          placeholder="Ex.: Pedreiros, cofragistas e serventes" hint="Enter muda de linha. O tamanho da letra ajusta-se sozinho." />
+        <div class="field-with-eye">
+          <${Field} label="Introdução" id="f-intro" multiline value=${t.intro} onInput=${set('intro')} placeholder="Ex.: Tem experiência em obra e procura um novo desafio?" />
+          <${EyeMini} on=${project.show.intro} onClick=${() => show('intro')(!project.show.intro)} what="introdução" />
+        </div>
+      <//>
+      <${Group} title="Vantagens" show=${project.show.benefits} onToggle=${show('benefits')} hint="Toque no ícone para o trocar. Enter acrescenta outra linha.">
+        <${ListEditor} items=${t.benefits} onChange=${setList('benefits')} withIcon prefix="f-benefit" coalesce="benefit" itemLabel="Vantagem"
+          addLabel="Adicionar vantagem" placeholder="Ex.: Alojamento pago" />
+      <//>
+      <${Group} title="Vagas" show=${project.show.positions} onToggle=${show('positions')}>
+        <${Field} label="Título da caixa" id="f-positionsTitle" value=${t.positionsTitle} onInput=${set('positionsTitle')} placeholder="Ex.: Procuramos:" />
+        <${ListEditor} items=${t.positions} onChange=${setList('positions')} prefix="f-position" coalesce="position" itemLabel="Vaga"
+          addLabel="Adicionar vaga" placeholder="Ex.: Pedreiro com experiência" />
+      <//>
+      <${Group} title="Ficha da oferta (opcional)" hint="Preencha uma vez para todas as línguas e escolha as peças onde aparece. Os rótulos e a data adaptam-se à língua.">
+        <div class="offer-row">
+          <div class="field">
+            <label for="f-offer-salary">Salário</label>
+            <input id="f-offer-salary" type="text" inputmode="decimal" value=${offer.salary} placeholder="Ex.: 1900" onInput=${setOffer('salary', true)} />
+          </div>
+          <div class="field">
+            <label for="f-offer-currency">Moeda</label>
+            <select id="f-offer-currency" value=${offer.currency} onChange=${setOffer('currency')}>
+              ${M.CURRENCIES.map((c) => html`<option key=${c} value=${c}>${c}</option>`)}
+            </select>
+          </div>
+          <div class="field">
+            <label for="f-offer-period">Por</label>
+            <select id="f-offer-period" value=${offer.period} onChange=${setOffer('period')}>
+              ${M.PERIODS.map((k) => html`<option key=${k} value=${k}>${PERIOD_LABELS[k]}</option>`)}
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label for="f-offer-vacancies">Número de vagas</label>
+          <input id="f-offer-vacancies" type="text" inputmode="numeric" value=${offer.vacancies} placeholder="Ex.: 30" onInput=${setOffer('vacancies', true)} />
+        </div>
+        <${Field} label="Localização pública" id="f-offer-location" value=${offer.location || ''} onInput=${setOffer('location', true)} placeholder="Ex.: Lausanne, Suíça" hint="Escreva a cidade ou região que quer divulgar." />
+        <div class="field"><label for="f-offer-startDate">Data de início</label><input id="f-offer-startDate" type="date" value=${offer.startDate || ''} onInput=${setOffer('startDate', true)} /></div>
+        <fieldset class="offer-visibility"><legend>Mostrar a ficha em</legend>${Object.entries(M.OFFER_OUTPUTS).map(([key, label]) => html`<label key=${key}><input type="checkbox" checked=${M.offerVisible(project, key)} onChange=${(e) => { const checked = e.target.checked; update((p) => { p.offer.visibility = { ...M.DEFAULT_OFFER.visibility, ...p.offer.visibility, [key]: checked }; }); }} />${label}</label>`)}</fieldset>
+        ${offerLine && html`<small class="field-hint">${offerLine}</small>`}
+      <//>
+      <${Group} title="Selo" show=${project.show.badge} onToggle=${show('badge')} hint="Um destaque curto num círculo sobre a fotografia.">
+        <${Field} label="Texto do selo" id="f-badge" value=${t.badge} onInput=${set('badge')} placeholder="Ex.: Início imediato" />
+      <//>
+    </div>`;
+  }
+
+  // ---------------------------------------------------------------- Contactos
+  function ContactsPanel({ project, update }) {
+    const t = project.texts[project.locale];
+    const show = (key) => (v) => update((p) => { p.show[key] = v; });
+    // A contact holding the WhatsApp number is drawn once, on the green button.
+    const wa = project.whatsapp;
+    const waOwn = wa && C.digits(wa.country, wa.number);
+    const waTwin = waOwn && project.show.waCta !== false && (t.contacts || []).find((c) => C.digits(wa.country, c.text) === waOwn);
+    return html`<div class="panel-inner">
+      <div class="panel-head"><h2>Contactos</h2><p>Como os candidatos chegam até si: o WhatsApp, os outros contactos e o código QR.</p></div>
+      <${Group} title="O seu WhatsApp">
+        <${WhatsAppFields} project=${project} update=${update} />
+      <//>
+      <${Group} title="Outros contactos" show=${project.show.contacts} onToggle=${show('contacts')} hint="O botão do WhatsApp aparece primeiro; depois estes. Oculto, o anúncio fica sem contactos nem QR.">
+        <${ListEditor} items=${t.contacts} onChange=${(items, coalesce) => update((p) => { p.texts[p.locale].contacts = items; }, coalesce ? { coalesce } : {})}
+          withIcon defaultIcon="phone" prefix="f-contact" coalesce="contact" itemLabel="Contacto" addLabel="Adicionar contacto" placeholder="Telefone, email ou site" />
+        ${waTwin && html`<small class="field-hint">«${waTwin.text.trim()}» é o mesmo número do WhatsApp: no anúncio aparece uma vez, no botão verde.</small>`}
+      <//>
+      <${Group} title="Código QR">
+        <div class="field qr-mode">
+          <div class="qr-mode-row">
+            <div class="seg small" role="radiogroup" aria-label="O que o QR abre">
+              <button role="radio" id=${project.qrMode !== 'link' ? 'f-qr' : undefined} aria-checked=${project.qrMode !== 'link'} class=${project.qrMode !== 'link' ? 'on' : ''} onClick=${() => update((p) => { p.qrMode = 'whatsapp'; })}>WhatsApp (recomendado)</button>
+              <button role="radio" aria-checked=${project.qrMode === 'link'} class=${project.qrMode === 'link' ? 'on' : ''} onClick=${() => update((p) => { p.qrMode = 'link'; })}>Link</button>
+            </div>
+            <${EyeMini} on=${project.show.qr !== false} onClick=${() => show('qr')(project.show.qr === false)} what="código QR" />
+          </div>
+          ${project.qrMode === 'link'
+            ? html`<${Field} label="Link do QR" id="f-qr" value=${t.qr || ''} type="url" placeholder="Ex.: o site ou um formulário" hint="Vazio = sem QR."
+              onInput=${(e) => { const v = e.target.value; update((p) => { p.texts[p.locale].qr = v; }, { coalesce: 'text:qr' }); }} />`
+            : html`<small class="field-hint">${C.adLink(project, project.locale) ? 'O QR abre o WhatsApp com a mensagem acima. Ideal para cartazes impressos e para mostrar ao vivo.' : 'Escreva o seu WhatsApp acima para o QR aparecer.'}</small>`}
+        </div>
+      <//>
+    </div>`;
+  }
+
+  // ---------------------------------------------------------------- Imagens
+  function DropZone({ id, label, sub, onFile, img, kind, busy, busyLabel }) {
+    const [over, setOver] = useState(false);
+    const ref = useRef();
+    useEffect(() => {
+      if (!img || !ref.current) return;
+      const c = ref.current;
+      const k = Math.min(1, 640 / Math.max(img.width, img.height));
+      c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    }, [img]);
+    return html`<button id=${id} class=${'drop' + (over ? ' over' : '') + (img ? ' has' : '') + (busy ? ' busy' : '') + ` ${kind}`}
+      onClick=${() => { if (!busy) onFile(); }} aria-busy=${!!busy}
+      onDragOver=${(e) => { e.preventDefault(); setOver(true); }} onDragLeave=${() => setOver(false)}
+      onDrop=${(e) => { e.preventDefault(); setOver(false); const f = e.dataTransfer.files && e.dataTransfer.files[0]; if (f && !busy) onFile(f); }}>
+      ${img ? html`<canvas ref=${ref} aria-hidden="true"></canvas><span class="drop-swap"><${Icon} name="refresh-cw" size=${15} /> Substituir</span>`
+        : html`<span class="drop-empty"><${Icon} name="image-plus" size=${26} /><strong>${label}</strong><small>${sub}</small></span>`}
+      ${busy && html`<span class="busy-veil"><${Spinner} large /> ${busyLabel}</span>`}
+    </button>`;
+  }
+  function Slider({ label, value, min, max, step, onInput, format, id }) {
+    return html`<div class="slider">
+      <label for=${id}><span>${label}</span><output>${format ? format(value) : value}</output></label>
+      <input id=${id} type="range" min=${min} max=${max} step=${step} value=${value} onInput=${(e) => onInput(parseFloat(e.target.value))} />
+    </div>`;
+  }
+  const pct = (v) => `${Math.round(v * 100)}%`;
+
+  function PhotoDetails({ item, project, onSave, onClose }) {
+    const [draft, setDraft] = useState(() => ({ ...L.metadata(item), cat: item.cat || 'geral' })), [tags, setTags] = useState((item.tags || []).join(', '));
+    const [usage, setUsage] = useState(null), [busy, setBusy] = useState(false), [error, setError] = useState('');
+    const running = useRef(false);
+    useEffect(() => { let live = true; L.usage(item.asset, project).then((u) => { if (live) setUsage(u); }).catch((e) => { if (live) setError(e.message); }); return () => { live = false; }; }, []);
+    const save = async () => {
+      if (running.current) return; running.current = true; setBusy(true); setError('');
+      try { onSave(await L.saveMetadata(item.asset, { name: draft.name, description: draft.description, favorite: draft.favorite, cat: draft.cat, tags })); onClose(); }
+      catch (e) { setError(e.message || 'Não foi possível guardar.'); }
+      finally { setBusy(false); running.current = false; }
+    };
+    return html`<${Modal} title="Detalhes da fotografia" className="photo-details" busy=${busy} onClose=${onClose}><div class="library-body">
+      <img class="photo-details-image" src=${item.thumb} alt=${draft.description || L.label(item)} />
+      <fieldset disabled=${busy}><div class="field"><label for="asset-name">Nome</label><input id="asset-name" value=${draft.name} maxLength="120" onInput=${(e) => setDraft({ ...draft, name: e.target.value })} /></div>
+      <div class="field"><label for="asset-description">Descrição</label><textarea id="asset-description" value=${draft.description} rows="3" maxLength="600" onInput=${(e) => setDraft({ ...draft, description: e.target.value })} /></div>
+      <div class="field"><label for="asset-tags">Etiquetas (separadas por vírgulas)</label><input id="asset-tags" value=${tags} onInput=${(e) => setTags(e.target.value)} /></div>
+      <div class="field"><label for="asset-category">Profissão</label><select id="asset-category" value=${draft.cat} onChange=${(e) => setDraft({ ...draft, cat: e.target.value })}><option value="geral">Geral</option>${TR.list.map((t) => html`<option key=${t.id} value=${t.photo}>${t.label}</option>`)}</select></div>
+      <label class="check"><input type="checkbox" checked=${draft.favorite} onChange=${(e) => setDraft({ ...draft, favorite: e.target.checked })} /> Favorita</label>
+      <button class="btn primary" onClick=${save}>Guardar detalhes</button></fieldset>
+      ${draft.originalName && html`<p class="field-hint">Ficheiro original: ${draft.originalName}</p>`}
+      <section class="photo-usage"><h3>Utilização</h3>${usage ? html`${usage.projects.length || usage.templates.length ? html`<ul>${usage.projects.map((p) => html`<li key=${p.id}>${p.name} · ${p.trashed ? 'Reciclagem' : 'Anúncio'}${p.current ? '' : ' · só no histórico'}${p.current && p.history ? ' e histórico' : ''}</li>`)}${usage.templates.map((t) => html`<li key=${t.id}>${t.name} · Modelo pessoal</li>`)}</ul>` : html`<p>Não está usada em anúncios ou modelos guardados.</p>`}` : html`<p>A verificar utilização…</p>`}</section>
+      ${error && html`<p class="workflow-error" role="alert">${error}</p>`}
+    </div><//>`;
+  }
+  function PhotoLibrary({ project, setPhotoAsset, choosePhoto, imgBusy }) {
+    const [lib, setLib] = useState(null);
+    const [mine, setMine] = useState([]);
+    const tradeCat = project.trade && TR.get(project.trade) ? TR.get(project.trade).photo : null;
+    const [cat, setCat] = useState('auto');
+    const [busy, setBusy] = useState(null);
+    const [adding, setAdding] = useState(null); // { done, total }
+    const [query, setQuery] = useState(''), [favorite, setFavorite] = useState(false), [tag, setTag] = useState('');
+    const [details, setDetails] = useState(null), [importResult, setImportResult] = useState(null), [libError, setLibError] = useState('');
+    const importPending = useRef(false);
+    useEffect(() => { L.index().then(setLib); L.userItems().then(setMine).catch((e) => setLibError(e.message)); }, []);
+    const bundled = lib ? lib.items : [];
+    const present = useMemo(() => new Set(bundled.map((i) => i.cat)), [lib]);
+    // «Deste anúncio»: the library photos of every trade of the ad.
+    const adCats = (project.trades || []).map((id) => TR.get(id) && TR.get(id).photo).filter(Boolean);
+    const hasAd = adCats.some((c) => present.has(c));
+    const effective = cat === 'auto' ? (hasAd ? 'ad' : tradeCat && present.has(tradeCat) ? tradeCat : (bundled.length ? 'all' : 'mine')) : cat;
+    const cats = [
+      ...(hasAd ? [{ id: 'ad', label: 'Deste anúncio' }] : []),
+      ...(bundled.length ? [{ id: 'all', label: 'Todas' }] : []),
+      ...TR.list.filter((t) => present.has(t.photo)).map((t) => ({ id: t.photo, label: t.label })),
+      ...(present.has('geral') ? [{ id: 'geral', label: 'Gerais' }] : []),
+      { id: 'mine', label: `As minhas (${mine.length})` },
+    ];
+    const items = L.filter(effective === 'mine'
+      ? mine.map((m) => ({ ...m, key: m.asset }))
+      : bundled.filter((i) => effective === 'all' || (effective === 'ad' ? adCats.includes(i.cat) : i.cat === effective)).map((i) => ({ ...i, key: i.id, name: `${TR.list.find((t) => t.photo === i.cat)?.label || 'Fotografia'} · ${i.id}` })), { query, favorite: effective === 'mine' && favorite, tag: effective === 'mine' ? tag : '' });
+    const locked = !!(busy || imgBusy);
+    const libWait = useDelayed(!lib, 300);
+    async function pick(it) {
+      if (locked) return;
+      setBusy(it.key);
+      try {
+        if (it.asset) { setPhotoAsset(it.asset); toast('Fotografia aplicada'); }
+        else await choosePhoto(L.fileFor(it.id).catch(() => { throw new Error('Não foi possível abrir esta fotografia.'); }));
+      } catch (err) {
+        console.error(err);
+        toast('Não foi possível abrir esta fotografia.', { kind: 'error' });
+      } finally {
+        setBusy(null);
+      }
+    }
+    async function addMine() {
+      if (locked || importPending.current) return;
+      importPending.current = true;
+      try {
+        const files = await pickFiles('image/*'); if (!files.length) return;
+        setBusy('adding'); setAdding({ done: 0, total: files.length }); setImportResult(null); setLibError('');
+        const result = await L.addUserPhotos(files, tradeCat || 'geral', (done) => setAdding({ done, total: files.length }));
+        setMine(await L.userItems());
+        setCat('mine'); setQuery(''); setFavorite(false); setTag(''); setImportResult(result);
+      } catch (err) {
+        setLibError(err.message || 'Não foi possível guardar as fotografias.');
+      } finally {
+        importPending.current = false; setBusy(null);
+        setAdding(null);
+      }
+    }
+    async function removeMine(it) {
+      const ok = await confirmDialog({ title: 'Tirar da biblioteca?', body: 'A fotografia sai da biblioteca. Os anúncios que já a usam ficam iguais.', confirm: 'Tirar', danger: true });
+      if (!ok) return;
+      try { await L.removeUser(it.asset); setMine(await L.userItems()); } catch (e) { setLibError(e.message); }
+    }
+    return html`<div class="library">
+      <div class="chips-row small" role="radiogroup" aria-label="Categoria">
+        ${cats.map((c) => html`<button key=${c.id} role="radio" aria-checked=${effective === c.id} class=${'tchip' + (effective === c.id ? ' on' : '')} onClick=${() => setCat(c.id)}>${c.label}</button>`)}
+      </div>
+      <label class="lib-search">Pesquisar fotografias<input type="search" value=${query} placeholder="Nome, descrição, etiquetas…" onInput=${(e) => setQuery(e.target.value)} /></label>
+      ${effective === 'mine' && html`<div class="library-filters"><label class="check"><input type="checkbox" checked=${favorite} onChange=${(e) => setFavorite(e.target.checked)} /> Só favoritas</label><label>Etiqueta<select value=${tag} onChange=${(e) => setTag(e.target.value)}><option value="">Todas</option>${[...new Set(mine.flatMap((m) => m.tags || []))].sort().map((t) => html`<option key=${t} value=${t}>${t}</option>`)}</select></label></div>`}
+      ${libWait && html`<${BrickLoader} label="A carregar a biblioteca…" />`}
+      ${!lib ? html`<div class="lib-grid" aria-busy="true" aria-label="A carregar a biblioteca">
+        ${[0, 1, 2, 3, 4, 5].map((i) => html`<span key=${i} class="lib-skel"></span>`)}
+      </div>` : items.length ? html`<div class=${'lib-grid' + (effective === 'mine' ? ' own-photos' : '') + (locked ? ' is-busy' : '')}>
+        ${items.map((it) => html`<div key=${it.key} class="lib-cell">
+          <button class=${'lib-item' + (busy === it.key ? ' busy' : '')} onClick=${() => pick(it)} aria-busy=${busy === it.key}
+            aria-label=${busy === it.key ? 'A aplicar esta fotografia' : `Usar ${L.label(it)}${it.description ? ' — ' + it.description : ''}`}>
+            <img src=${it.thumb} alt="" loading="lazy" />
+          </button>
+          ${it.asset && html`<span class="lib-name" title=${L.label(it)}>${L.label(it)}</span><div class="lib-meta-actions"><button class="btn ghost sm" aria-pressed=${!!it.favorite} aria-label=${`Favorita: ${L.label(it)}`} disabled=${locked} onClick=${async () => { try { setMine(await L.saveMetadata(it.asset, { favorite: !it.favorite })); } catch (e) { setLibError(e.message); } }}><${Icon} name="star" size=${15} /></button><button class="btn ghost sm" disabled=${locked} onClick=${() => setDetails(it)}>Detalhes</button></div>
+            <button class="lib-remove" aria-label=${`Tirar ${L.label(it)} da biblioteca`} onClick=${() => removeMine(it)}><${Icon} name="x" size=${13} stroke=${2.6} /></button>`}
+        </div>`)}
+      </div>` : html`<p class="lib-empty">${query || favorite || tag ? 'Não há fotografias para estes filtros.' : effective === 'mine'
+        ? 'Ainda não guardou fotografias suas. Acrescente as que usa muitas vezes e ficam aqui para todos os anúncios.'
+        : 'A biblioteca embutida ainda não tem fotografias.'}</p>`}
+      <button class="btn ghost sm" onClick=${addMine} disabled=${locked} aria-busy=${!!adding}>
+        ${adding ? html`<${Spinner} />` : html`<${Icon} name="image-plus" size=${16} />`}
+        ${adding ? (adding.total > 1 ? `A adicionar ${Math.min(adding.done + 1, adding.total)} de ${adding.total}…` : 'A adicionar…') : 'Adicionar fotografias à biblioteca'}</button>
+      ${libError && html`<p class="workflow-error" role="alert">${libError}</p>`}
+      ${importResult && html`<div class="library-import-result"><p role="status">${importResult.added} adicionadas · ${importResult.duplicates} duplicadas · ${importResult.failed} rejeitadas.</p>${!importResult.duplicateCheck && html`<p>Este navegador não permite verificar duplicados. Os ficheiros válidos foram adicionados.</p>`}<details open=${importResult.failed > 0 || importResult.duplicates > 0}><summary>Resultado por ficheiro</summary><ul>${importResult.items.map((it, i) => html`<li key=${i}><strong>${it.name}</strong>: ${it.reason}</li>`)}</ul></details></div>`}
+      ${details && html`<${BodyLayer}><${PhotoDetails} item=${details} project=${project} onSave=${setMine} onClose=${() => setDetails(null)} /><//>`}
+    </div>`;
+  }
+
+  function ImagesPanel({ project, update, images, choosePhoto, chooseLogo, setPhotoAsset, imgBusy }) {
+    const ph = M.photoForFormat(project.photo, project.format);
+    const st = project.style;
+    const adj = ph ? { ...M.DEFAULT_FX, ...(ph.adj || {}) } : M.DEFAULT_FX;
+    const setAdj = (k) => (v) => update((p) => { p.photo.adj = { ...M.DEFAULT_FX, ...(p.photo.adj || {}), [k]: v }; }, { coalesce: `adj-${k}` });
+    return html`<div class="panel-inner">
+      <div class="panel-head"><h2>Imagens</h2><p>Arraste ficheiros para aqui ou diretamente para o anúncio.</p></div>
+      <${Group} title="Fotografia">
+        <${DropZone} id="f-photo" kind="photo" label="Escolher fotografia" sub="JPG, PNG ou WebP. No telemóvel pode tirar uma na hora." img=${images.photo} onFile=${choosePhoto}
+          busy=${imgBusy === 'photo'} busyLabel="A preparar a fotografia…" />
+        ${ph && html`<div class="photo-tools">
+          <${Slider} id="photo-zoom" label="Aproximar" value=${ph.zoom} min=${1} max=${3} step=${0.01} format=${pct}
+            onInput=${(v) => update((p) => M.setPhotoFrame(p, p.format, { zoom: v }), { coalesce: 'zoom' })} />
+          <div class="row-btns">
+            <button class="btn ghost sm" onClick=${() => update((p) => M.setPhotoFrame(p, p.format, { zoom: 1, fx: .5, fy: .5 }))}><${Icon} name="crosshair" size=${16} /> Centrar</button>
+            <button class="btn ghost sm" aria-pressed=${!!ph.flip} onClick=${() => update((p) => { p.photo.flip = !p.photo.flip; })}><${Icon} name="flip-horizontal-2" size=${16} /> Espelhar</button>
+            <button class="btn ghost sm danger-text" onClick=${() => update((p) => { p.photo = null; })}><${Icon} name="trash-2" size=${16} /> Remover</button>
+          </div>
+          <p class="tip"><${Icon} name="hand" size=${15} /> Enquadramento de ${M.FORMATS[project.format].label}. Arraste a fotografia para a enquadrar. Ctrl + roda do rato, ou dois dedos, aproxima. Use Comparar formatos para ajustar também pelo teclado.</p>
+          <details class="adjust">
+            <summary><${Icon} name="sliders-horizontal" size=${16} /> Ajustar a fotografia</summary>
+            <${Slider} id="adj-b" label="Brilho" value=${adj.b} min=${0.7} max=${1.35} step=${0.01} format=${pct} onInput=${setAdj('b')} />
+            <${Slider} id="adj-c" label="Contraste" value=${adj.c} min=${0.7} max=${1.4} step=${0.01} format=${pct} onInput=${setAdj('c')} />
+            <${Slider} id="adj-s" label="Cor" value=${adj.s} min=${0} max=${1.6} step=${0.01} format=${pct} onInput=${setAdj('s')} />
+            <div class="row-btns">
+              <button class="btn ghost sm" onClick=${() => update((p) => { p.photo.adj = { b: 1.04, c: 1.12, s: 1.15 }; })}><${Icon} name="wand-sparkles" size=${16} /> Realçar</button>
+              <button class="btn ghost sm" onClick=${() => update((p) => { p.photo.adj = { ...M.DEFAULT_FX }; })}><${Icon} name="rotate-ccw" size=${16} /> Repor</button>
+            </div>
+          </details>
+        </div>`}
+      <//>
+      <${Group} title="Biblioteca de fotografias" hint="Toque numa fotografia para a usar neste anúncio.">
+        <${PhotoLibrary} project=${project} setPhotoAsset=${setPhotoAsset} choosePhoto=${choosePhoto} imgBusy=${imgBusy} />
+      <//>
+      <${Group} title="Logótipo" show=${project.show.logo} onToggle=${(v) => update((p) => { p.show.logo = v; })}>
+        <${DropZone} id="f-logo" kind="logo" label="Escolher logótipo" sub="PNG com fundo transparente fica melhor." img=${images.logo} onFile=${chooseLogo}
+          busy=${imgBusy === 'logo'} busyLabel="A preparar o logótipo…" />
+        ${project.logo && html`<div class="photo-tools">
+          <${Slider} id="logo-size" label="Tamanho" value=${st.logoScale} min=${0.5} max=${1.8} step=${0.01} format=${pct}
+            onInput=${(v) => update((p) => { p.style.logoScale = v; }, { coalesce: 'logoScale' })} />
+          <div class="field"><label>Cor do logótipo</label>
+            <div class="seg small wrap" role="radiogroup" aria-label="Cor do logótipo">
+              ${[['auto', 'Automática'], ['original', 'Original'], ['white', 'Branco'], ['dark', 'Escuro']].map(([v, l]) => html`<button key=${v} role="radio" aria-checked=${st.logoTone === v} class=${st.logoTone === v ? 'on' : ''} onClick=${() => update((p) => { p.style.logoTone = v; })}>${l}</button>`)}
+            </div>
+            <small class="field-hint">Automática: fica branco sobre fundos escuros quando o logótipo tem transparência.</small>
+          </div>
+          <button class="btn ghost sm danger-text" onClick=${() => update((p) => { p.logo = null; })}><${Icon} name="trash-2" size=${16} /> Remover logótipo</button>
+        </div>`}
+        ${!project.logo && html`<div class="brand-fields">
+          <p class="group-hint">Sem logótipo? O nome da empresa aparece no lugar dele.</p>
+          <${Field} label="Nome da empresa" id="f-brand-name" value=${project.brand.name} placeholder="Ex.: Timework"
+            onInput=${(e) => { const v = e.target.value; update((p) => { p.brand.name = v; }, { coalesce: 'brandName' }); }} />
+          <${Field} label="Frase da marca (opcional)" id="f-brand-tag" value=${project.brand.tagline} placeholder="Ex.: Recrutamento e seleção"
+            onInput=${(e) => { const v = e.target.value; update((p) => { p.brand.tagline = v; }, { coalesce: 'brandTag' }); }} />
+          <${Slider} id="brand-size" label="Tamanho" value=${st.logoScale} min=${0.5} max=${1.8} step=${0.01} format=${pct}
+            onInput=${(v) => update((p) => { p.style.logoScale = v; }, { coalesce: 'logoScale' })} />
+        </div>`}
+      <//>
+    </div>`;
+  }
+
+  // ---------------------------------------------------------------- Aspeto
+  function ColorField({ label, value, onChange, id }) {
+    const [draft, setDraft] = useState(value);
+    useEffect(() => setDraft(value), [value]);
+    return html`<div class="color-field">
+      <label for=${id}>${label}</label>
+      <div class="color-row">
+        <span class="swatch" style=${`background:${value}`}><input type="color" name=${`${id}-picker`} value=${U.normHex(value).toLowerCase()} aria-label=${`${label}: escolher cor`}
+          onInput=${(e) => onChange(e.target.value.toUpperCase(), true)} /></span>
+        <input id=${id} class="hex" type="text" value=${draft} spellcheck="false" maxlength="7"
+          onInput=${(e) => { const v = e.target.value; setDraft(v); if (U.isHex(v) && v.replace('#', '').length === 6) onChange(U.normHex(v)); }}
+          onBlur=${() => setDraft(value)} />
+      </div>
+    </div>`;
+  }
+
+  // the template (folded, saying which one), then the colours, the letter, the sizes and the brand
+  function LookPanel({ project, update, images, brand, setBrand, onReuse }) {
+    const st = project.style;
+    const tpl = T.get(project.template);
+    const setColor = (key) => (v, live) => update((p) => { p.style[key] = v; if (key === 'primary' || key === 'accent') p.style.customColors = true; }, { coalesce: live ? `color:${key}` : undefined });
+    return html`<div class="panel-inner">
+      <div class="panel-head"><h2>Aspeto</h2><p>Modelo, cores, letra e tamanhos. O contraste é corrigido automaticamente para tudo se ler bem.</p></div>
+      <${Group} title="Modelo" fold="aspeto:modelo" closed summary=${tpl.name} hint="Troque de composição. O texto, as imagens e as cores da marca mantêm-se.">
+        <${TemplateGallery} project=${project} update=${update} images=${images} />
+      <//>
+      <${Group} title="Cores da marca">
+        <div class="palettes" role="list">
+          ${M.PALETTES.map((pl) => {
+            const on = U.normHex(st.primary) === U.normHex(pl.primary) && U.normHex(st.accent) === U.normHex(pl.accent);
+            return html`<button key=${pl.id} role="listitem" class=${'palette' + (on ? ' on' : '')} title=${pl.name} aria-label=${`Paleta ${pl.name}`}
+              onClick=${() => update((p) => { p.style.primary = pl.primary; p.style.accent = pl.accent; p.style.customColors = true; })}>
+              <span style=${`background:${pl.primary}`}></span><span style=${`background:${pl.accent}`}></span>
+            </button>`;
+          })}
+        </div>
+        ${images.logo && html`<button class="btn ghost sm" onClick=${() => {
+          const pal = A.logoPalette(images.logo);
+          if (!pal) { toast('Não encontrámos cores fortes no logótipo.', { kind: 'error' }); return; }
+          update((p) => { p.style.primary = pal.primary; p.style.accent = pal.accent; p.style.customColors = true; });
+          toast('Cores tiradas do logótipo');
+        }}><${Icon} name="pipette" size=${16} /> Usar as cores do logótipo</button>`}
+        <div class="color-grid">
+          <${ColorField} id="c-primary" label="Principal" value=${st.primary} onChange=${setColor('primary')} />
+          <${ColorField} id="c-accent" label="Destaque" value=${st.accent} onChange=${setColor('accent')} />
+          <${ColorField} id="c-bg" label="Fundo" value=${st.bg} onChange=${setColor('bg')} />
+          <${ColorField} id="c-text" label="Texto" value=${st.text} onChange=${setColor('text')} />
+        </div>
+        <button class="btn link sm" onClick=${() => update((p) => { const d = tpl.defaults; Object.assign(p.style, { primary: d.primary, accent: d.accent, bg: d.bg, text: d.text, customColors: false }); })}>
+          <${Icon} name="rotate-ccw" size=${15} /> Repor as cores do modelo ${tpl.name}
+        </button>
+      <//>
+      <${Group} title="Letra">
+        <div class="fonts">
+          ${Object.entries(M.FONTS).map(([id, f]) => html`<button key=${id} class=${'font-card' + (st.fonts === id ? ' on' : '')} aria-pressed=${st.fonts === id}
+            onClick=${() => update((p) => { p.style.fonts = id; p.style.upper = id !== 'elegant'; })}>
+            <span class="font-sample" style=${`font-family:'${f.head.family}';font-weight:${f.head.weight}`}>${id === 'elegant' ? 'Vagas' : 'VAGAS'}</span>
+            <span class="font-name">${f.label}</span>
+          </button>`)}
+        </div>
+        <label class="switch"><input type="checkbox" checked=${st.upper} onChange=${(e) => update((p) => { p.style.upper = e.target.checked; })} /><span class="switch-ui"></span> Título em maiúsculas</label>
+      <//>
+      <${Group} title="Tamanhos" hint="Valores máximos: se o texto não couber, a letra encolhe sozinha.">
+        <${Slider} id="s-text" label="Texto" value=${st.textScale} min=${0.7} max=${1.3} step=${0.01} format=${pct}
+          onInput=${(v) => update((p) => { p.style.textScale = v; }, { coalesce: 'textScale' })} />
+        <${Slider} id="s-head" label="Título" value=${st.headScale} min=${0.6} max=${1.4} step=${0.01} format=${pct}
+          onInput=${(v) => update((p) => { p.style.headScale = v; }, { coalesce: 'headScale' })} />
+      <//>
+      <${Group} title="Marcas e modelos pessoais" hint="Guarde várias identidades e anúncios completos para reutilizar.">
+        <button class="btn ghost" onClick=${onReuse}><${Icon} name="copy" /> Abrir biblioteca pessoal</button>
+      <//>
+    </div>`;
+  }
+
+  // «Modelo» in «Aspeto»: the thumbnails are drawn once the block is open (it has a width)
+  function TemplateGallery({ project, update, images }) {
+    const ref = useRef();
+    const size = useSize(ref);
+    const w = size.w ? Math.floor((size.w - 16) / 2) : 0;
+    const variants = useMemo(() => (w > 0 ? T.list.map((t) => M.applyTemplate(project, t)) : []), [project, w > 0]);
+    return html`<div class="tpl-mini-grid" ref=${ref}>
+      ${T.list.map((t, i) => html`<button key=${t.id} class=${'tpl-mini' + (project.template === t.id ? ' on' : '')} aria-pressed=${project.template === t.id}
+        onClick=${() => transition(() => update((p) => { Object.assign(p, M.applyTemplate(p, t)); }))}>
+        ${w > 0 && html`<${PosterThumb} project=${variants[i]} images=${images} width=${w} />`}
+        <span>${t.name}</span>
+      </button>`)}
+    </div>`;
+  }
+
+  // ---------------------------------------------------------------- workspace (live preview)
+  function Workspace({ project, images, update, onSelect, guides, setGuides, report, onReport, choosePhoto, chooseLogo, mobile, pvLarge, setPvLarge, busy, onConvert, onCompare }) {
+    const wrapRef = useRef();
+    const canvasRef = useRef();
+    const regionsRef = useRef([]);
+    const infoRef = useRef(null);
+    const dragRef = useRef(null);
+    const pointers = useRef(new Map());
+    const pinch = useRef(null);
+    const scratch = useMemo(() => document.createElement('canvas').getContext('2d'), []);
+    const [hover, setHover] = useState(null);
+    const [dropping, setDropping] = useState(false);
+    const size = useSize(wrapRef);
+    const fmt = M.FORMATS[project.format];
+    const margin = mobile ? 24 : 72;
+    const k = size.w ? Math.max(0.05, Math.min((size.w - margin) / fmt.w, (size.h - (mobile ? 16 : 48)) / fmt.h)) : 0;
+    const cssW = Math.round(fmt.w * k), cssH = Math.round(fmt.h * k);
+
+    useEffect(() => {
+      if (!k || !canvasRef.current) return undefined;
+      const id = requestAnimationFrame(() => {
+        const c = canvasRef.current;
+        if (!c) return;
+        const dpr = Math.min(2, window.devicePixelRatio || 1);
+        const pw = Math.round(cssW * dpr), phh = Math.round(cssH * dpr);
+        if (c.width !== pw) c.width = pw;
+        if (c.height !== phh) c.height = phh;
+        const ctx = c.getContext('2d');
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.clearRect(0, 0, c.width, c.height);
+        const res = E.render(ctx, project, { images, scale: (cssW / fmt.w) * dpr, mode: 'editor', guides });
+        regionsRef.current = res.regions;
+        infoRef.current = res.photo;
+        onReport(res.report);
+      });
+      return () => cancelAnimationFrame(id);
+    }, [project, images, k, guides]);
+
+    const toPoster = (e) => {
+      const r = canvasRef.current.getBoundingClientRect();
+      return { x: ((e.clientX - r.left) / r.width) * fmt.w, y: ((e.clientY - r.top) / r.height) * fmt.h };
+    };
+    const hitTest = (pt) => {
+      const regs = regionsRef.current;
+      for (let i = regs.length - 1; i >= 0; i--) {
+        const g = regs[i];
+        if (pt.x < g.x || pt.y < g.y || pt.x > g.x + g.w || pt.y > g.y + g.h) continue;
+        if (g.clip) { g.clip(scratch); if (!scratch.isPointInPath(pt.x, pt.y)) continue; }
+        return g;
+      }
+      return null;
+    };
+    const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+
+    function onPointerDown(e) {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      e.currentTarget.setPointerCapture(e.pointerId);
+      pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (pointers.current.size === 2 && project.photo) {
+        const [a, b] = [...pointers.current.values()];
+        pinch.current = { d0: dist(a, b), z0: M.photoForFormat(project.photo, project.format).zoom };
+        dragRef.current = null;
+        return;
+      }
+      const pt = toPoster(e);
+      const frame = M.photoForFormat(project.photo, project.format);
+      dragRef.current = { start: pt, g: hitTest(pt), moved: false, fx: frame?.fx, fy: frame?.fy };
+    }
+    function onPointerMove(e) {
+      if (pointers.current.has(e.pointerId)) pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (pinch.current && pointers.current.size === 2) {
+        const [a, b] = [...pointers.current.values()];
+        const zoom = U.clamp(pinch.current.z0 * (dist(a, b) / pinch.current.d0), 1, 3);
+        update((p) => M.setPhotoFrame(p, p.format, { zoom }), { coalesce: 'zoom' });
+        return;
+      }
+      const pt = toPoster(e);
+      const d = dragRef.current;
+      if (d && d.g && d.g.key === 'photo' && project.photo && infoRef.current) {
+        const dx = pt.x - d.start.x, dy = pt.y - d.start.y;
+        if (Math.abs(dx) + Math.abs(dy) > 3) d.moved = true;
+        if (!d.moved) return;
+        const { rect, dw, dh } = infoRef.current;
+        const fxMin = rect.w / 2 / dw, fyMin = rect.h / 2 / dh;
+        const fx = U.clamp(d.fx - dx / dw, fxMin, 1 - fxMin);
+        const fy = U.clamp(d.fy - dy / dh, fyMin, 1 - fyMin);
+        update((p) => M.setPhotoFrame(p, p.format, { fx, fy }), { coalesce: 'photo-drag' });
+        return;
+      }
+      if (e.pointerType !== 'mouse') return;
+      const g = hitTest(pt);
+      if (!hover || !g || hover.key !== g.key || hover.x !== g.x || hover.y !== g.y) setHover(g);
+    }
+    function onPointerUp(e) {
+      pointers.current.delete(e.pointerId);
+      if (pinch.current) { if (pointers.current.size < 2) pinch.current = null; dragRef.current = null; return; }
+      const d = dragRef.current;
+      dragRef.current = null;
+      if (!d) return;
+      if (!d.moved && d.g) {
+        if (d.g.key === 'photo' && !project.photo) choosePhoto();
+        else onSelect(d.g.key);
+      }
+    }
+    function onWheel(e) {
+      if (!e.ctrlKey || !project.photo) return;
+      const g = hitTest(toPoster(e));
+      if (!g || g.key !== 'photo') return;
+      e.preventDefault();
+      update((p) => M.setPhotoFrame(p, p.format, { zoom: M.photoForFormat(p.photo, p.format).zoom * (e.deltaY < 0 ? 1.06 : 1 / 1.06) }), { coalesce: 'zoom' });
+    }
+    function onDrop(e) {
+      e.preventDefault();
+      setDropping(false);
+      const f = e.dataTransfer.files && e.dataTransfer.files[0];
+      if (!f) return;
+      const g = canvasRef.current ? hitTest(toPoster(e)) : null;
+      if (g && g.key === 'logo') chooseLogo(f); else choosePhoto(f);
+    }
+
+    const cursor = hover ? (hover.key === 'photo' ? (project.photo ? 'grab' : 'pointer') : 'pointer') : 'default';
+    const showBusy = useDelayed(!!busy, 300);
+    const notes = [];
+    if (report) {
+      if (!project.photo) notes.push({ icon: 'image-plus', text: mobile ? 'Sem fotografia' : 'Sem fotografia: arraste uma para o anúncio.', kind: 'info' });
+      if (report.shrink < 0.97) notes.push({ icon: 'scaling', text: html`<span>Texto reduzido para <${CountUp} value=${Math.round(report.shrink * 100)} />%</span>`, kind: report.shrink < 0.7 ? 'warn' : 'info', title: 'Para letra maior: encurte os textos, oculte um bloco ou experimente outro formato.' });
+      if (report.photoUpscale > 1.6) notes.push({ icon: 'triangle-alert', text: 'Fotografia com pouca resolução', kind: 'warn' });
+      if (report.minTextSize > 0 && report.minTextSize < 26) notes.push({ icon: 'type', text: `Texto pequeno: ${Math.round(report.minTextSize)} px`, kind: 'warn', title: 'Confirme a leitura em Comparar formatos. Pode encurtar o texto ou aumentar o tamanho em Aspeto.' });
+    }
+    return html`<main class="workspace">
+      <div class="ws-bar">
+        <${FormatSwitch} value=${project.format} compact=${mobile} onChange=${(f) => transition(() => update((p) => { p.format = f; }, { coalesce: 'format' }))} />
+        <button class="btn ghost sm" onClick=${onCompare} aria-label="Comparar formatos">Comparar<span class="hide-sm"> formatos</span></button>
+        ${project.format === 'story' && html`<label class="switch dark"><input type="checkbox" checked=${guides} onChange=${(e) => setGuides(e.target.checked)} /><span class="switch-ui"></span> <span class="hide-sm">Zonas do Instagram</span><span class="show-sm">Zonas</span></label>`}
+        ${mobile && html`<button class="icon-btn ws-size" onClick=${() => transition(() => setPvLarge(!pvLarge))} aria-label=${pvLarge ? 'Reduzir pré-visualização' : 'Ampliar pré-visualização'}>
+          <${Icon} name=${pvLarge ? 'zoom-out' : 'zoom-in'} size=${18} /></button>`}
+        <button class="btn sm ws-convert" onClick=${onConvert} aria-label="Converter em vídeo"
+          title="Fazer um vídeo com os textos desta imagem (pode mudá-los só para o vídeo)">
+          <${Icon} name="video" size=${15} /> <span class="hide-sm">Converter em vídeo</span><span class="show-sm">Vídeo</span></button>
+      </div>
+      <div class=${'stage' + (dropping ? ' dropping' : '')} ref=${wrapRef}
+        onDragOver=${(e) => { e.preventDefault(); setDropping(true); }} onDragLeave=${(e) => { if (e.currentTarget === e.target) setDropping(false); }} onDrop=${onDrop}>
+        ${showBusy && html`<div class="stage-busy"><${BrickLoader} label=${busy} /></div>`}
+        ${k > 0 && html`<div class=${'poster-wrap' + (busy ? ' loading' : '')} style=${`width:${cssW}px;height:${cssH}px`}>
+          <canvas ref=${canvasRef} class="poster" style=${`width:${cssW}px;height:${cssH}px;cursor:${cursor}`}
+            role="img" aria-label=${`Pré-visualização do anúncio, formato ${fmt.label} ${fmt.w} por ${fmt.h}`}
+            onPointerDown=${onPointerDown} onPointerMove=${onPointerMove} onPointerUp=${onPointerUp} onPointerCancel=${onPointerUp}
+            onPointerLeave=${() => { if (!dragRef.current) setHover(null); }} onWheel=${onWheel}
+            onDblClick=${(e) => { const g = hitTest(toPoster(e)); if (g && g.key === 'photo') choosePhoto(); }}></canvas>
+          ${hover && html`<div class="hover-box" style=${`left:${hover.x * k - 4}px;top:${hover.y * k - 4}px;width:${hover.w * k + 8}px;height:${hover.h * k + 8}px`}>
+            <span class=${'hover-label' + (hover.y * k < 30 ? ' below' : '')}>${regionLabel(hover.key)}</span>
+          </div>`}
+        </div>`}
+        ${dropping && html`<div class="drop-hint"><${Icon} name="image-plus" size=${22} /> Largue para usar como fotografia (ou sobre o logótipo para o substituir)</div>`}
+      </div>
+      <div class="ws-notes" aria-live="polite">
+        ${notes.length ? notes.map((n) => html`<span class=${'note ' + n.kind} title=${n.title || ''}><${Icon} name=${n.icon} size=${15} /> ${n.text}</span>`)
+          : html`<span class="note ok"><${Icon} name="check" size=${15} /> Tudo cabe no tamanho escolhido</span>`}
+        <span class="ws-tip hide-sm"><${Icon} name="mouse-pointer-click" size=${15} /> Clique num elemento do anúncio para o editar.</span>
+      </div>
+    </main>`;
+  }
+
+  // ---------------------------------------------------------------- «Vídeo»: the stage
+  // The video plays in a loop in the chosen format; «Ouvir» plays it with its
+  // sound; a click pauses and resumes it. An edit keeps the time it was at.
+  const SOUND_NAMES = { generated: 'música da app', own: 'som próprio', none: 'sem som' };
+  // quiet: something else needs the attention (the export dialog): «Ouvir» stops.
+  function VideoStage({ P, project, format, setFormat, mobile, quiet, onCover, coverReady, pvLarge, setPvLarge, guides, setGuides }) {
+    const wrapRef = useRef();
+    const canvasRef = useRef();
+    const at = useRef(0); // the time on screen
+    const playbackFrame = useRef(0);
+    const seekTarget = useRef(null);
+    const size = useSize(wrapRef);
+    const fmt = M.FORMATS[format];
+    const margin = mobile ? 24 : 72;
+    const k = size.w ? Math.max(0, Math.min((size.w - margin) / fmt.w, (size.h - (mobile ? 16 : 48)) / fmt.h)) : 0;
+    const cssW = Math.round(fmt.w * k), cssH = Math.round(fmt.h * k);
+    const vid = project.video || M.DEFAULT_VIDEO;
+    const [paused, setPaused] = useState(false);
+    const [listening, setListening] = useState(false);
+    const [clock, setClock] = useState(null);
+    const [position, setPosition] = useState(0), [seekTick, setSeekTick] = useState(0);
+    const lastPosition = useRef(0);
+    const seek = (value) => { cancelAnimationFrame(playbackFrame.current); at.current = seekTarget.current = RS.production.frameTime(P, Number(value)); setPosition(at.current); setListening(false); setPaused(true); setSeekTick((v) => v + 1); };
+    useEffect(() => { at.current = RS.production.frameTime(P, at.current); if (seekTarget.current !== null) seekTarget.current = RS.production.frameTime(P, seekTarget.current); setPosition(at.current); }, [P]);
+    // «Ouvir» ends with the sound switched off, and while the export dialog is open
+    useEffect(() => { if (vid.sound === 'none' || quiet) setListening(false); }, [vid.sound, quiet]);
+    useEffect(() => { if (quiet) setPaused(true); }, [quiet]);
+    useEffect(() => {
+      if (!listening || !P || vid.sound === 'none') { setClock(null); return undefined; }
+      let pv = null, live = true;
+      (async () => {
+        let src = P.timeline;
+        if (vid.sound === 'own') {
+          try {
+            src = await A.fittedSound(vid.ownSound, P.timeline.duration);
+          } catch (err) {
+            toast(err.message || 'Não foi possível ler este ficheiro de som.', { kind: 'error' });
+            setListening(false);
+            return;
+          }
+        }
+        if (!live || seekTarget.current !== null) return;
+        pv = RS.sound.preview(src, RS.production.frameTime(P, at.current));
+        setPaused(false);
+        setClock(() => pv.time);
+      })();
+      return () => { live = false; if (pv) pv.stop(); };
+    }, [listening, P, vid.sound, vid.ownSound]);
+    useEffect(() => {
+      const c = canvasRef.current;
+      if (!P || !k || !c) return undefined;
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      const pw = Math.round(cssW * dpr), ph = Math.round(cssH * dpr);
+      if (c.width !== pw) c.width = pw;
+      if (c.height !== ph) c.height = ph;
+      const ctx = c.getContext('2d');
+      const d = P.timeline.duration;
+      const draw = (t) => { at.current = t; RS.motion.render(ctx, P, { t, scale: (cssW / fmt.w) * dpr }); if (performance.now() - lastPosition.current > 150) { lastPosition.current = performance.now(); setPosition(t); } };
+      if (paused) { draw(RS.production.frameTime(P, seekTarget.current ?? at.current)); return undefined; }
+      // the loop keeps going from where it was, with a short pause on the last frame
+      const start = performance.now() - at.current * 1000;
+      const tick = (now) => {
+        if (seekTarget.current !== null) return;
+        playbackFrame.current = requestAnimationFrame(tick);
+        let t;
+        if (clock) { t = clock(); if (t > d + 0.6) setListening(false); } else t = ((now - start) / 1000) % (d + 0.8);
+        draw(Math.max(0, Math.min(t, d - 0.01)));
+      };
+      playbackFrame.current = requestAnimationFrame(tick);
+      return () => cancelAnimationFrame(playbackFrame.current);
+    }, [P, k, cssW, cssH, paused, clock, seekTick]);
+    const toggle = () => { seekTarget.current = null; if (listening) setListening(false); setPaused((p) => !p); };
+    return html`<main class=${'workspace video-stage' + (paused ? ' paused' : '')}>
+      <div class="ws-bar">
+        <${FormatSwitch} value=${format} compact=${mobile} onChange=${(f) => transition(() => setFormat(f))} />
+        ${format === 'story' && html`<button class="btn ghost sm" aria-pressed=${guides} onClick=${() => setGuides(!guides)} aria-label="Mostrar zonas de segurança do vídeo">Zonas</button>`}
+        <button class="btn sm ws-pause" onClick=${toggle} aria-label=${paused ? 'Continuar vídeo' : 'Pausar vídeo'} title=${paused ? 'Continuar vídeo' : 'Pausar vídeo'}><${Icon} name=${paused ? 'play' : 'pause'} size=${16} /></button>
+        ${mobile && html`<button class="btn sm ws-pause" aria-label=${pvLarge ? 'Reduzir pré-visualização do vídeo' : 'Ampliar pré-visualização do vídeo'} onClick=${() => setPvLarge(!pvLarge)}><${Icon} name=${pvLarge ? 'minimize-2' : 'maximize-2'} size=${16} /></button>`}
+        ${vid.sound !== 'none' && html`<button class=${'btn sm ws-listen' + (listening ? ' on' : '')} aria-pressed=${listening} aria-label=${listening ? 'Parar o som' : 'Ouvir o vídeo'} onClick=${() => { seekTarget.current = null; setListening(!listening); }}
+          title=${listening ? 'Parar o som' : 'Ver o vídeo com o som'}>
+          <${Icon} name=${listening ? 'square' : 'volume-2'} size=${15} /><span class="hide-sm">${listening ? 'Parar' : 'Ouvir'}</span></button>`}
+      </div>
+      <div class="stage" ref=${wrapRef}>
+        ${k > 0 && P && html`<div class="poster-wrap" style=${`width:${cssW}px;height:${cssH}px`}>
+          <canvas ref=${canvasRef} class="poster" data-motion=${P.style.id} style=${`width:${cssW}px;height:${cssH}px;cursor:pointer`}
+            role="img" aria-label=${`Vídeo ${P.style.name}, formato ${fmt.label}. Clique para ${paused ? 'continuar' : 'pausar'}.`}
+            onPointerDown=${(e) => { if (e.pointerType === 'mouse' && e.button !== 0) return; toggle(); }}></canvas>
+          ${paused && html`<span class="stage-paused" aria-hidden="true"><${Icon} name="play" size=${30} /></span>`}
+          ${guides && format === 'story' && html`<div class="video-safe-guides" aria-hidden="true" style=${`top:${100 * E.SAFE.top / fmt.h}%;bottom:${100 * E.SAFE.bottom / fmt.h}%`}><span>Zona de segurança</span></div>`}
+        </div>`}
+      </div>
+      <${VideoTimeline} prepared=${P} position=${position} onSeek=${seek} />
+      <div class="ws-notes" aria-live="polite">
+        <span class="note info"><${Icon} name="video" size=${15} /> <span>${P ? html`${P.style.name} · <${CountUp} value=${P.timeline.duration} /> s · ${SOUND_NAMES[vid.sound] || ''}` : 'A preparar o vídeo…'}</span></span>
+        <button class="btn sm ws-pause" disabled=${!coverReady} title=${coverReady ? 'Escolher o fotograma da capa' : 'A preparar as imagens e o vídeo…'} onClick=${() => onCover(at.current)}>Escolher capa</button>
+      </div>
+    </main>`;
+  }
+
+  // ---------------------------------------------------------------- «Vídeo»: the panel
+  // Draws its children at the end of <body>, out of the panel (whose blocks
+  // animate and fold): a dialog's fixed overlay then covers the whole window.
+  function BodyLayer({ children }) {
+    const host = useRef(null);
+    useLayoutEffect(() => {
+      const el = document.createElement('div');
+      document.body.appendChild(el);
+      host.current = el;
+      return () => { render(null, el); el.remove(); host.current = null; };
+    }, []);
+    useLayoutEffect(() => { if (host.current) render(children, host.current); });
+    return null;
+  }
+  // A photo of the video in a square, cropped around its point («Enquadrar»).
+  function FocusThumb({ img, focus }) {
+    const ref = useRef();
+    useEffect(() => {
+      const c = ref.current;
+      if (!c || !img) return;
+      c.width = c.height = 192;
+      const g = c.getContext('2d');
+      g.clearRect(0, 0, 192, 192);
+      RS.motionKit.cover(g, img, 0, 0, 192, 192, focus);
+    }, [img, focus.x, focus.y]);
+    return html`<canvas ref=${ref} aria-hidden="true"></canvas>`;
+  }
+  // The photos the video uses, as the stage has them (a recipe's full photos,
+  // as many as it shows; a style's hero, and its cards when it has them: not
+  // Cinema's or Impacto's), once each, with their ids.
+  function videoPhotoList(photos, style) {
+    if (!photos) return null;
+    const recipe = style.recipe;
+    const imgs = recipe ? (photos.full && photos.full.length ? photos.full : photos.cards || []).slice(0, recipe.photos)
+      : [photos.hero, ...(style.fx.cards ? photos.cards || [] : [])];
+    const out = [];
+    for (const img of imgs) {
+      const id = img && RS.motion.photoIdOf(img);
+      if (id && !out.some((x) => x.id === id)) out.push({ id, img });
+    }
+    return out;
+  }
+  const FOCUS_STEP = 0.02;
+  const r3 = (v) => Math.round(U.clamp(v, 0, 1) * 1000) / 1000;
+  // «Enquadrar»: the photo large, with the point the video keeps in the centre
+  // (of the frame, of a tile, of a card). Dragged with a mouse, a finger or a
+  // pen, or moved with the arrow keys (Shift: bigger steps); «Centrar» goes
+  // back to the default point. Every change is saved and reaches the stage: a
+  // drag when it ends, the arrow keys once they stop (the video is prepared once).
+  const FOCUS_KEYS_SAVE = 280;
+  function FramePhoto({ project, update, photo, onClose }) {
+    const [closing, close] = useClosing(onClose);
+    const stored = RS.motion.photoFocus(project, photo.img) || { x: 0.5, y: 0.4 };
+    const [pt, setPt] = useState(stored);
+    const cur = useRef(pt);
+    const canvasRef = useRef();
+    const dotRef = useRef();
+    const held = useRef(false);
+    const later = useRef(0); // the arrow keys' move, saved once they stop
+    const save = (f) => update((p) => { M.setVideoPhotoFocus(p, photo.id, f); }, { coalesce: 'video-focus' });
+    const wait = () => { clearTimeout(later.current); later.current = 0; };
+    const flush = () => { if (later.current) { wait(); save(cur.current); } };
+    useEffect(() => flush, []); // closed before the keys' move was saved
+    // the ad changed under the dialog (Ctrl+Z): the point follows it, unless it is being moved
+    useEffect(() => {
+      if (held.current || later.current || (cur.current.x === stored.x && cur.current.y === stored.y)) return;
+      cur.current = stored;
+      setPt(stored);
+    }, [stored.x, stored.y]);
+    useEffect(() => {
+      const c = canvasRef.current, img = photo.img;
+      const iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height;
+      const k = Math.min(1, 1200 / Math.max(iw, ih, 1));
+      c.width = Math.max(1, Math.round(iw * k)); c.height = Math.max(1, Math.round(ih * k));
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      if (dotRef.current) dotRef.current.focus();
+    }, [photo.img]);
+    const place = (f, keep = true) => {
+      cur.current = f;
+      setPt(f);
+      if (keep) save(f);
+    };
+    const at = (e) => {
+      const r = canvasRef.current.getBoundingClientRect();
+      return { x: r3((e.clientX - r.left) / r.width), y: r3((e.clientY - r.top) / r.height) };
+    };
+    const down = (e) => {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      e.preventDefault();
+      wait(); // the drag saves where it ends
+      held.current = true;
+      try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* a pointer the browser no longer tracks */ }
+      if (dotRef.current) dotRef.current.focus();
+      place(at(e), false);
+    };
+    const move = (e) => { if (held.current) place(at(e), false); };
+    const up = (e) => { if (!held.current) return; held.current = false; place(at(e)); };
+    // the browser took the pointer over (a scroll): its event has no place on the photo, the last point stays
+    const cancel = () => { if (!held.current) return; held.current = false; place(cur.current); };
+    const onKey = (e) => {
+      const s = e.shiftKey ? FOCUS_STEP * 5 : FOCUS_STEP;
+      const d = { ArrowLeft: [-s, 0], ArrowRight: [s, 0], ArrowUp: [0, -s], ArrowDown: [0, s] }[e.key];
+      if (!d) return;
+      e.preventDefault();
+      place({ x: r3(cur.current.x + d[0]), y: r3(cur.current.y + d[1]) }, false);
+      wait();
+      later.current = setTimeout(() => { later.current = 0; save(cur.current); }, FOCUS_KEYS_SAVE);
+    };
+    // «Centrar»: the photo's own default (the ad's framing, a library photo's, a little above the middle)
+    const centre = () => {
+      wait();
+      update((p) => { M.setVideoPhotoFocus(p, photo.id, null); });
+      place(RS.motion.photoFocus({ photo: project.photo }, photo.img) || { x: 0.5, y: 0.4 }, false);
+    };
+    const pc = (v) => Math.round(v * 100);
+    // Ctrl+Z / Ctrl+Y (the editor's, on the window) undo the keys' move too: it is saved first
+    return html`<div class=${'modal-back' + (closing ? ' closing' : '')} onMouseDown=${(e) => { if (e.target === e.currentTarget) close(); }}
+      onKeyDown=${(e) => { if (e.key === 'Escape') { e.stopPropagation(); close(); } else if ((e.ctrlKey || e.metaKey) && /^[zy]$/i.test(e.key)) flush(); }}>
+      <div class="modal frame-sheet" role="dialog" aria-modal="true" aria-labelledby="frame-title">
+        <header class="modal-head">
+          <h2 id="frame-title">Enquadrar fotografia</h2>
+          <button class="icon-btn" aria-label="Fechar" onClick=${() => close()}><${Icon} name="x" /></button>
+        </header>
+        <div class="frame-body">
+          <p class="frame-hint" id="frame-hint">Arraste o ponto para o que deve ficar ao centro, como a cara de quem está na fotografia. Com o teclado, mova-o com as setas.</p>
+          <div class="frame-photo" onPointerDown=${down} onPointerMove=${move} onPointerUp=${up} onPointerCancel=${cancel}>
+            <canvas ref=${canvasRef} aria-hidden="true"></canvas>
+            <div ref=${dotRef} class="frame-dot" role="slider" tabindex="0" aria-label="Ponto que fica ao centro" aria-describedby="frame-hint"
+              aria-valuemin="0" aria-valuemax="100" aria-valuenow=${pc(pt.x)} aria-valuetext=${`${pc(pt.x)} % da esquerda, ${pc(pt.y)} % do topo`}
+              style=${`left:${pt.x * 100}%;top:${pt.y * 100}%`} onKeyDown=${onKey} onBlur=${flush}></div>
+          </div>
+          <div class="frame-actions">
+            <button type="button" class="btn ghost" onClick=${centre}><${Icon} name="crosshair" size=${16} /> Centrar</button>
+            <button type="button" class="btn primary" onClick=${() => close()}><${Icon} name="check" size=${16} /> Feito</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }
+  // «Fotografias»: the photos the video uses, each with «Enquadrar». style:
+  // the model (RS.motion.styleOf; a recipe's has its definition in .recipe).
+  function VideoFraming({ project, update, photos, style }) {
+    const [open, setOpen] = useState(null); // { id, img, from }
+    const list = videoPhotoList(photos, style);
+    const shut = () => {
+      const { id, from } = open;
+      setOpen(null);
+      const b = from && from.isConnected ? from : document.querySelector(`.vf-item[data-photo-id="${CSS.escape(id)}"]`);
+      if (b) requestAnimationFrame(() => b.focus());
+    };
+    if (!list) return html`<div class="vf-grid" aria-busy="true" aria-label="A carregar as fotografias do vídeo">${[0, 1, 2].map((i) => html`<span key=${i} class="lib-skel"></span>`)}</div>`;
+    if (!list.length) return null;
+    return html`<div class="video-framing">
+      <p class="vf-head">No vídeo: toque numa fotografia para a enquadrar.</p>
+      <div class="vf-grid">${list.map((it, i) => html`<button key=${it.id} type="button" class="vf-item" data-photo-id=${it.id}
+          aria-label=${`Enquadrar a fotografia ${i + 1} do vídeo`} onClick=${(e) => setOpen({ ...it, from: e.currentTarget })}>
+          <${FocusThumb} img=${it.img} focus=${RS.motion.photoFocus(project, it.img) || { x: 0.5, y: 0.4 }} />
+          <span class="vf-label"><${Icon} name="crosshair" size=${14} /> Enquadrar</span></button>`)}</div>
+      ${open && html`<${BodyLayer}><${FramePhoto} key=${open.id} project=${project} update=${update} photo=${open} onClose=${shut} /><//>`}
+    </div>`;
+  }
+  // Photos the person picks for the video (library and «As minhas», up to eight,
+  // in the order picked).
+  function VideoPhotos({ project, ids, onChange }) {
+    const [lib, setLib] = useState(null);
+    const [mine, setMine] = useState([]);
+    const [query, setQuery] = useState(''), [favorite, setFavorite] = useState(false);
+    useEffect(() => {
+      L.index().then(setLib).catch(() => setLib({ items: [] }));
+      L.userItems().then(setMine).catch(() => {});
+    }, []);
+    const adCats = (project.trades || []).map((id) => TR.get(id) && TR.get(id).photo).filter(Boolean);
+    const bundled = lib ? lib.items : [];
+    const list = L.filter([...bundled.filter((i) => adCats.includes(i.cat)), ...bundled.filter((i) => !adCats.includes(i.cat))]
+      .map((i) => ({ ...i, key: i.id, name: `${TR.list.find((t) => t.photo === i.cat)?.label || 'Fotografia'} · ${i.id}` }))
+      .concat(mine.map((m) => ({ ...m, key: m.asset }))), { query, favorite });
+    const full = ids.length >= M.MAX_VIDEO_PHOTOS;
+    const toggle = (key) => onChange(ids.includes(key) ? ids.filter((x) => x !== key) : [...ids, key]);
+    return html`<div class="video-photos">
+      <label class="lib-search">Pesquisar fotografias do vídeo<input type="search" value=${query} onInput=${(e) => setQuery(e.target.value)} /></label><label class="check"><input type="checkbox" checked=${favorite} onChange=${(e) => setFavorite(e.target.checked)} /> Só as minhas favoritas</label>
+      ${!lib ? html`<div class="lib-grid" aria-busy="true" aria-label="A carregar a biblioteca">${[0, 1, 2, 3, 4, 5].map((i) => html`<span key=${i} class="lib-skel"></span>`)}</div>`
+      : html`<div class="lib-grid">${list.map((it) => {
+        const n = ids.indexOf(it.key) + 1;
+        return html`<button key=${it.key} type="button" class=${'lib-item' + (n ? ' picked' : '')} aria-pressed=${n > 0} disabled=${!n && full}
+          aria-label=${n ? `${L.label(it)}, fotografia ${n} do vídeo (tocar para tirar)` : `Usar ${L.label(it)} no vídeo`} onClick=${() => toggle(it.key)}>
+          <img src=${it.thumb} alt="" loading="lazy" />${n > 0 && html`<span class="pick-n" aria-hidden="true">${n}</span>`}</button>`;
+      })}</div>`}
+      ${lib && !list.length && html`<p class="lib-empty">Não há fotografias para estes filtros.</p>`}
+      <small class="field-hint"><${CountUp} value=${ids.length} duration=${300} /> de ${M.MAX_VIDEO_PHOTOS}. Entram no vídeo por esta ordem. A pesquisa não retira fotografias já escolhidas.</small>
+    </div>`;
+  }
+  // The «Vídeo» panel in four tabs; the open one is kept by the Editor. Modelo:
+  // the recipes and styles, the photos («Enquadrar») and the length; Textos;
+  // Aspeto: colours, letters, background; Som e fim.
+  const VIDEO_TABS = [
+    { id: 'modelo', label: 'Modelo', icon: 'layout-template' },
+    { id: 'textos', label: 'Textos', icon: 'type' },
+    { id: 'aspeto', label: 'Aspeto', icon: 'palette' },
+    { id: 'fim', label: 'Som e fim', icon: 'music' },
+  ];
+  function VideoPanel({ project, update, images, photos, P, vKey, tab, setTab, onEditImage }) {
+    const vid = project.video || M.DEFAULT_VIDEO;
+    const style = RS.motion.styleOf(vid.motion);
+    const recipe = !!style.recipe;
+    // only the settings that act on this video: «Cartaz animado» plays the poster as it is
+    const poster = !!style.poster;
+    const usesPhotos = recipe ? style.recipe.photos > 0 : !poster;
+    const setVideo = (patch, coalesce) => update((p) => { p.video = { ...M.DEFAULT_VIDEO, ...(p.video || {}), ...patch }; }, coalesce ? { coalesce } : {});
+    const setShow = (patch) => update((p) => {
+      p.video = { ...M.DEFAULT_VIDEO, ...(p.video || {}) };
+      p.video.show = { ...M.DEFAULT_VIDEO_SHOW, ...(p.video.show || {}), ...patch };
+    });
+    // The length stays when the new model has it («Automática» too) — but Curto's 6 s is Curto's own.
+    const pick = (s) => {
+      const has = vid.duration === 'auto' ? s.durations.length > 1 : s.durations.includes(vid.duration);
+      const keep = has && !(style.id === 'curto' && s.id !== 'curto');
+      setVideo({ motion: s.id, duration: keep ? vid.duration : s.defaultDuration, bg: s.bgModes[0] });
+    };
+    const shown = RS.motion.STYLES.filter((s) => !s.test);
+    const seg = (items, value, onPick, aria) => html`<div class="seg small" role="radiogroup" aria-label=${aria}>
+      ${items.map(([v, l, title]) => html`<button key=${v} role="radio" aria-checked=${value === v} class=${value === v ? 'on' : ''} title=${title || ''}
+        onClick=${() => onPick(v)}>${l}</button>`)}</div>`;
+    // «Fotografias»: the trades' photos, or the ones picked
+    const [choosing, setChoosing] = useState(() => !!chosenPhotos(project));
+    const picked = chosenPhotos(project) || [];
+    // the list changes, each photo's point («Enquadrar») stays
+    const setPhotoList = (mode, ids) => update((p) => {
+      p.video = { ...M.DEFAULT_VIDEO, ...(p.video || {}) };
+      p.video.photos = { ...(p.video.photos || {}), mode, ids };
+    });
+    const setPhotos = (mode) => {
+      setChoosing(mode === 'chosen');
+      if (mode === 'trades') setPhotoList('trades', []);
+    };
+    // «Som»: the person's own file
+    const [soundInfo, setSoundInfo] = useState(null);
+    useEffect(() => {
+      let live = true;
+      if (vid.ownSound) A.audioInfo(vid.ownSound).then((i) => { if (live) setSoundInfo(i); });
+      else setSoundInfo(null);
+      return () => { live = false; };
+    }, [vid.ownSound]);
+    async function chooseOwnSound() {
+      const f = await U.pickFile('audio/*,.mp3,.m4a');
+      if (!f) return;
+      try {
+        const a = await A.importAudio(f);
+        setVideo({ sound: 'own', ownSound: a.id });
+        setSoundInfo({ id: a.id, name: a.name, duration: a.duration });
+        toast(`Som «${a.name}» pronto. Fica ajustado à duração do vídeo.`);
+      } catch (err) {
+        toast(err.message || 'Não foi possível ler este ficheiro de som.', { kind: 'error' });
+        setVideo({ sound: 'generated' });
+      }
+    }
+    // «Um som meu» asks for a file the first time (and when it is already chosen).
+    const pickSound = (v) => {
+      if (v === 'own' && (!vid.ownSound || vid.sound === 'own')) { chooseOwnSound(); return; }
+      setVideo({ sound: v });
+    };
+    // What this video cannot show (too little time, or no such scene in the style).
+    const lost = P && RS.motion.leftOut(P);
+    const count = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+    const lostText = lost && [
+      lost.benefits && count(lost.benefits, 'vantagem', 'vantagens'),
+      lost.highlights && count(lost.highlights, 'destaque', 'destaques'),
+      lost.positions && count(lost.positions, 'vaga da lista', 'vagas da lista'),
+      lost.intro && 'a introdução',
+      lost.chat && 'a conversa no WhatsApp',
+      lost.closing && 'a frase final',
+    ].filter(Boolean);
+    const several = lostText && (lostText.length > 1 || lost.benefits > 1 || lost.highlights > 1 || lost.positions > 1);
+    const listed = lostText && (lostText.length > 1 ? `${lostText.slice(0, -1).join(', ')} e ${lostText[lostText.length - 1]}` : lostText[0]);
+    // at the longest length (or on «Automática», which already gives all it can) only fewer lines help
+    const longest = Math.max(...style.durations);
+    const advice = style.durations.length === 1 ? 'Escolha outro modelo, com mais tempo.'
+      : vid.duration !== 'auto' && P && P.timeline.duration < longest ? 'Escolha «Automática» ou uma duração maior.'
+      : 'Tire algumas linhas em «Textos» ou escolha outro modelo.';
+    const lostNote = lostText && lostText.length > 0 && html`<p class="video-note"><${Icon} name="info" size=${15} /> <span>Não cabe tudo em ${P.timeline.duration} s: ${several ? 'ficam' : 'fica'} de fora ${listed}. ${advice}</span></p>`;
+    const gallery = (list, label) => html`<${MotionPicker} project=${project} images=${images} photos=${photos} value=${vid.motion} onChange=${pick} list=${list} label=${label} />`;
+    // «Receitas» and «Estilos» fold: when the tab opens, the one holding the chosen model is open
+    // and the other names it; a pick changes neither (the card tapped stays where it is)
+    const galleryGroup = (title, mine) => html`<${Group} title=${title} fold=${`video:${title === 'Receitas' ? 'receitas' : 'estilos'}`} closed=${!mine}
+      summary=${mine ? style.name : `Em uso: ${style.name}`}>${gallery(shown.filter((s) => !!s.recipe === (title === 'Receitas')), title)}<//>`;
+    // «Fotografias» (part of the model): the trades' photos or the ones picked, each with «Enquadrar»
+    const photosBlock = usesPhotos && html`<${Group} where="vídeo" title="Fotografias">
+      ${seg([['trades', 'Das funções do anúncio'], ['chosen', 'Escolher']], choosing ? 'chosen' : 'trades', setPhotos, 'Fotografias do vídeo')}
+      <${VideoFraming} project=${project} update=${update} photos=${photos} style=${style} />
+      ${choosing && html`<${VideoPhotos} project=${project} ids=${picked} onChange=${(ids) => setPhotoList(ids.length ? 'chosen' : 'trades', ids)} />`}
+    <//>`;
+    // the tabs: arrows, Home and End move between them (WAI-ARIA tabs)
+    const tabsRef = useRef();
+    const onTabKey = (e) => {
+      const i = VIDEO_TABS.findIndex((t) => t.id === tab);
+      const n = VIDEO_TABS.length;
+      const to = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: n - 1 }[e.key];
+      if (to === undefined) return;
+      e.preventDefault();
+      const next = VIDEO_TABS[(to + n) % n];
+      setTab(next.id);
+      requestAnimationFrame(() => { const b = document.getElementById(`vtab-${next.id}`); if (b) b.focus(); });
+    };
+    // a new tab opens at its top (the tabs stay pinned above it)
+    useLayoutEffect(() => {
+      const sc = tabsRef.current && tabsRef.current.closest('.panel');
+      const head = sc && sc.querySelector('.panel-head');
+      if (!head) return;
+      const natural = head.getBoundingClientRect().bottom - sc.getBoundingClientRect().top + sc.scrollTop;
+      if (sc.scrollTop > natural) sc.scrollTop = natural;
+    }, [tab]);
+    const vs = vid.show || M.DEFAULT_VIDEO_SHOW;
+    return html`<div class="panel-inner">
+      <div class="panel-head"><h2>Vídeo</h2>
+        <p>${style.name}${P ? html` · <${CountUp} value=${P.timeline.duration} /> s` : ''}. Cada alteração aparece logo no vídeo.</p></div>
+      <div class="video-tabs" role="tablist" aria-label="Partes do vídeo" ref=${tabsRef} onKeyDown=${onTabKey}>
+        ${VIDEO_TABS.map((t) => html`<button key=${t.id} id=${`vtab-${t.id}`} type="button" role="tab" aria-selected=${tab === t.id} aria-controls=${tab === t.id ? `vpanel-${t.id}` : undefined}
+          tabindex=${tab === t.id ? 0 : -1} class=${tab === t.id ? 'on' : ''} onClick=${() => setTab(t.id)}><${Icon} name=${t.icon} size=${16} /><span>${t.label}</span></button>`)}
+      </div>
+      <div key=${tab} class="video-tab" role="tabpanel" id=${`vpanel-${tab}`} aria-labelledby=${`vtab-${tab}`}>
+        ${tab === 'modelo' && html`
+          ${galleryGroup('Receitas', recipe)}
+          ${galleryGroup('Estilos', !recipe)}
+          <p class="field-hint">${style.concept || ''}</p>
+          ${photosBlock}
+          <${Group} id="video-duration" where="vídeo" title="Duração">
+            <${VideoLengths} project=${project} P=${P} vKey=${vKey} onPick=${(d) => setVideo({ duration: d })} />
+            ${lostNote}
+          <//>`}
+        ${tab === 'textos' && html`<${VideoTexts} project=${project} update=${update} style=${style} lostNote=${lostNote} onEditImage=${onEditImage} />`}
+        ${tab === 'aspeto' && html`
+          ${poster ? html`<${Group} where="vídeo" title="Animação">
+            ${seg([['dynamic', 'Dinâmico', 'Entradas rápidas, selo a carimbar e contacto a pulsar'], ['soft', 'Suave', 'Só aparições suaves e movimentos curtos']], vid.style, (s) => setVideo({ style: s }), 'Animação do cartaz')}
+          <//>` : html`<${Group} where="vídeo" title="Cores">
+            <div class="video-colors">
+              ${seg([['style', recipe ? 'Cores da receita' : 'Cores do estilo'], ['brand', 'Cores da marca', 'As cores principal e de destaque do anúncio']], vid.colors === 'brand' || vid.colors === 'style' ? vid.colors : null, (c) => setVideo({ colors: c }), 'Cores do vídeo')}
+            </div>
+            <div class="palettes video-palettes" role="radiogroup" aria-label="Paletas prontas">
+              ${M.PALETTES.map((pl) => html`<button key=${pl.id} type="button" role="radio" aria-checked=${vid.colors === pl.id} class=${'palette' + (vid.colors === pl.id ? ' on' : '')}
+                title=${pl.name} aria-label=${`Paleta ${pl.name}`} onClick=${() => setVideo({ colors: pl.id })}>
+                <span style=${`background:${pl.primary}`}></span><span style=${`background:${pl.accent}`}></span></button>`)}
+            </div>
+            <div class="video-accent">
+              <${ColorField} id="f-video-accent" label="Cor de destaque" value=${(P && P.C && P.C.accentChosen) || style.palette.accent}
+                onChange=${(v, live) => setVideo({ accent: v }, live ? 'video-accent' : undefined)} />
+              ${vid.accent && html`<button type="button" class="btn link sm" onClick=${() => setVideo({ accent: null })}><${Icon} name="rotate-ccw" size=${14} /> Repor</button>`}
+            </div>
+            ${P && P.C && P.C.accent !== P.C.accentChosen && html`<small class="field-hint">No vídeo fica <span class="hex-chip" style=${`background:${P.C.accent}`}></span> ${P.C.accent} para se ler bem neste fundo.</small>`}
+            <small class="field-hint">O botão do WhatsApp fica sempre verde.</small>
+          <//>`}
+          ${!poster && html`<${Group} where="vídeo" title="Letra">
+            <select id="f-video-font" aria-label="Letra do vídeo" value=${vid.font || ''} onChange=${(e) => setVideo({ font: e.target.value || null })}>
+              <option value="">${recipe ? 'Da receita' : 'Do estilo'}</option>
+              ${Object.entries(M.FONTS).map(([id, f]) => html`<option key=${id} value=${id}>${f.label}</option>`)}
+            </select>
+          <//>`}
+          ${style.bgModes.length > 1 && html`<${Group} where="vídeo" title="Fundo">
+            ${seg([['light', 'Claro'], ['dark', 'Escuro']], style.bgModes.includes(vid.bg) ? vid.bg : style.bgModes[0], (b) => setVideo({ bg: b }), 'Fundo do vídeo')}
+          <//>`}`}
+        ${tab === 'fim' && html`
+          <${Group} where="vídeo" title="Som">
+            ${seg(SOUND_OPTIONS, vid.sound, pickSound, 'Som do vídeo')}
+            ${vid.sound === 'own' && soundInfo && html`<p class="sound-file"><${Icon} name="music" size=${15} /> <span>${soundInfo.name} · ${Math.round(soundInfo.duration)} s</span>
+              <button type="button" class="btn link sm" onClick=${chooseOwnSound}>Trocar</button></p>`}
+            <small class="field-hint">${vid.sound === 'none' ? 'Sem som: junte a música na app do Instagram, que tem músicas licenciadas e dá mais alcance.'
+              : vid.sound === 'own' ? 'Use só músicas que pode publicar. O som é ajustado à duração do vídeo, com um final suave.'
+              : 'Música criada pela app: pode publicar sem problemas de direitos.'} «Ouvir» está por cima do vídeo.</small>
+          <//>
+          ${!poster && html`<${Group} where="vídeo" title="Contacto no fim" hint="O cartão do WhatsApp fica parado no fim, para dar tempo de o ler.">
+            ${seg([[2, '2 s'], [4, '4 s']], vid.hold === 4 ? 4 : 2, (h) => setVideo({ hold: h }), 'Tempo do contacto no fim')}
+            <label class="switch video-qr"><input type="checkbox" checked=${vs.qr !== false} onChange=${(e) => setShow({ qr: e.target.checked })} /><span class="switch-ui"></span> Código QR no cartão</label>
+          <//>`}
+          ${poster && html`<p class="field-hint">O Cartaz animado acaba como a imagem: o contacto e o código QR são os dela.</p>`}`}
+      </div>
+    </div>`;
+  }
+
+  // «Duração»: 10–30 s and «Automática · N s» (and 6 s where the model has
+  // it). A length the information cannot fill is greyed, with how much more
+  // to write: a video is never stretched, slowed down or repeated.
+  function VideoLengths({ project, P, vKey, onPick }) {
+    const vid = project.video || M.DEFAULT_VIDEO;
+    // a style is measured with the photos the stage uses
+    const photos = P && P.content ? P.content.photos : undefined;
+    const L = useMemo(() => RS.motion.lengths(project, { locale: project.locale, photos }), [vKey, photos]);
+    // what makes a video longer: a style grows with benefits, a recipe with benefits or highlights
+    const more = (n, adds = L.adds) => (adds === 'benefits' ? `${n} ${n === 1 ? 'vantagem' : 'vantagens'}`
+      : `${n} ${n === 1 ? 'vantagem ou destaque' : 'vantagens ou destaques'}`);
+    const why = (o) => `Escreva mais ${more(o.missing)} para chegar aos ${o.value} s`;
+    // the ad's other languages: a fixed length one of them cannot fill is named
+    // (measured once the edits settle; «Automática» fits each language by itself)
+    const settled = useSettled(project, 300);
+    const others = useMemo(() => {
+      const d = (settled.video || {}).duration;
+      if (typeof d !== 'number' || d <= 10) return [];
+      return settled.locales.filter((code) => code !== settled.locale).map((code) => {
+        const Lc = RS.motion.lengths(settled, { locale: code, photos });
+        const o = Lc.options.find((x) => x.value === d);
+        return o && !o.ok ? { code, missing: o.missing, adds: Lc.adds, d } : null;
+      }).filter(Boolean);
+    }, [videoKey(settled), photos]);
+    const auto = L.options.find((o) => o.value === 'auto');
+    const fixed = L.options.filter((o) => o.value !== 'auto');
+    const chosen = L.options.find((o) => o.value === vid.duration);
+    const value = chosen ? vid.duration : auto ? 'auto' : fixed[0].value;
+    const lost = fixed.filter((o) => !o.ok);
+    const worst = lost[lost.length - 1];
+    const radio = (o, label, cls) => html`<button key=${o.value} type="button" role="radio" aria-checked=${value === o.value}
+      class=${(cls || '') + (value === o.value ? ' on' : '')} disabled=${!o.ok} title=${o.ok ? '' : why(o)} onClick=${() => onPick(o.value)}>${label}</button>`;
+    return html`<div class="lengths" role="radiogroup" aria-label="Duração do vídeo">
+        ${auto && radio(auto, html`<span>Automática</span><small>· <${CountUp} value=${auto.seconds} /> s</small>`, 'len-auto')}
+        <div class="seg small len-fixed">${fixed.map((o) => radio(o, `${o.value} s`))}</div>
+      </div>
+      ${auto && html`<small class="field-hint">«Automática» dá o tempo que os textos pedem, entre 10 e 30 s.</small>`}
+      ${chosen && !chosen.ok && P && html`<p class="video-note"><${Icon} name="info" size=${15} /> <span>Com estes textos o vídeo só chega aos ${P.timeline.duration} s.</span></p>`}
+      ${worst && html`<p class="length-note"><${Icon} name="pencil" size=${14} /> <span>${why(worst)}.</span></p>`}
+      ${others.map((x) => {
+        const l = M.localeInfo(x.code);
+        return html`<p key=${x.code} class="length-note length-other"><${Icon} name="languages" size=${14} /> <span>Em ${l.label} (${l.short}) faltam ${more(x.missing, x.adds)} para chegar aos ${x.d} s.</span></p>`;
+      })}`;
+  }
+
+  // «Textos do vídeo», one language at a time: every field starts as the
+  // image's and follows it until he changes it here (for the video only);
+  // lists follow the image item by item. Model words are under «Textos do modelo».
+  const MODEL_WORDS = {
+    board: 'Cabeçalho do painel', benefit: 'Linha das vantagens', role: 'Função', gate: 'Embarque', pass: 'Título do cartão',
+    clock: 'Hora no ecrã', now: 'Quando chega a mensagem', title: 'Título do contrato', signature: 'Linha da assinatura',
+    stamp: 'Carimbo', benefits: 'Palavra «vantagens»',
+  };
+  const VIDEO_LISTS = ['benefits', 'highlights', 'positions', 'contacts'];
+  function VideoTexts({ project, update, style, lostNote, onEditImage }) {
+    if (style.poster) {
+      return html`<div class="video-note"><${Icon} name="info" size=${15} />
+        <span>O Cartaz animado mostra a imagem tal como está: mude os textos na imagem. <button type="button" class="btn link sm" onClick=${onEditImage}>Editar a imagem</button></span></div>`;
+    }
+    const code = project.locale;
+    const loc = M.localeInfo(code);
+    const vid = project.video || M.DEFAULT_VIDEO;
+    const vs = vid.show || M.DEFAULT_VIDEO_SHOW;
+    const vt = (vid.texts || {})[code] || {};
+    const img = RS.motionTimeline.imageTexts(project, code);
+    const def = style.recipe;
+    // a change to this language's texts; an emptied text stays (it blanks the
+    // field in the video), lists and model words left with nothing are dropped
+    const edit = (fn, coalesce) => update((p) => {
+      p.video = { ...M.DEFAULT_VIDEO, ...(p.video || {}) };
+      p.video.show = { ...M.DEFAULT_VIDEO_SHOW, ...(p.video.show || {}) };
+      const all = { ...(p.video.texts || {}) };
+      const cur = { ...(all[code] || {}) };
+      fn(cur, p);
+      for (const k of VIDEO_LISTS) {
+        const l = cur[k];
+        if (l && !Object.keys(l.edits || {}).length && !(l.added || []).length && !(l.order || []).length) delete cur[k];
+      }
+      if (cur.model) {
+        for (const id of Object.keys(cur.model)) if (!Object.keys(cur.model[id]).length) delete cur.model[id];
+        if (!Object.keys(cur.model).length) delete cur.model;
+      }
+      if (Object.keys(cur).length) all[code] = cur; else delete all[code];
+      p.video.texts = all;
+    }, coalesce ? { coalesce } : {});
+    const eyeOn = (key) => (typeof vs[key] === 'boolean' ? vs[key] : (project.show || {})[key] !== false);
+    const setEye = (key, on) => update((p) => {
+      p.video = { ...M.DEFAULT_VIDEO, ...(p.video || {}) };
+      p.video.show = { ...M.DEFAULT_VIDEO_SHOW, ...(p.video.show || {}), [key]: on };
+    });
+    const own = (key) => typeof vt[key] === 'string';
+    const text = (key, label, o = {}) => html`<${VtField} id=${`vt-${key}`} label=${label} solo=${o.solo} multiline=${o.multiline} blank=${o.blank}
+      value=${own(key) ? vt[key] : img[key]} edited=${own(key) && o.reset !== false} placeholder=${o.placeholder || ''} hint=${o.hint}
+      onInput=${(v) => edit((c, p) => { if (o.onType) o.onType(c, p, v); c[key] = v; }, `vt:${code}:${key}`)}
+      onReset=${() => edit((c) => { delete c[key]; })} />`;
+    // a style shows the salary and the vacancies only (its counter): no highlights of his own there
+    const fixedHl = !def;
+    const listItems = (kind) => (kind === 'highlights' && fixedHl ? img.highlights.filter((x) => x.role === 'salary' || x.role === 'vacancies') : img[kind]);
+    const list = (kind, addLabel, itemLabel, placeholder) => html`<${VtList} kind=${kind} items=${listItems(kind)} override=${vt[kind]} hl=${kind === 'highlights'}
+      own=${!(kind === 'highlights' && fixedHl)} addLabel=${addLabel} itemLabel=${itemLabel} placeholder=${placeholder} onChange=${(fn, coalesce) => edit((c) => { c[kind] = fn(c[kind]); }, coalesce)} />`;
+    const block = (key, title, eye, body, hint) => html`<${Group} id=${`vt-block-${key}`} title=${title} where="vídeo" hint=${hint}
+      show=${eye ? eyeOn(eye) : undefined} onToggle=${eye ? (on) => setEye(eye, on) : undefined}>${body}<//>`;
+    // the closing line shows once he writes it (it has no image text)
+    const showClosing = (c, p, v) => {
+      if (v.trim() && !String(vt.closing || '').trim()) p.video.show.closing = true;
+    };
+    const words = def && def.labels ? Object.keys(def.labels) : [];
+    const mine = (vt.model || {})[def ? def.id : ''] || {};
+    const setWord = (key, v) => edit((c) => {
+      const m = { ...(c.model || {}) };
+      m[def.id] = { ...(m[def.id] || {}) };
+      if (v === undefined) delete m[def.id][key]; else m[def.id][key] = v;
+      c.model = m;
+    }, v === undefined ? undefined : `vt:${code}:model:${key}`);
+    const resetAll = () => {
+      edit((c) => { for (const k of Object.keys(c)) delete c[k]; });
+      toast(`Os textos do vídeo em ${loc.label} voltaram a ser os da imagem. Pode desfazer com Ctrl+Z.`);
+    };
+    return html`<div class="vt-panel">
+      <div class="vt-top">
+        <div class="vt-langs">
+          <span class="vt-langs-label">Língua</span>
+          <div class="texts-locales chips-row small" role="radiogroup" aria-label="Língua dos textos do vídeo">
+            ${project.locales.map((c) => {
+              const l = M.localeInfo(c);
+              return html`<button key=${c} type="button" role="radio" aria-checked=${c === code} class=${'tchip' + (c === code ? ' on' : '')}
+                title=${`Textos do vídeo em ${l.label}`} onClick=${() => update((p) => { p.locale = c; }, { coalesce: 'locale' })}>${l.short}</button>`;
+            })}
+          </div>
+        </div>
+        <button type="button" class="btn link sm vt-reset-all" disabled=${!Object.keys(vt).length} onClick=${resetAll}
+          title=${`Todos os textos do vídeo em ${loc.label} voltam a ser os da imagem`}><${Icon} name="rotate-ccw" size=${14} /> Repor tudo da imagem</button>
+      </div>
+      <p class="group-hint vt-intro">Começam iguais aos da imagem. O que mudar aqui fica só no vídeo em ${loc.label}.</p>
+      ${lostNote}
+      ${block('kicker', 'Chamada', 'kicker', text('kicker', 'Chamada', { solo: true }))}
+      ${block('headline', 'Título', null, text('headline', 'Título', { solo: true, multiline: true, blank: 'Em branco: o vídeo mostra o nome da empresa ou a primeira vantagem.' }))}
+      ${def && block('intro', 'Introdução', 'intro', text('intro', 'Introdução', { solo: true, multiline: true }))}
+      ${block('benefits', 'Vantagens', 'benefits', list('benefits', 'Adicionar vantagem', 'Vantagem', 'Ex.: Carrinha da empresa'))}
+      ${block('highlights', 'Destaques', 'highlights', list('highlights', 'Adicionar destaque', 'Destaque'),
+        fixedHl ? `Este estilo mostra o salário e as vagas. As receitas mostram também o selo e os seus destaques.`
+          : 'Números em destaque, como «1900 €» · «por mês» ou «40 h» · «por semana». Só um número simples conta até ao valor.')}
+      ${block('positions', 'Vagas', 'positions', html`
+        ${text('positionsTitle', 'Título da lista', { placeholder: (M.STOCK.positionsTitle || {})[code] || '' })}
+        ${list('positions', 'Adicionar vaga', 'Vaga', 'Ex.: Pintor de construção civil')}`)}
+      ${def && block('chat', 'Conversa no WhatsApp', 'chat', text('message', 'Mensagem', { solo: true, multiline: true }),
+        'A mensagem que aparece a ser escrita e enviada no vídeo.')}
+      ${block('contacts', 'Contactos', 'contacts', list('contacts', 'Adicionar contacto', 'Contacto', 'Ex.: emprego@empresa.pt'),
+        'Oculto, o vídeo também acaba sem o cartão do WhatsApp.')}
+      ${block('button', 'Botão e dica', null, html`
+        ${text('cta', 'Botão do WhatsApp')}
+        ${text('hint', 'Dica do código QR')}`)}
+      ${def && block('closing', 'Frase final', 'closing', text('closing', 'Frase final', { solo: true, reset: false, placeholder: 'Ex.: Começa já na segunda-feira', onType: showClosing }),
+        'Uma frase sua antes do contacto.')}
+      ${block('brand', 'Nome da empresa', null, text('brandName', 'Nome da empresa', { solo: true, placeholder: 'Nome da empresa' }))}
+      ${words.length > 0 && block('model', 'Textos do modelo', null, words.map((key) => {
+        const d = def.labels[key] || {};
+        const mineSet = typeof mine[key] === 'string';
+        return html`<${VtField} key=${key} id=${`vt-model-${key}`} label=${MODEL_WORDS[key] || d['pt-PT'] || key} value=${mineSet ? mine[key] : (d[code] || d['pt-PT'] || '')}
+          edited=${mineSet} resetLabel="Repor" blank="Em branco: o modelo não mostra esta palavra." onInput=${(v) => setWord(key, v)} onReset=${() => setWord(key, undefined)} />`;
+      }), `Palavras que só o modelo ${style.name} usa, já traduzidas.`)}
+    </div>`;
+  }
+  // One text of the video: the image's until he writes his own («Repor da imagem»).
+  // blank: what an emptied text does in the video (said under the field)
+  function VtField({ id, label, value, edited, onInput, onReset, multiline, placeholder, hint, solo, resetLabel = 'Repor da imagem', blank = 'Fica em branco no vídeo.' }) {
+    return html`<div class=${'field vt-field' + (edited ? ' edited' : '') + (solo ? ' solo' : '')}>
+      <div class="vt-label"><label for=${id} class=${solo ? 'sr-only' : ''}>${label}</label>
+        ${edited && html`<span class="vt-own">Só no vídeo</span>`}
+        ${edited && onReset && html`<button type="button" class="btn link sm vt-reset" onClick=${onReset} title="Voltar ao texto de origem"><${Icon} name="rotate-ccw" size=${13} /> ${resetLabel}</button>`}</div>
+      ${multiline ? html`<${AutoTextarea} id=${id} value=${value} placeholder=${placeholder} onInput=${(e) => onInput(e.target.value)} />`
+        : html`<input id=${id} type="text" value=${value} placeholder=${placeholder} onInput=${(e) => onInput(e.target.value)} />`}
+      ${edited && !String(value || '').trim() && html`<small class="field-hint vt-blank">${blank}</small>`}
+      ${hint && html`<small class="field-hint">${hint}</small>`}
+    </div>`;
+  }
+  // A list of the video: the image's items (changed, taken out and brought
+  // back one by one) and his own; a highlight is a value and a label.
+  const HL_ROLES = { salary: 'Salário', vacancies: 'Vagas', badge: 'Selo' };
+  // examples in the empty fields: value · label of each kind of highlight
+  const HL_EXAMPLES = { salary: ['1900 €', 'por mês'], vacancies: ['12', 'vagas'], badge: ['Início imediato', 'opcional'], own: ['40 h', 'por semana'] };
+  // own: his own items can be added (and are shown)
+  function VtList({ kind, items, override, onChange, hl, addLabel, itemLabel, placeholder, own = true }) {
+    const ov = override || {};
+    const edits = ov.edits || {};
+    const added = ov.added || [];
+    const pendingFocus = useRef(null);
+    const listRef = useRef();
+    const exits = RS.ui.useExits();
+    const arrived = RS.ui.useArrivals([...items.map((it) => it.id), ...(own ? added.map((it) => it.id) : [])]);
+    RS.ui.useFlip(listRef);
+    useEffect(() => {
+      if (!pendingFocus.current) return;
+      const el = document.getElementById(pendingFocus.current);
+      pendingFocus.current = null;
+      if (el) el.focus();
+    });
+    // each change applies to the list as saved, so two quick edits never undo each other
+    const change = (fn, coalesce) => onChange((l) => {
+      const next = { edits: { ...((l && l.edits) || {}) }, added: [...((l && l.added) || [])], order: (l && l.order) || null };
+      fn(next);
+      return next;
+    }, coalesce);
+    const has = (id) => Object.prototype.hasOwnProperty.call(edits, id);
+    // patch: { text } | { value } | { label }; null takes the item out of the video
+    const editImage = (id, patch, coalesce) => change((l) => {
+      if (patch === null) l.edits[id] = null;
+      else l.edits[id] = hl ? { ...(l.edits[id] || {}), ...patch } : patch.text;
+    }, coalesce);
+    const resetImage = (id) => change((l) => { delete l.edits[id]; });
+    const editAdded = (id, patch, coalesce) => change((l) => { l.added = l.added.map((x) => (x.id === id ? { ...x, ...patch } : x)); }, coalesce);
+    const removeAdded = (id) => exits.exit(id, () => change((l) => { l.added = l.added.filter((x) => x.id !== id); }));
+    const add = () => {
+      const id = M.item('').id;
+      pendingFocus.current = `vt-${kind}-${id}`;
+      change((l) => { l.added.push(hl ? { id, role: 'own', value: '', label: '' } : { id, text: '' }); });
+    };
+    const name = (it) => (hl ? [it.value, it.label].filter(Boolean).join(' ') : it.text) || itemLabel;
+    const fields = (it, cur, onEdit) => (hl ? html`
+        <input id=${`vt-${kind}-${it.id}`} class="vt-hl-value" type="text" value=${cur.value} placeholder=${(HL_EXAMPLES[it.role] || HL_EXAMPLES.own)[0]}
+          aria-label=${`Valor: ${HL_ROLES[it.role] || itemLabel}`} onInput=${(e) => onEdit({ value: e.target.value }, 'value')} />
+        <input id=${`vt-${kind}-${it.id}-label`} class="vt-hl-label" type="text" value=${cur.label} placeholder=${(HL_EXAMPLES[it.role] || HL_EXAMPLES.own)[1]}
+          aria-label=${`Legenda: ${HL_ROLES[it.role] || itemLabel}`} onInput=${(e) => onEdit({ label: e.target.value }, 'label')} />`
+      : html`<input id=${`vt-${kind}-${it.id}`} type="text" value=${cur.text} placeholder=${placeholder} aria-label=${itemLabel}
+          onInput=${(e) => onEdit({ text: e.target.value }, 'text')} />`);
+    return html`<div class="vt-list" ref=${listRef}>
+      ${items.map((it) => {
+        const e = has(it.id) ? edits[it.id] : undefined;
+        if (e === null) {
+          return html`<div key=${it.id} data-flip=${it.id} class=${'vt-row removed' + (arrived(it.id) ? ' fresh' : '')}>
+            <span class="vt-gone">${name(it)}</span>
+            <button type="button" class="btn link sm vt-restore" onClick=${() => resetImage(it.id)}><${Icon} name="rotate-ccw" size=${13} /> Voltar a pôr</button>
+          </div>`;
+        }
+        const cur = hl ? { ...it, ...(e || {}) } : { text: typeof e === 'string' ? e : it.text };
+        return html`<div key=${it.id} data-flip=${it.id} class=${'vt-row' + (arrived(it.id) ? ' fresh' : '') + (e !== undefined ? ' edited' : '') + (hl ? ' vt-hl' : '')}>
+          ${hl && HL_ROLES[it.role] && html`<span class="vt-origin">${HL_ROLES[it.role]}</span>`}
+          ${fields(it, cur, (patch, f) => editImage(it.id, patch, `vt:${kind}:${it.id}:${f}`))}
+          ${e !== undefined && html`<button type="button" class="icon-btn subtle vt-reset" aria-label=${`Repor da imagem: ${name(it)}`} title="Repor da imagem"
+            onClick=${() => resetImage(it.id)}><${Icon} name="rotate-ccw" size=${15} /></button>`}
+          <button type="button" class="icon-btn subtle vt-remove" aria-label=${`Tirar do vídeo: ${name(cur)}`} title="Tirar do vídeo (fica na imagem)"
+            onClick=${() => editImage(it.id, null)}><${Icon} name="x" size=${16} /></button>
+        </div>`;
+      })}
+      ${own && added.map((it) => html`<div key=${it.id} data-flip=${it.id} class=${'vt-row own' + (arrived(it.id) ? ' fresh' : '') + (hl ? ' vt-hl' : '') + (exits.leaving(it.id) ? ' leaving' : '')}>
+        ${hl && html`<span class="vt-origin">Seu</span>`}
+        ${fields(it, it, (patch, f) => editAdded(it.id, patch, `vt:${kind}:${it.id}:${f}`))}
+        <button type="button" class="icon-btn subtle vt-remove" aria-label=${`Apagar: ${name(it)}`} title="Apagar"
+          onClick=${() => removeAdded(it.id)}><${Icon} name="x" size=${16} /></button>
+      </div>`)}
+      ${own && html`<button type="button" class="add-row vt-add" data-flip="end" onClick=${add}><${Icon} name="plus" size=${16} stroke=${2.4} /> ${addLabel}</button>`}
+    </div>`;
+  }
+  const SOUND_OPTIONS = [['generated', 'Música da app', 'Ritmo e efeitos criados pela app, sem direitos de autor'], ['own', 'Um som meu', 'Um ficheiro MP3 ou M4A seu'], ['none', 'Sem som', 'Junte a música depois, na app do Instagram']];
+
+  // ---------------------------------------------------------------- export
+  const EXPORT_NAMES = { square: 'quadrado', portrait: 'retrato', story: 'story' };
+
+  // The dialog opens on the editor's tab; the video itself is shaped in «Vídeo»
+  // («Mudar o vídeo» goes there: onClose('video')).
+  function ExportDialog({ project, update, images, onClose, saveFile, fileSaving, mobile, initialKind, videoFormat, prepared, onHistory, onResolve, onProduction }) {
+    const [kind, setKind] = useState(initialKind === 'video' ? 'video' : 'image'); // 'image' | 'video'
+    // the previews are drawn once the dialog has arrived: drawing them during its
+    // entrance stalled the sheet on a phone (half a second while it rose)
+    const [entered, setEntered] = useState(false);
+    useEffect(() => { const id = setTimeout(() => setEntered(true), 520); return () => clearTimeout(id); }, []);
+    const arrived = (e) => { if (e.target === e.currentTarget) setEntered(true); };
+    const [imgFormats, setImgFormats] = useState([project.format]);
+    const [vidFormats, setVidFormats] = useState([videoFormat || 'story']); // Reels and Stories are 9:16
+    const [locales, setLocales] = useState([project.locale]);
+    const [type, setType] = useState('png');
+    const [busy, setBusy] = useState(null); // { action, label, pct }
+    const busyRef = useRef(false);
+    // «PRONTO»: the file's name on screen, then `then` (today's message) and the dialog closes
+    const [done, setDone] = useState(null);
+    const thenRef = useRef(null);
+    const celebrate = (name, then) => { RS.haptics.success(); thenRef.current = then; setDone({ name }); };
+    const flush = () => { const t = thenRef.current; thenRef.current = null; if (t) t(); };
+    useEffect(() => flush, []); // closed during «PRONTO»: the message still comes
+    const abortRef = useRef(null);
+    const [vSupport, setVSupport] = useState(null);
+    useEffect(() => { RS.video.support().then(setVSupport).catch(() => setVSupport({ method: null })); }, []);
+    const video = kind === 'video';
+    const formats = video ? vidFormats : imgFormats;
+    const setFormats = video ? setVidFormats : setImgFormats;
+    const vid = project.video || M.DEFAULT_VIDEO;
+    const vStyle = RS.motion.styleOf(vid.motion);
+    const vPhotos = useVideoPhotos(project, images, video);
+    const [capLocale, setCapLocale] = useState(project.locale);
+    const caption = M.publicationText(project, capLocale);
+    const customCaption = typeof (project.captions || {})[capLocale] === 'string';
+    const captionState = M.captionStatus(project, capLocale);
+    const setCaption = (text) => update((p) => M.setPublicationText(p, capLocale, text), { coalesce: `caption:${capLocale}` });
+    async function regenerateCaption() {
+      const code = capLocale;
+      const ok = await confirmDialog({ title: 'Regenerar o texto da publicação?', body: 'O texto desta língua volta a acompanhar o anúncio. Pode desfazer com Ctrl+Z.', confirm: 'Regenerar' });
+      if (ok) update((p) => M.setPublicationText(p, code, null));
+    }
+    const [closing, close] = useClosing(onClose);
+    const prevFocus = useRef(document.activeElement);
+    const firstRef = useRef();
+    useEffect(() => { if (firstRef.current && !mobile) firstRef.current.focus(); return () => { if (prevFocus.current && prevFocus.current.focus) prevFocus.current.focus(); }; }, []);
+    const toggle = (list, set, v) => set(list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
+    const combos = [];
+    for (const l of project.locales) if (locales.includes(l)) for (const f of M.FORMAT_ORDER) if (formats.includes(f)) combos.push({ l, f });
+    const canShare = typeof navigator.canShare === 'function';
+    const first = combos[0];
+    // the stage's video when it is the same (format and language): preparing it again took two seconds on a phone
+    const P0 = useMemo(() => {
+      if (!(video && first && entered)) return null;
+      if (prepared && first.f === videoFormat && first.l === project.locale) return prepared;
+      return RS.motion.prepare(project, { format: first.f, locale: first.l, images, photos: vPhotos || NO_PHOTOS });
+    }, [video, videoKey(project), first && first.f, first && first.l, images, vPhotos, entered, prepared]);
+
+    const [checkState, setCheckState] = useState({ reports: [], pending: true, error: false });
+    const checkKey = JSON.stringify([kind, formats, locales, videoKey(project)]);
+    useEffect(() => {
+      let live = true;
+      setCheckState({ reports: [], pending: !!combos.length, error: false, key: checkKey });
+      if (entered) (async () => {
+        const reports = [];
+        for (const c of combos) {
+          await afterPaint(); if (!live) return;
+          reports.push(video && vid.motion !== 'poster'
+            ? { ...c, prepared: c.l === first.l && c.f === first.f && P0 ? P0 : RS.motion.prepare(project, { format: c.f, locale: c.l, images, photos: vPhotos || NO_PHOTOS }) }
+            : { ...c, report: E.renderToCanvas(project, { format: c.f, locale: c.l, images, scale: 0.12, mode: 'thumb' }).report });
+          setCheckState({ reports: [...reports], pending: reports.length < combos.length, error: false, key: checkKey });
+        }
+      })().catch((err) => { console.error(err); if (live) setCheckState({ reports: [], pending: false, error: true, key: checkKey }); });
+      return () => { live = false; };
+    }, [entered, checkKey, images, vPhotos, P0]);
+    const checkReports = checkState.key === checkKey ? checkState.reports : [];
+    const checking = !!combos.length && (checkState.key !== checkKey || checkState.pending);
+    const checks = useMemo(() => W.preflight(project, { kind, combos, reports: checkReports }), [project, kind, formats.join(), locales.join(), checkReports]);
+
+    const ext = type === 'png' ? 'png' : 'jpg';
+    const baseName = (c) => `${U.slug(project.name)}-${M.localeInfo(c.l).short.toLowerCase()}-${EXPORT_NAMES[c.f]}`;
+    const fileName = (c) => `${baseName(c)}.${ext}`;
+    const encode = (c) => new Promise((resolve, reject) => {
+      const { canvas } = E.renderToCanvas(project, { format: c.f, locale: c.l, images, scale: 1, mode: 'export' });
+      canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('encode'))), type === 'png' ? 'image/png' : 'image/jpeg', 0.93);
+    });
+
+    // Runs one export action at a time; the button shows its progress.
+    async function busyRun(action, fn) {
+      if (busyRef.current || done) return;
+      busyRef.current = true;
+      try {
+        await fn((label, pct = null) => setBusy({ action, label, pct }));
+      } finally {
+        busyRef.current = false;
+        setBusy(null);
+      }
+    }
+    // Renders every chosen image, painting the progress before each one.
+    async function encodeAll(step, verb) {
+      const blobs = [];
+      for (let i = 0; i < combos.length; i++) {
+        step(combos.length > 1 ? `${verb} ${i + 1} de ${combos.length}…` : `${verb}…`);
+        await afterPaint();
+        blobs.push(await encode(combos[i]));
+      }
+      return blobs;
+    }
+    // Videos: one after the other, with the percentage on the button and Cancelar.
+    // Each video: the motion style (RS.motion) drawn frame by frame, with the
+    // generated music, the person's own sound fitted to it, or no sound.
+    async function makeVideos(step) {
+      abortRef.current = new AbortController();
+      const signal = abortRef.current.signal;
+      const blobs = [];
+      try {
+        const photos = vid.motion === 'poster' ? NO_PHOTOS : await videoPhotos(project, images);
+        for (let i = 0; i < combos.length; i++) {
+          const c = combos[i];
+          const what = combos.length > 1 ? `A criar ${i + 1} de ${combos.length}` : 'A criar o vídeo';
+          step(`${what}…`, 0);
+          await afterPaint();
+          const P = RS.motion.prepare(project, { format: c.f, locale: c.l, images, photos });
+          let audio = null;
+          if (vid.sound === 'generated') audio = await RS.sound.renderGenerated(P.timeline);
+          else if (vid.sound === 'own') audio = await A.fittedSound(vid.ownSound, P.timeline.duration);
+          if (signal.aborted) throw new DOMException('Cancelado', 'AbortError');
+          blobs.push(await RS.video.create(project, {
+            format: c.f, locale: c.l, images, duration: P.timeline.duration, style: vid.style, signal, audio,
+            frame: (ctx, t) => RS.motion.render(ctx, P, { t, scale: 1 }),
+            onProgress: (x) => step(`${what}…`, Math.round(x * 100)),
+          }));
+        }
+      } finally {
+        abortRef.current = null;
+      }
+      return blobs.map((blob, i) => ({ blob, name: `${baseName(combos[i])}.${RS.video.extOf(blob)}` }));
+    }
+    const silentNote = (out) => {
+      if (out.some((v) => v.blob.silent)) toast('O vídeo saiu sem som: este navegador não consegue juntar o som. Junte a música na app do Instagram.', { kind: 'error' });
+    };
+    const videoFailed = (err) => {
+      if (err && err.name === 'AbortError') { toast('Vídeo cancelado.'); return; }
+      RS.haptics.error();
+      console.error(err);
+      if (err && err.message === RS.sound.BAD_FILE) {
+        toast('Não foi possível ler o seu som. Escolha-o de novo em «Um som meu» ou use «Música da app».', { kind: 'error' });
+        return;
+      }
+      toast(err && err.message && /navegador/.test(err.message) ? err.message : 'Não foi possível criar o vídeo. Tente de novo.', { kind: 'error' });
+    };
+    const downloadVideo = () => combos.length && busyRun('download', async (step) => {
+      let out;
+      try { out = await makeVideos(step); } catch (err) { videoFailed(err); return; }
+      try {
+        step('A guardar…');
+        if (out.length === 1) {
+          const { blob, name } = out[0];
+          const ok = await U.saveBlob(blob, name, [{ description: 'Vídeo', accept: { [blob.type]: [`.${RS.video.extOf(blob)}`] } }]);
+          if (ok) celebrate(name, () => { toast('Vídeo guardado. Está pronto para os Reels e as Stories.'); silentNote(out); });
+        } else {
+          const files = [];
+          for (const v of out) files.push({ name: v.name, bytes: new Uint8Array(await v.blob.arrayBuffer()) });
+          const zipName = `${U.slug(project.name)}-videos.zip`;
+          const ok = await U.saveBlob(U.zip(files), zipName, [{ description: 'Arquivo ZIP', accept: { 'application/zip': ['.zip'] } }]);
+          if (ok) celebrate(zipName, () => { toast(`${files.length} vídeos guardados num ZIP.`); silentNote(out); });
+        }
+      } catch (err) {
+        console.error(err);
+        RS.haptics.error();
+        toast('Não foi possível guardar o vídeo. Tente de novo.', { kind: 'error' });
+      }
+    });
+    const shareVideo = () => combos.length && busyRun('share', async (step) => {
+      let out;
+      try { out = await makeVideos(step); } catch (err) { videoFailed(err); return; }
+      try {
+        const files = out.map((v) => new File([v.blob], v.name, { type: v.blob.type }));
+        if (!navigator.canShare({ files })) throw new Error('share');
+        step('A abrir a partilha…');
+        try { await navigator.clipboard.writeText(caption); } catch { /* optional */ }
+        await navigator.share({ files, text: caption });
+        toast('Partilhado. O texto da publicação também foi copiado.');
+        silentNote(out);
+      } catch (err) {
+        if (err && err.name === 'AbortError') return;
+        console.error(err);
+        RS.haptics.error();
+        toast('Este aparelho não deixou partilhar o vídeo. Use «Descarregar».', { kind: 'error' });
+      }
+    });
+    const cancelVideo = () => { if (abortRef.current) abortRef.current.abort(); };
+
+    const download = () => combos.length && busyRun('download', async (step) => {
+      try {
+        const blobs = await encodeAll(step, 'A preparar');
+        step('A guardar…');
+        if (combos.length === 1) {
+          const blob = blobs[0];
+          const ok = await U.saveBlob(blob, fileName(combos[0]), [{ description: `Imagem ${ext.toUpperCase()}`, accept: { [blob.type]: [`.${ext}`] } }]);
+          if (ok) celebrate(fileName(combos[0]), () => toast('Imagem guardada. Está pronta para publicar.'));
+        } else {
+          const files = [];
+          for (let i = 0; i < combos.length; i++) files.push({ name: fileName(combos[i]), bytes: new Uint8Array(await blobs[i].arrayBuffer()) });
+          const zipName = `${U.slug(project.name)}-imagens.zip`;
+          const ok = await U.saveBlob(U.zip(files), zipName, [{ description: 'Arquivo ZIP', accept: { 'application/zip': ['.zip'] } }]);
+          if (ok) celebrate(zipName, () => toast(`${files.length} imagens guardadas num ZIP.`));
+        }
+      } catch (err) {
+        console.error(err);
+        RS.haptics.error();
+        toast('Não foi possível criar a imagem. Tente de novo.', { kind: 'error' });
+      }
+    });
+    // Shares straight to Instagram, Facebook, WhatsApp... (phone share sheet / Windows share).
+    const share = () => combos.length && busyRun('share', async (step) => {
+      try {
+        const blobs = await encodeAll(step, 'A preparar');
+        const files = blobs.map((b, i) => new File([b], fileName(combos[i]), { type: b.type }));
+        if (!navigator.canShare({ files })) throw new Error('share');
+        step('A abrir a partilha…');
+        try { await navigator.clipboard.writeText(caption); } catch { /* optional */ }
+        await navigator.share({ files, text: caption });
+        toast('Partilhado. O texto da publicação também foi copiado.');
+      } catch (err) {
+        if (err && err.name === 'AbortError') return;
+        console.error(err);
+        RS.haptics.error();
+        toast('Este aparelho não deixou partilhar. Use «Descarregar».', { kind: 'error' });
+      }
+    });
+    const copyImage = () => busyRun('copy', async (step) => {
+      try {
+        step('A copiar…');
+        await afterPaint();
+        const blob = await new Promise((resolve, reject) => {
+          const { canvas } = E.renderToCanvas(project, { images, scale: 1, mode: 'export' });
+          canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('encode'))), 'image/png');
+        });
+        await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+        toast('Imagem copiada. Cole-a no Facebook ou no Instagram com Ctrl+V.');
+      } catch (err) {
+        console.error(err);
+        toast('Este navegador não deixou copiar a imagem. Use «Descarregar».', { kind: 'error' });
+      }
+    });
+    const doing = (action) => busy && busy.action === action;
+    // the busy words, with the percentage counting up (videos)
+    const busyText = () => html`${busy.label}${busy.pct != null ? html` <${CountUp} value=${busy.pct} duration=${300} />%` : ''}`;
+    async function copyCaption() {
+      try { await navigator.clipboard.writeText(caption); toast('Texto da publicação copiado'); }
+      catch { toast('Não foi possível copiar. Selecione o texto e copie.', { kind: 'error' }); }
+    }
+    // For the Instagram Story link sticker (Instagram has no links in captions).
+    const waLink = C.adLink(project, capLocale);
+    async function copyWaLink() {
+      try { await navigator.clipboard.writeText(waLink); toast('Link do WhatsApp copiado. Na Story do Instagram, cole-o no autocolante «Link».'); }
+      catch { toast('Não foi possível copiar o link. Copie-o do texto da publicação.', { kind: 'error' }); }
+    }
+
+    const thumbW = mobile ? (combos.length > 1 ? 120 : 190) : combos.length > 2 ? 150 : 210;
+    const label = combos.length > 1 ? `Descarregar ${combos.length} imagens (ZIP)` : 'Descarregar imagem';
+    const vLabel = combos.length > 1 ? `Criar ${combos.length} vídeos (ZIP)` : 'Criar vídeo';
+    const noVideo = video && vSupport && !vSupport.method;
+    return html`<div class=${'modal-back' + (closing ? ' closing' : '')} onMouseDown=${(e) => { if (e.target === e.currentTarget && !busy) close(); }}
+      onKeyDown=${(e) => { if (e.key === 'Escape' && !busy) close(); }}>
+      <div class="modal export" role="dialog" aria-modal="true" aria-labelledby="exp-title" onAnimationEnd=${arrived}>
+        <header class="modal-head">
+          <h2 id="exp-title">${video ? 'Exportar vídeo' : 'Exportar imagem'}</h2>
+          <div class="seg kind-switch" role="radiogroup" aria-label="Imagem ou vídeo">
+            <button role="radio" aria-checked=${!video} class=${!video ? 'on' : ''} disabled=${!!busy || !!done} onClick=${() => setKind('image')}><${Icon} name="image" size=${16} /> Imagem</button>
+            <button role="radio" aria-checked=${video} class=${video ? 'on' : ''} disabled=${!!busy || !!done} onClick=${() => setKind('video')}><${Icon} name="video" size=${16} /> Vídeo</button>
+          </div>
+          <div class="spacer"></div>
+          <button class="icon-btn" aria-label="Fechar" onClick=${() => close()} disabled=${!!busy}><${Icon} name="x" /></button>
+        </header>
+        <div class="production-entry"><button class="btn ghost" disabled=${!!busy || !!done} onClick=${onProduction}><${Icon} name="copy" /> Carrosséis e campanha completa</button><span class="field-hint">Várias peças, um único ZIP.</span></div>
+        <div class="export-body">
+          <div class="export-preview">
+            ${done ? html`<${Celebration} detail=${done.name} onDone=${() => { flush(); close(); }} />`
+            : busy && (busy.action === 'download' || busy.action === 'share') ? html`<${CraneProgress} progress=${busy.pct != null ? busy.pct / 100 : null} label=${busy.label} />`
+            : !combos.length ? html`<p class="muted">Escolha pelo menos um formato e uma língua.</p>`
+            : video ? html`<figure key=${'v' + combos[0].l + combos[0].f}>
+                ${P0 && html`<${VideoPreview} prepared=${P0} width=${mobile ? 170 : 230} still=${busy ? P0.timeline.duration - 0.01 : null} />`}
+                <figcaption>${M.FORMATS[combos[0].f].label} · ${M.localeInfo(combos[0].l).short} · ${P0 ? P0.timeline.duration : vid.duration} s · ${vStyle.name}</figcaption>
+              </figure>
+              ${combos.length > 1 && html`<p class="muted">e mais ${combos.length - 1} ${combos.length - 1 === 1 ? 'vídeo' : 'vídeos'}</p>`}`
+            : html`${combos.slice(0, 6).map((c) => html`<figure key=${c.l + c.f}>
+              <${PosterThumb} project=${project} format=${c.f} locale=${c.l} images=${images} width=${thumbW} pending=${!entered} />
+              <figcaption>${M.FORMATS[c.f].label} · ${M.localeInfo(c.l).short}</figcaption>
+            </figure>`)}
+            ${combos.length > 6 && html`<p class="muted">e mais ${combos.length - 6}…</p>`}`}
+          </div>
+          <div class="export-options">
+            <fieldset><legend>${video ? 'Formato' : 'Formatos'}</legend>
+              ${M.FORMAT_ORDER.map((f, i) => html`<label key=${f} class="check"><input ref=${i === 0 ? firstRef : null} type="checkbox" checked=${formats.includes(f)} disabled=${!!busy || !!done} onChange=${() => toggle(formats, setFormats, f)} />
+                <span><strong>${M.FORMATS[f].label}</strong> ${M.FORMATS[f].w}×${M.FORMATS[f].h} · ${video && f === 'story' ? 'Reels e Stories' : M.FORMATS[f].hint}</span></label>`)}
+            </fieldset>
+            ${project.locales.length > 1 && html`<fieldset><legend>Línguas</legend>
+              ${project.locales.map((l) => html`<label key=${l} class="check"><input type="checkbox" checked=${locales.includes(l)} disabled=${!!busy || !!done} onChange=${() => toggle(locales, setLocales, l)} />
+                <span><strong>${M.localeInfo(l).short}</strong> ${M.localeInfo(l).label}</span></label>`)}
+            </fieldset>`}
+            ${video ? html`
+              <fieldset><legend>Ficheiro</legend>
+                <p class="video-file"><${Icon} name="video" size=${16} /> <span><strong>MP4</strong> · ${vStyle.name} · ${P0 ? P0.timeline.duration : vid.duration} s · ${SOUND_NAMES[vid.sound] || ''}</span></p>
+                <button type="button" class="btn link sm" disabled=${!!busy || !!done} onClick=${() => close('video')}><${Icon} name="sliders-horizontal" size=${14} /> Mudar o vídeo</button>
+              </fieldset>
+              ${noVideo ? html`<p class="video-note warn"><${Icon} name="triangle-alert" size=${15} /> Este navegador não consegue criar vídeo. Use o Microsoft Edge ou o Google Chrome atualizados.</p>`
+                : html`<p class="video-note"><${Icon} name="info" size=${15} /> ${vid.sound === 'none' ? 'Sem som: junte a música na app do Instagram, que tem músicas licenciadas e dá mais alcance.'
+                  : vid.sound === 'own' ? 'Use só músicas que pode publicar. O som é ajustado à duração do vídeo, com um final suave.'
+                  : 'Música criada pela app: pode publicar sem problemas de direitos.'}${vSupport && (vSupport.method === 'recorder' || (vid.sound !== 'none' && !vSupport.aac)) ? ' Neste navegador o vídeo é gravado em tempo real: demora o mesmo que o vídeo.' : ''}</p>`}`
+            : html`<fieldset><legend>Ficheiro</legend>
+              <div class="seg small" role="radiogroup" aria-label="Tipo de ficheiro">
+                <button role="radio" aria-checked=${type === 'png'} class=${type === 'png' ? 'on' : ''} onClick=${() => setType('png')}>PNG · máxima nitidez</button>
+                <button role="radio" aria-checked=${type === 'jpg'} class=${type === 'jpg' ? 'on' : ''} onClick=${() => setType('jpg')}>JPG · mais leve</button>
+              </div>
+            </fieldset>`}
+            <section class="preflight" aria-label="Verificação antes de exportar"><h3>Antes de exportar</h3>
+              ${checking && html`<p class="field-hint" role="status">A verificar a composição (${checkReports.length}/${combos.length})…</p>`}
+              ${checkState.error && html`<p class="field-hint" role="alert">Não foi possível verificar todas as composições. Confirme a pré-visualização antes de exportar.</p>`}
+              ${checks.length > 0 ? html`<p class="field-hint">${checks.length} ${checks.length === 1 ? 'ponto a confirmar' : 'pontos a confirmar'}. Pode exportar mesmo assim.</p><ul class="checks">${checks.map((c) => html`<li key=${c.id} class=${c.kind}><${Icon} name="triangle-alert" size=${15} /><div><span>${c.text}</span><button class="btn link sm" disabled=${!!busy || !!done} onClick=${() => { if (c.caption) { setCapLocale(c.locale); requestAnimationFrame(() => document.querySelector('.caption-text')?.focus()); } else onResolve(c); }}>${c.review ? 'Rever tradução' : 'Verificar'}</button></div></li>`)}</ul>`
+                : !checking && !checkState.error && html`<p class="field-hint">${!combos.length ? 'Escolha um formato e uma língua.' : 'Sem avisos automáticos. Confirme o conteúdo na pré-visualização.'}</p>`}
+            </section>
+            ${video ? html`<div class=${'export-actions' + (busy ? ' is-busy' : '')}>
+              ${canShare && mobile && html`<button class=${'btn primary lg' + (doing('share') ? ' busy' : '')} disabled=${!!busy || !!done || !combos.length || noVideo} aria-busy=${doing('share')} onClick=${shareVideo}>
+                ${doing('share') ? html`<${Spinner} /> ${busyText()}` : html`<${Icon} name="external-link" /> Partilhar vídeo`}</button>`}
+              <button class=${'btn lg ' + (canShare && mobile ? 'ghost' : 'primary') + (doing('download') ? ' busy' : '')} disabled=${!!busy || !!done || !combos.length || noVideo} aria-busy=${doing('download')} onClick=${downloadVideo}>
+                ${doing('download') ? html`<${Spinner} /> ${busyText()}` : html`<${Icon} name="video" /> ${canShare && mobile ? 'Descarregar' : vLabel}`}</button>
+              ${canShare && !mobile && html`<button class=${'btn ghost' + (doing('share') ? ' busy' : '')} disabled=${!!busy || !!done || !combos.length || noVideo} aria-busy=${doing('share')} onClick=${shareVideo} title="Abre a partilha do Windows">
+                ${doing('share') ? html`<${Spinner} /> ${busyText()}` : html`<${Icon} name="external-link" /> Partilhar`}</button>`}
+              ${busy && html`<button class="btn ghost danger-text" onClick=${cancelVideo}><${Icon} name="x" /> Cancelar</button>`}
+              ${mobile && !busy && html`<button class="btn ghost" onClick=${saveFile} disabled=${fileSaving} aria-busy=${!!fileSaving}>${fileSaving ? html`<${Spinner} /> A preparar projeto…` : html`<${Icon} name="save" /> Guardar projeto`}</button>`}
+            </div>` : html`<div class=${'export-actions' + (busy ? ' is-busy' : '')}>
+              ${canShare && mobile && html`<button class=${'btn primary lg' + (doing('share') ? ' busy' : '')} disabled=${!!busy || !!done || !combos.length} aria-busy=${doing('share')} onClick=${share}>
+                ${doing('share') ? html`<${Spinner} /> ${busyText()}` : html`<${Icon} name="external-link" /> Partilhar`}</button>`}
+              <button class=${'btn lg ' + (canShare && mobile ? 'ghost' : 'primary') + (doing('download') ? ' busy' : '')} disabled=${!!busy || !!done || !combos.length} aria-busy=${doing('download')} onClick=${download}>
+                ${doing('download') ? html`<${Spinner} /> ${busyText()}` : html`<${Icon} name="download" /> ${label}`}</button>
+              ${canShare && !mobile && html`<button class=${'btn ghost' + (doing('share') ? ' busy' : '')} disabled=${!!busy || !!done || !combos.length} aria-busy=${doing('share')} onClick=${share} title="Abre a partilha do Windows">
+                ${doing('share') ? html`<${Spinner} /> ${busyText()}` : html`<${Icon} name="external-link" /> Partilhar`}</button>`}
+              ${!mobile && html`<button class=${'btn ghost' + (doing('copy') ? ' busy' : '')} disabled=${!!busy || !!done} aria-busy=${doing('copy')} onClick=${copyImage} title="Copia a imagem do formato e língua que está a ver">
+                ${doing('copy') ? html`<${Spinner} /> ${busyText()}` : html`<${Icon} name="clipboard-copy" /> Copiar imagem`}</button>`}
+              ${mobile && html`<button class="btn ghost" disabled=${!!busy || !!done || fileSaving} aria-busy=${!!fileSaving} onClick=${saveFile}>${fileSaving ? html`<${Spinner} /> A preparar projeto…` : html`<${Icon} name="save" /> Guardar projeto`}</button>`}
+            </div>`}
+          </div>
+        </div>
+        <section class="caption">
+          <div class="caption-head">
+            <h3>Texto para a publicação</h3>
+            ${project.locales.length > 1 && html`<div class="seg small caption-locales" role="group" aria-label="Língua do texto da publicação">${project.locales.map((l) => html`<button key=${l} class=${capLocale === l ? 'on' : ''} aria-pressed=${capLocale === l} title=${M.localeInfo(l).label} onClick=${() => setCapLocale(l)}>${M.localeInfo(l).short}</button>`)}</div>`}
+            <div class="spacer"></div>
+            ${waLink && html`<button class="btn ghost sm" onClick=${copyWaLink} title="Para o autocolante «Link» das Stories do Instagram"><${Icon} name="message-circle" size=${16} /> Copiar link do WhatsApp</button>`}
+            <button class="btn ghost sm" onClick=${copyCaption}><${Icon} name="copy" size=${16} /> Copiar texto</button>
+            <button class="btn ghost sm" disabled=${!customCaption || !!busy} onClick=${regenerateCaption}><${Icon} name="rotate-ccw" size=${16} /> Regenerar</button>
+          </div>
+          ${['stale', 'unverified'].includes(captionState) && html`<div class="caption-warning" role="status"><p>${captionState === 'stale' ? 'A oferta ou os contactos mudaram desde a última edição deste texto. Confirme os dados antes de publicar.' : 'Este texto personalizado ainda não foi confirmado com os dados atuais.'} O seu texto foi mantido.</p><button class="btn ghost sm" disabled=${!!busy} onClick=${() => update((p) => M.confirmPublicationText(p, capLocale))}>Confirmo que o texto está atualizado</button></div>`}
+          <textarea class="caption-text" name="caption" value=${caption} onInput=${(e) => setCaption(e.target.value)} aria-label="Texto para a publicação" disabled=${!!busy}></textarea>
+          <div class="caption-footer"><small class="field-hint">${customCaption ? 'Texto personalizado guardado neste anúncio, nesta língua.' : 'Texto automático: acompanha as alterações do anúncio até o editar.'}</small>
+            <button class="btn ghost sm" disabled=${!!busy} onClick=${onHistory}><${Icon} name="clock" size=${16} /> Histórico de versões</button></div>
+        </section>
+      </div>
+    </div>`;
+  }
+
+  // ============================================================== app
+  const BUSY_LABELS = { gallery: 'A abrir os modelos', create: 'A preparar o anúncio', open: 'A abrir o anúncio', nav: 'A abrir' };
+  // Thin bar at the top while a screen is opening.
+  function TopProgress({ busy }) {
+    const [anim, setAnim] = useState(navAnim.on);
+    useEffect(() => { navAnim.subs.add(setAnim); return () => navAnim.subs.delete(setAnim); }, []);
+    const show = useDelayed(!!busy && !anim, 300);
+    return html`<div class=${'top-progress' + (show ? ' on' : '')} aria-hidden="true">${show && html`<${CotaLoader} bar />`}</div>
+      <div class="sr-only" role="status" aria-live="polite">${busy ? `${BUSY_LABELS[busy.split(':')[0]] || 'A abrir'}…` : ''}</div>`;
+  }
+
+  function App() {
+    const [ready, setReady] = useState(false);
+    const [route, setRoute] = useState({ name: 'home' });
+    const [brand, setBrand] = useState(null);
+    // One navigation at a time: while a screen opens, further clicks are ignored
+    // and the clicked element shows its own loading state.
+    const [busy, setBusy] = useState(null);
+    const busyRef = useRef(null);
+    const runRef = useRef(null); // the navigation running now
+    // One navigation at a time; but a new tap wins over a screen change that is only
+    // animating (spec: «a new touch wins»): the animation jumps to its end, then the tap runs.
+    const run = useCallback(async (key, fn) => {
+      if (busyRef.current) {
+        if (!navAnim.on || !navVT || !runRef.current) return false;
+        try { navVT.skipTransition(); } catch { /* already over */ }
+        await runRef.current;
+        if (busyRef.current) return false;
+      }
+      busyRef.current = key;
+      setBusy(key);
+      const job = (async () => {
+        try {
+          await afterPaint();
+          await fn();
+          return true;
+        } catch (err) {
+          console.error(err);
+          toast('Não foi possível abrir. Tente de novo.', { kind: 'error' });
+          return false;
+        } finally {
+          busyRef.current = null;
+          setBusy(null);
+        }
+      })();
+      runRef.current = job;
+      return job;
+    }, []);
+    useEffect(() => { document.documentElement.classList.toggle('is-busy', !!busy); }, [busy]);
+    const routeRef = useRef(route);
+    routeRef.current = route;
+    // Outside the editor the page simply reloads into the new version; in the
+    // editor the person chooses when (the last keystrokes may still be saving).
+    const newVersionReady = () => {
+      try {
+        const last = Number(sessionStorage.getItem('rs-updated') || 0);
+        if (Date.now() - last < 15000) return; // never loop
+        sessionStorage.setItem('rs-updated', String(Date.now()));
+      } catch { /* private mode: still fine, controllerchange fires once */ }
+      if (routeRef.current.name === 'editor') {
+        toast('Há uma versão nova da aplicação.', { action: 'Atualizar', onAction: async () => {
+          try { if (RS.beforeReload) await RS.beforeReload(); location.reload(); }
+          catch (err) { toast('Não foi possível guardar. A atualização fica para mais tarde.', { kind: 'error' }); }
+        } });
+      } else {
+        toast('Versão nova instalada. A atualizar…');
+        setTimeout(() => location.reload(), 900);
+      }
+    };
+    // the welcome: the first opening as an installed app (https), or right after installing
+    const [welcome, setWelcome] = useState(() => RS.install.shouldWelcome({ standalone: standalone(), protocol: location.protocol }));
+    useEffect(() => { welcomeBus.subs.add(setWelcome); return () => welcomeBus.subs.delete(setWelcome); }, []);
+    const [intro, setIntro] = useState(() => {
+      try { return !sessionStorage.getItem('rs-intro') && !reducedMotion(); } catch { return !reducedMotion(); }
+    });
+    useEffect(() => {
+      (async () => {
+        await E.loadFonts();
+        await S.open();
+        const catalog = await S.getCatalog();
+        await S.housekeeping();
+        // the home opens on its real contents (an empty profile: the building site, not the cards first)
+        homeCache.recs = await listHome().catch(() => null);
+        setBrand(RS.reuse.defaultBrand(catalog));
+        setReady(true);
+      })().catch((err) => { console.error(err); setReady(true); });
+      // Installable and offline-capable when served over http(s) (e.g. on a phone).
+      if (/^https?:$/.test(location.protocol)) {
+        const link = document.createElement('link');
+        link.rel = 'manifest'; link.href = 'manifest.webmanifest';
+        document.head.appendChild(link);
+        if ('serviceWorker' in navigator) {
+          const sw = navigator.serviceWorker;
+          // A new publish: its worker takes over (skipWaiting + claim) and the page
+          // moves to it at once, instead of showing the old copy until the next opening.
+          // The first takeover of a first visit is the install, not an update.
+          let controlled = !!sw.controller;
+          sw.addEventListener('controllerchange', () => { if (controlled) newVersionReady(); controlled = true; });
+          sw.register('sw.js')
+            .then((reg) => {
+              // An installed app stays open in the background: check again when it comes back.
+              document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') reg.update().catch(() => {}); });
+              return sw.ready;
+            })
+            .then((reg) => { const c = navigator.connection; if (reg.active && !(c && c.saveData)) reg.active.postMessage('cache-photos'); })
+            .catch((err) => console.warn('Service worker', err));
+        }
+      }
+    }, []);
+    const go = (r, key = 'nav') => run(key, () => transition(() => setRoute(r)));
+    // back from the editor: in the new view the ad's card is the poster
+    const backFrom = (id) => run('nav', () => transition(async () => {
+      setRoute({ name: 'home' });
+      await domFlushed();
+      markPoster(id ? document.querySelector(`.proj-card[data-id="${CSS.escape(id)}"] .proj-thumb`) : null);
+    }));
+
+    // The slow part (photo, saving) runs before the screen change, while the
+    // card shows "A preparar o anúncio…"; the change itself is then instant.
+    const create = (template, format, selectedBrand, trades, photoId) => run(`create:${template.id}`, async () => {
+      let p = M.newProject(template, { format, trades });
+      if (selectedBrand) p = applyBrand(p, selectedBrand);
+      if (photoId) {
+        try {
+          const a = await A.importFile(await L.fileFor(photoId), 'photo');
+          p.photo = { asset: a.id, zoom: 1, fx: 0.5, fy: a.h > a.w * 1.3 ? 0.36 : 0.5, flip: false, adj: { ...M.DEFAULT_FX } };
+        } catch (err) { console.warn('Library photo not applied', err); }
+      }
+      const rec = await S.putProject(p);
+      await transition(() => setRoute({ name: 'editor', project: p, revision: rec.revision }));
+    });
+    // Photo and logo are decoded before the editor opens, so it opens complete.
+    const open = (data, key = 'open') => run(key, async () => {
+      const rec = await S.getProject(data.id);
+      if (!rec || rec.deletedAt) throw new Error('Este anúncio já não está disponível. Atualize a lista de anúncios.');
+      const p = M.normalize(rec.data);
+      await Promise.all([A.load(p.photo && p.photo.asset), A.load(p.logo && p.logo.asset)]).catch((err) => console.warn(err));
+      await transition(() => setRoute({ name: 'editor', project: p, revision: rec.revision || 0 }));
+    });
+    const endIntro = useCallback(() => {
+      try { sessionStorage.setItem('rs-intro', '1'); } catch { /* private mode */ }
+      setIntro(false);
+    }, []);
+
+    // The start screen in index.html stays until the app is ready, then fades.
+    useEffect(() => {
+      if (!ready) return undefined;
+      const boot = document.getElementById('boot');
+      if (boot) { boot.classList.add('out'); setTimeout(() => boot.remove(), 320); }
+      // Warm the photo library while the person looks at the home screen.
+      const idle = window.requestIdleCallback || ((f) => setTimeout(f, 1200));
+      idle(() => L.index().then((lib) => { if (lib.items[0]) L.full(lib.items[0].id).catch(() => {}); }));
+      return undefined;
+    }, [ready]);
+
+    if (!ready) return html`<div class="splash"><${Wordmark} /><span class="splash-bar"></span></div>`;
+    return html`
+      ${route.name === 'home' && html`<${Home} busy=${busy} brand=${brand} setBrand=${setBrand} onNew=${() => go({ name: 'gallery' }, 'gallery')} onOpen=${open} />`}
+      ${route.name === 'gallery' && html`<${Gallery} busy=${busy} brand=${brand} onBack=${() => go({ name: 'home' })} onCreate=${create} />`}
+      ${route.name === 'editor' && html`<${Editor} key=${route.project.id} initial=${route.project} initialRevision=${route.revision} brand=${brand} setBrand=${setBrand} onExit=${backFrom} />`}
+      <${TopProgress} busy=${busy} />
+      <${Toasts} />
+      <${DialogHost} />
+      ${intro && html`<${RS.ui.Opening} onDone=${endIntro} />`}
+      ${welcome && html`<${Welcome} onDone=${() => setWelcome(false)} />`}`;
+  }
+
+  // a tick under the finger (Android vibration, iPhone switches; quiet on a PC)
+  RS.haptics.install();
+  // Ilustrativo: a brick jumps out of a main control when it is pressed
+  RS.ui.tapBricks(document);
+  // iPhone Safari applies :active (the press of every button) only on pages that listen to touches
+  document.addEventListener('touchstart', () => {}, { passive: true });
+  // the «selected» pill glides in every segmented control, tab row and section bar
+  RS.ui.autoGlide(document);
+  // pop-ups grow from the button that opened them
+  RS.ui.autoOrigin(document);
+  U.installModalFocus(document);
+  render(html`<${App} />`, document.getElementById('app'));
+})();

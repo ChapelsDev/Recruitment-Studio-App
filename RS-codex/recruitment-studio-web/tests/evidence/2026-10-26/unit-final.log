@@ -1,0 +1,1436 @@
+
+> test
+> node --test tests/unit/*.test.cjs
+
+TAP version 13
+# Subtest: appearance: auto follows the device, a choice wins
+ok 1 - appearance: auto follows the device, a choice wins
+  ---
+  duration_ms: 2.3301
+  type: 'test'
+  ...
+# Subtest: appearance: junk settings fall back to automatic with vibration on
+ok 2 - appearance: junk settings fall back to automatic with vibration on
+  ---
+  duration_ms: 2.0421
+  type: 'test'
+  ...
+# Subtest: appearance: saved settings come back
+ok 3 - appearance: saved settings come back
+  ---
+  duration_ms: 0.6615
+  type: 'test'
+  ...
+# Subtest: appearance: saving never throws
+ok 4 - appearance: saving never throws
+  ---
+  duration_ms: 0.6477
+  type: 'test'
+  ...
+# Subtest: appearance: the bar colours of both themes
+ok 5 - appearance: the bar colours of both themes
+  ---
+  duration_ms: 1.7925
+  type: 'test'
+  ...
+# Subtest: appearance: only an installed app opens on the system's splash
+ok 6 - appearance: only an installed app opens on the system's splash
+  ---
+  duration_ms: 0.6572
+  type: 'test'
+  ...
+# Subtest: appearance: the motion style — Ilustrativo on a new device, Calmo when it asks for less motion, a choice wins
+ok 7 - appearance: the motion style — Ilustrativo on a new device, Calmo when it asks for less motion, a choice wins
+  ---
+  duration_ms: 0.9255
+  type: 'test'
+  ...
+# Subtest: appearance: <html data-motion> follows the choice, or the device while nothing is chosen
+ok 8 - appearance: <html data-motion> follows the choice, or the device while nothing is chosen
+  ---
+  duration_ms: 3.5974
+  type: 'test'
+  ...
+# Subtest: assets: the keyframes check catches a costly property
+ok 9 - assets: the keyframes check catches a costly property
+  ---
+  duration_ms: 4.5744
+  type: 'test'
+  ...
+# Subtest: assets: feel- keyframes animate only cheap properties
+ok 10 - assets: feel- keyframes animate only cheap properties
+  ---
+  duration_ms: 4.4608
+  type: 'test'
+  ...
+# Subtest: assets: the icon masters exist
+ok 11 - assets: the icon masters exist
+  ---
+  duration_ms: 2.161
+  type: 'test'
+  ...
+# Subtest: assets: every icon exists at its size
+ok 12 - assets: every icon exists at its size
+  ---
+  duration_ms: 6.4623
+  type: 'test'
+  ...
+# Subtest: assets: the icon is the bubble entering from its corner
+ok 13 - assets: the icon is the bubble entering from its corner
+  ---
+  duration_ms: 120.2891
+  type: 'test'
+  ...
+# Subtest: assets: the manifest lists 192, 512 and a maskable icon that exist
+ok 14 - assets: the manifest lists 192, 512 and a maskable icon that exist
+  ---
+  duration_ms: 4.8006
+  type: 'test'
+  ...
+# Subtest: install: the manifest describes the app for the install sheet
+ok 15 - install: the manifest describes the app for the install sheet
+  ---
+  duration_ms: 3.2482
+  type: 'test'
+  ...
+# Subtest: assets: the page links an SVG favicon, a 180 px Apple icon and the manifest
+ok 16 - assets: the page links an SVG favicon, a 180 px Apple icon and the manifest
+  ---
+  duration_ms: 4.222
+  type: 'test'
+  ...
+# Subtest: assets: the motion tokens
+ok 17 - assets: the motion tokens
+  ---
+  duration_ms: 1.4147
+  type: 'test'
+  ...
+# Subtest: install: in the light theme an installed app fades in from the dark splash
+ok 18 - install: in the light theme an installed app fades in from the dark splash
+  ---
+  duration_ms: 4.6849
+  type: 'test'
+  ...
+# Subtest: motion: taps go through a screen change that is animating (a new tap wins)
+ok 19 - motion: taps go through a screen change that is animating (a new tap wins)
+  ---
+  duration_ms: 2.85
+  type: 'test'
+  ...
+# Subtest: motion: iPhone Safari applies :active (the press) only when the page listens to touches
+ok 20 - motion: iPhone Safari applies :active (the press) only when the page listens to touches
+  ---
+  duration_ms: 4.2301
+  type: 'test'
+  ...
+# Subtest: custom carousel preserves automatic mode in other languages and accepts ordering, hiding and new content
+ok 21 - custom carousel preserves automatic mode in other languages and accepts ordering, hiding and new content
+  ---
+  duration_ms: 18.1605
+  type: 'test'
+  ...
+# Subtest: splitting and joining preserve text and distinct titles, keep QR on the last split and reject hidden joins
+ok 22 - splitting and joining preserve text and distinct titles, keep QR on the last split and reject hidden joins
+  ---
+  duration_ms: 3.301
+  type: 'test'
+  ...
+# Subtest: custom long text and calls paginate without ellipsis in both formats and every composition
+ok 23 - custom long text and calls paginate without ellipsis in both formats and every composition
+  ---
+  duration_ms: 19.3448
+  type: 'test'
+  ...
+# Subtest: carousel review detects later contacts changes without overwriting personal pages
+ok 24 - carousel review detects later contacts changes without overwriting personal pages
+  ---
+  duration_ms: 9.0701
+  type: 'test'
+  ...
+# Subtest: slide rendering uses its own photo and the shared crop/adjustment renderer; missing photos fail explicitly
+ok 25 - slide rendering uses its own photo and the shared crop/adjustment renderer; missing photos fail explicitly
+  ---
+  duration_ms: 6.0537
+  type: 'test'
+  ...
+# Subtest: digits: national numbers get the country code
+ok 26 - digits: national numbers get the country code
+  ---
+  duration_ms: 2.7296
+  type: 'test'
+  ...
+# Subtest: digits: +… and 00… are taken as international
+ok 27 - digits: +… and 00… are taken as international
+  ---
+  duration_ms: 0.3368
+  type: 'test'
+  ...
+# Subtest: digits: a number typed with its country code but no + is not doubled
+ok 28 - digits: a number typed with its country code but no + is not doubled
+  ---
+  duration_ms: 0.5088
+  type: 'test'
+  ...
+# Subtest: digits: national numbers that begin like the country code stay national
+ok 29 - digits: national numbers that begin like the country code stay national
+  ---
+  duration_ms: 0.3813
+  type: 'test'
+  ...
+# Subtest: digits: a number that is too short gives null
+ok 30 - digits: a number that is too short gives null
+  ---
+  duration_ms: 0.5152
+  type: 'test'
+  ...
+# Subtest: display: country code then groups of three
+ok 31 - display: country code then groups of three
+  ---
+  duration_ms: 0.579
+  type: 'test'
+  ...
+# Subtest: display: a number typed with another country's code is grouped after that code
+ok 32 - display: a number typed with another country's code is grouped after that code
+  ---
+  duration_ms: 1.9278
+  type: 'test'
+  ...
+# Subtest: defaultMessage: the {profissões} token also works without the tilde or with capitals
+ok 33 - defaultMessage: the {profissões} token also works without the tilde or with capitals
+  ---
+  duration_ms: 0.8474
+  type: 'test'
+  ...
+# Subtest: waLink: the message is encoded, empty message gives no text
+ok 34 - waLink: the message is encoded, empty message gives no text
+  ---
+  duration_ms: 1.8026
+  type: 'test'
+  ...
+# Subtest: defaultMessage: names up to three trades in the ad language
+ok 35 - defaultMessage: names up to three trades in the ad language
+  ---
+  duration_ms: 1.529
+  type: 'test'
+  ...
+# Subtest: defaultMessage: more than three trades gives the general message
+ok 36 - defaultMessage: more than three trades gives the general message
+  ---
+  duration_ms: 0.46
+  type: 'test'
+  ...
+# Subtest: adMessage: a message the person wrote wins over the generated one
+ok 37 - adMessage: a message the person wrote wins over the generated one
+  ---
+  duration_ms: 0.4953
+  type: 'test'
+  ...
+# Subtest: adMessage: an empty message follows the trades
+ok 38 - adMessage: an empty message follows the trades
+  ---
+  duration_ms: 0.2763
+  type: 'test'
+  ...
+# Subtest: adMessage: never carries the ad id, the format or a language code
+ok 39 - adMessage: never carries the ad id, the format or a language code
+  ---
+  duration_ms: 0.5611
+  type: 'test'
+  ...
+# Subtest: adLink: link with the message, null without a valid number
+ok 40 - adLink: link with the message, null without a valid number
+  ---
+  duration_ms: 0.4405
+  type: 'test'
+  ...
+# Subtest: meetLink: the face-to-face message in the chosen language
+ok 41 - meetLink: the face-to-face message in the chosen language
+  ---
+  duration_ms: 0.5344
+  type: 'test'
+  ...
+# Subtest: COUNTRIES: Portugal first
+ok 42 - COUNTRIES: Portugal first
+  ---
+  duration_ms: 1.7495
+  type: 'test'
+  ...
+# Subtest: format crops are independent, inherit older framing and survive portable normalization
+ok 43 - format crops are independent, inherit older framing and survive portable normalization
+  ---
+  duration_ms: 12.9067
+  type: 'test'
+  ...
+# Subtest: absolute legibility warns without relative shrinking, for images and video, only where measured
+ok 44 - absolute legibility warns without relative shrinking, for images and video, only where measured
+  ---
+  duration_ms: 6.884
+  type: 'test'
+  ...
+# Subtest: engine measures only drawn text at poster size and exports each format crop
+ok 45 - engine measures only drawn text at poster size and exports each format crop
+  ---
+  duration_ms: 19.0622
+  type: 'test'
+  ...
+# Subtest: haptics: Android vibrates, iPhone ticks on taps, PC is quiet
+ok 46 - haptics: Android vibrates, iPhone ticks on taps, PC is quiet
+  ---
+  duration_ms: 8.0417
+  type: 'test'
+  ...
+# Subtest: haptics: patterns
+ok 47 - haptics: patterns
+  ---
+  duration_ms: 2.0301
+  type: 'test'
+  ...
+# Subtest: haptics: Android plays the patterns, vibration off is quiet
+ok 48 - haptics: Android plays the patterns, vibration off is quiet
+  ---
+  duration_ms: 1.338
+  type: 'test'
+  ...
+# Subtest: haptics: on iPhone and on PC nothing vibrates from script
+ok 49 - haptics: on iPhone and on PC nothing vibrates from script
+  ---
+  duration_ms: 0.6669
+  type: 'test'
+  ...
+# Subtest: install: platform says file for the .exe window
+ok 50 - install: platform says file for the .exe window
+  ---
+  duration_ms: 2.3593
+  type: 'test'
+  ...
+# Subtest: install: every browser gets its own steps
+ok 51 - install: every browser gets its own steps
+  ---
+  duration_ms: 2.0864
+  type: 'test'
+  ...
+# Subtest: install: only an https address is kept
+ok 52 - install: only an https address is kept
+  ---
+  duration_ms: 6.3887
+  type: 'test'
+  ...
+# Subtest: install: the app's address — the page's own folder on https, the one typed on the .exe
+ok 53 - install: the app's address — the page's own folder on https, the one typed on the .exe
+  ---
+  duration_ms: 1.2144
+  type: 'test'
+  ...
+# Subtest: install: the welcome after installing is not shown again in the new window
+ok 54 - install: the welcome after installing is not shown again in the new window
+  ---
+  duration_ms: 1.0889
+  type: 'test'
+  ...
+# Subtest: install: the welcome shows once
+ok 55 - install: the welcome shows once
+  ---
+  duration_ms: 0.4163
+  type: 'test'
+  ...
+# Subtest: install: a computer with a touch screen is still a computer
+ok 56 - install: a computer with a touch screen is still a computer
+  ---
+  duration_ms: 0.782
+  type: 'test'
+  ...
+# Subtest: install: every guide with a drawing taps one thing per step
+ok 57 - install: every guide with a drawing taps one thing per step
+  ---
+  duration_ms: 0.919
+  type: 'test'
+  ...
+# Subtest: normalize: an old ad gets an empty offer and keeps its animated poster video
+ok 58 - normalize: an old ad gets an empty offer and keeps its animated poster video
+  ---
+  duration_ms: 10.2941
+  type: 'test'
+  ...
+# Subtest: normalize: an ad saved before videos existed also keeps the animated poster
+ok 59 - normalize: an ad saved before videos existed also keeps the animated poster
+  ---
+  duration_ms: 1.2178
+  type: 'test'
+  ...
+# Subtest: normalize: unknown video values fall back; Curto is always 6 s
+ok 60 - normalize: unknown video values fall back; Curto is always 6 s
+  ---
+  duration_ms: 3.6302
+  type: 'test'
+  ...
+# Subtest: normalize: a ready palette can colour the video
+ok 61 - normalize: a ready palette can colour the video
+  ---
+  duration_ms: 2.5571
+  type: 'test'
+  ...
+# Subtest: normalize: own sound without a file falls back to the generated music
+ok 62 - normalize: own sound without a file falls back to the generated music
+  ---
+  duration_ms: 1.1287
+  type: 'test'
+  ...
+# Subtest: newProject: Néon, «Automática», generated sound, empty offer
+ok 63 - newProject: Néon, «Automática», generated sound, empty offer
+  ---
+  duration_ms: 0.5718
+  type: 'test'
+  ...
+# Subtest: offerText: salary with its period and the vacancies, in the ad language
+ok 64 - offerText: salary with its period and the vacancies, in the ad language
+  ---
+  duration_ms: 1.2032
+  type: 'test'
+  ...
+# Subtest: offerText: null when salary and vacancies are empty
+ok 65 - offerText: null when salary and vacancies are empty
+  ---
+  duration_ms: 0.6109
+  type: 'test'
+  ...
+# Subtest: caption: the offer comes right after the headline
+ok 66 - caption: the offer comes right after the headline
+  ---
+  duration_ms: 2.279
+  type: 'test'
+  ...
+# Subtest: caption: no offer line without an offer
+ok 67 - caption: no offer line without an offer
+  ---
+  duration_ms: 1.5124
+  type: 'test'
+  ...
+# Subtest: normalize: video eyes, hold and photos get defaults and stay clean
+ok 68 - normalize: video eyes, hold and photos get defaults and stay clean
+  ---
+  duration_ms: 1.3273
+  type: 'test'
+  ...
+# Subtest: normalize: an ad without the new fields gets them
+ok 69 - normalize: an ad without the new fields gets them
+  ---
+  duration_ms: 0.8396
+  type: 'test'
+  ...
+# Subtest: normalize: new ads start at «Automática»
+ok 70 - normalize: new ads start at «Automática»
+  ---
+  duration_ms: 0.6189
+  type: 'test'
+  ...
+# Subtest: normalize: lengths 6–30 and auto are kept, others fall back to 15
+ok 71 - normalize: lengths 6–30 and auto are kept, others fall back to 15
+  ---
+  duration_ms: 3.1945
+  type: 'test'
+  ...
+# Subtest: normalize: an ad saved with include keeps the same video
+ok 72 - normalize: an ad saved with include keeps the same video
+  ---
+  duration_ms: 5.225
+  type: 'test'
+  ...
+# Subtest: mergeList: edits, removals, additions and order
+ok 73 - mergeList: edits, removals, additions and order
+  ---
+  duration_ms: 1.202
+  type: 'test'
+  ...
+# Subtest: mergeList: orphan edits are ignored and new image items appear
+ok 74 - mergeList: orphan edits are ignored and new image items appear
+  ---
+  duration_ms: 0.5047
+  type: 'test'
+  ...
+# Subtest: cleanVideoTexts: junk is dropped
+ok 75 - cleanVideoTexts: junk is dropped
+  ---
+  duration_ms: 1.5292
+  type: 'test'
+  ...
+# Subtest: pruneVideoTexts: edits of image items that are gone are dropped; his own items and the highlights stay
+ok 76 - pruneVideoTexts: edits of image items that are gone are dropped; his own items and the highlights stay
+  ---
+  duration_ms: 1.4056
+  type: 'test'
+  ...
+# Subtest: applyTradeTexts and normalize leave no edits of items that are gone
+ok 77 - applyTradeTexts and normalize leave no edits of items that are gone
+  ---
+  duration_ms: 1.4919
+  type: 'test'
+  ...
+# Subtest: normalize: «Escolher» without photos goes back to the trades' photos; hold 4 is kept
+ok 78 - normalize: «Escolher» without photos goes back to the trades' photos; hold 4 is kept
+  ---
+  duration_ms: 0.7737
+  type: 'test'
+  ...
+# Subtest: model: the recipes are motions, in their order
+ok 79 - model: the recipes are motions, in their order
+  ---
+  duration_ms: 0.364
+  type: 'test'
+  ...
+# Subtest: normalize: an old ad gets the new fields and keeps its QR link
+ok 80 - normalize: an old ad gets the new fields and keeps its QR link
+  ---
+  duration_ms: 11.0139
+  type: 'test'
+  ...
+# Subtest: normalize: an ad without a QR link uses the WhatsApp QR mode
+ok 81 - normalize: an ad without a QR link uses the WhatsApp QR mode
+  ---
+  duration_ms: 1.2836
+  type: 'test'
+  ...
+# Subtest: newProject: several trades, the first is the main one
+ok 82 - newProject: several trades, the first is the main one
+  ---
+  duration_ms: 0.9417
+  type: 'test'
+  ...
+# Subtest: caption: carries the WhatsApp link and the number when there is a number
+ok 83 - caption: carries the WhatsApp link and the number when there is a number
+  ---
+  duration_ms: 13.0394
+  type: 'test'
+  ...
+# Subtest: caption: no WhatsApp link without a number
+ok 84 - caption: no WhatsApp link without a number
+  ---
+  duration_ms: 1.5578
+  type: 'test'
+  ...
+# Subtest: setTrades: a generated message follows the new trades
+ok 85 - setTrades: a generated message follows the new trades
+  ---
+  duration_ms: 1.0959
+  type: 'test'
+  ...
+# Subtest: setTrades: a message the person wrote stays
+ok 86 - setTrades: a message the person wrote stays
+  ---
+  duration_ms: 1.1831
+  type: 'test'
+  ...
+# Subtest: caption: a contact with the WhatsApp number is not listed a second time
+ok 87 - caption: a contact with the WhatsApp number is not listed a second time
+  ---
+  duration_ms: 1.1953
+  type: 'test'
+  ...
+# Subtest: applyTradeTexts: explicit replacement now includes Spanish while preserving contacts and WhatsApp
+ok 88 - applyTradeTexts: explicit replacement now includes Spanish while preserving contacts and WhatsApp
+  ---
+  duration_ms: 11.8748
+  type: 'test'
+  ...
+# Subtest: addLocale: merged positions of every trade are translated
+ok 89 - addLocale: merged positions of every trade are translated
+  ---
+  duration_ms: 1.6227
+  type: 'test'
+  ...
+# Subtest: build: every duration ends exactly at the duration, scenes back to back
+ok 90 - build: every duration ends exactly at the duration, scenes back to back
+  ---
+  duration_ms: 6.7357
+  type: 'test'
+  ...
+# Subtest: build: hook first, end last with its minimum length
+ok 91 - build: hook first, end last with its minimum length
+  ---
+  duration_ms: 0.9217
+  type: 'test'
+  ...
+# Subtest: build: a headline-only ad gives exactly hook + end
+ok 92 - build: a headline-only ad gives exactly hook + end
+  ---
+  duration_ms: 2.0593
+  type: 'test'
+  ...
+# Subtest: build: no counter without salary or vacancies, no photo scenes without photos
+ok 93 - build: no counter without salary or vacancies, no photo scenes without photos
+  ---
+  duration_ms: 0.9271
+  type: 'test'
+  ...
+# Subtest: build: the style decides which scenes and in what order
+ok 94 - build: the style decides which scenes and in what order
+  ---
+  duration_ms: 0.7145
+  type: 'test'
+  ...
+# Subtest: build: benefits spread over the style's benefit slots, in their order
+ok 95 - build: benefits spread over the style's benefit slots, in their order
+  ---
+  duration_ms: 0.8018
+  type: 'test'
+  ...
+# Subtest: build: minBeats lengthens the scenes that have more text to show
+ok 96 - build: minBeats lengthens the scenes that have more text to show
+  ---
+  duration_ms: 0.7486
+  type: 'test'
+  ...
+# Subtest: build: starts, ends and cuts are on the beat
+ok 97 - build: starts, ends and cuts are on the beat
+  ---
+  duration_ms: 1.2641
+  type: 'test'
+  ...
+# Subtest: build: benefit texts are kept exactly as written; long ones get 1.5 s
+ok 98 - build: benefit texts are kept exactly as written; long ones get 1.5 s
+  ---
+  duration_ms: 1.7786
+  type: 'test'
+  ...
+# Subtest: build: when time runs out, photo scenes go first, then the last benefits
+ok 99 - build: when time runs out, photo scenes go first, then the last benefits
+  ---
+  duration_ms: 3.2705
+  type: 'test'
+  ...
+# Subtest: build: events — a kick every beat, a whoosh at every cut, a hit on the counter, a riser before the end
+ok 100 - build: events — a kick every beat, a whoosh at every cut, a hit on the counter, a riser before the end
+  ---
+  duration_ms: 1.4389
+  type: 'test'
+  ...
+# Subtest: content: only the ad's own words, hidden blocks left out, labels in the ad language
+ok 101 - content: only the ad's own words, hidden blocks left out, labels in the ad language
+  ---
+  duration_ms: 7.6446
+  type: 'test'
+  ...
+# Subtest: content: no number, no offer → no contact, no counter data; German labels in de-CH
+ok 102 - content: no number, no offer → no contact, no counter data; German labels in de-CH
+  ---
+  duration_ms: 2.9445
+  type: 'test'
+  ...
+# Subtest: acts: 15 s with everything = H M V D L C K O
+ok 103 - acts: 15 s with everything = H M V D L C K O
+  ---
+  duration_ms: 0.9698
+  type: 'test'
+  ...
+# Subtest: acts: 10 s keeps D and M, the rest of the time goes to the card
+ok 104 - acts: 10 s keeps D and M, the rest of the time goes to the card
+  ---
+  duration_ms: 0.4112
+  type: 'test'
+  ...
+# Subtest: acts: 6 s is the hook, the card and the loop
+ok 105 - acts: 6 s is the hook, the card and the loop
+  ---
+  duration_ms: 0.2741
+  type: 'test'
+  ...
+# Subtest: acts: a 4 s contact takes a bar from the lowest priority
+ok 106 - acts: a 4 s contact takes a bar from the lowest priority
+  ---
+  duration_ms: 0.6405
+  type: 'test'
+  ...
+# Subtest: acts: missing content leaves its time to the card; times are on the beat
+ok 107 - acts: missing content leaves its time to the card; times are on the beat
+  ---
+  duration_ms: 0.4566
+  type: 'test'
+  ...
+# Subtest: schedule: «Automática» gives the time the information needs
+ok 108 - schedule: «Automática» gives the time the information needs
+  ---
+  duration_ms: 5.6795
+  type: 'test'
+  ...
+# Subtest: schedule: a longer video shows more, not slower
+ok 109 - schedule: a longer video shows more, not slower
+  ---
+  duration_ms: 1.0977
+  type: 'test'
+  ...
+# Subtest: schedule: spare time becomes one benefit per page, then a longer card
+ok 110 - schedule: spare time becomes one benefit per page, then a longer card
+  ---
+  duration_ms: 0.7069
+  type: 'test'
+  ...
+# Subtest: schedule: lengths the information cannot fill are unavailable
+ok 111 - schedule: lengths the information cannot fill are unavailable
+  ---
+  duration_ms: 1.1804
+  type: 'test'
+  ...
+# Subtest: schedule: a very long ad is capped at 30 s and reports what is left out
+ok 112 - schedule: a very long ad is capped at 30 s and reports what is left out
+  ---
+  duration_ms: 0.4691
+  type: 'test'
+  ...
+# Subtest: schedule: Números can play the highlights first
+ok 113 - schedule: Números can play the highlights first
+  ---
+  duration_ms: 0.4219
+  type: 'test'
+  ...
+# Subtest: schedule: a saved length that cannot be filled any more falls back
+ok 114 - schedule: a saved length that cannot be filled any more falls back
+  ---
+  duration_ms: 1.3769
+  type: 'test'
+  ...
+# Subtest: schedule: intro and closing get a bar of their own, a recipe may switch acts off
+ok 115 - schedule: intro and closing get a bar of their own, a recipe may switch acts off
+  ---
+  duration_ms: 0.5757
+  type: 'test'
+  ...
+# Subtest: content: the video's eyes and lists hide benefits, highlights, positions and the QR
+ok 116 - content: the video's eyes and lists hide benefits, highlights, positions and the QR
+  ---
+  duration_ms: 1.6123
+  type: 'test'
+  ...
+# Subtest: content: video texts win over the image, per language
+ok 117 - content: video texts win over the image, per language
+  ---
+  duration_ms: 1.7291
+  type: 'test'
+  ...
+# Subtest: content: every list follows the image item by item
+ok 118 - content: every list follows the image item by item
+  ---
+  duration_ms: 0.9277
+  type: 'test'
+  ...
+# Subtest: content: highlights start from salary, vacancies and badge
+ok 119 - content: highlights start from salary, vacancies and badge
+  ---
+  duration_ms: 4.2775
+  type: 'test'
+  ...
+# Subtest: content: highlights keep their text; only plain numbers count
+ok 120 - content: highlights keep their text; only plain numbers count
+  ---
+  duration_ms: 1.4353
+  type: 'test'
+  ...
+# Subtest: content: the button, the hint and the message are his
+ok 121 - content: the button, the hint and the message are his
+  ---
+  duration_ms: 0.8041
+  type: 'test'
+  ...
+# Subtest: content: the video's eyes start from the image's
+ok 122 - content: the video's eyes start from the image's
+  ---
+  duration_ms: 1.3646
+  type: 'test'
+  ...
+# Subtest: content: an empty video headline falls back to the brand, then the first benefit
+ok 123 - content: an empty video headline falls back to the brand, then the first benefit
+  ---
+  duration_ms: 0.8771
+  type: 'test'
+  ...
+# Subtest: content: model labels are translated and editable
+ok 124 - content: model labels are translated and editable
+  ---
+  duration_ms: 1.6489
+  type: 'test'
+  ...
+# Subtest: content: the ad's contacts come with it, unless the block is hidden
+ok 125 - content: the ad's contacts come with it, unless the block is hidden
+  ---
+  duration_ms: 0.7693
+  type: 'test'
+  ...
+# Subtest: content: removing every benefit leaves none
+ok 126 - content: removing every benefit leaves none
+  ---
+  duration_ms: 0.5977
+  type: 'test'
+  ...
+# Subtest: content: with no choice the benefits are all there, chat and QR on
+ok 127 - content: with no choice the benefits are all there, chat and QR on
+  ---
+  duration_ms: 0.5226
+  type: 'test'
+  ...
+# Subtest: build: the closing card of the styles lasts the chosen hold
+ok 128 - build: the closing card of the styles lasts the chosen hold
+  ---
+  duration_ms: 0.6949
+  type: 'test'
+  ...
+# Subtest: offline readiness measures shell and photos separately, reports interrupted preparation and resumes only missing resources
+ok 129 - offline readiness measures shell and photos separately, reports interrupted preparation and resumes only missing resources
+  ---
+  duration_ms: 224.9458
+  type: 'test'
+  ...
+# Subtest: activation preserves other apps caches and fetch uses only this version; cache eviction is reflected in readiness
+ok 130 - activation preserves other apps caches and fetch uses only this version; cache eviction is reflected in readiness
+  ---
+  duration_ms: 26.3783
+  type: 'test'
+  ...
+# Subtest: offline bridge distinguishes disk copies and forwards actual worker progress without claiming availability early
+ok 131 - offline bridge distinguishes disk copies and forwards actual worker progress without claiming availability early
+  ---
+  duration_ms: 6.5326
+  type: 'test'
+  ...
+# Subtest: normalize: a photo's focus is kept, in both modes
+ok 132 - normalize: a photo's focus is kept, in both modes
+  ---
+  duration_ms: 13.6109
+  type: 'test'
+  ...
+# Subtest: normalize: a focus is clamped to the photo and junk is dropped
+ok 133 - normalize: a focus is clamped to the photo and junk is dropped
+  ---
+  duration_ms: 1.6567
+  type: 'test'
+  ...
+# Subtest: normalize: no focus, an empty one or a broken one leaves the photos as before
+ok 134 - normalize: no focus, an empty one or a broken one leaves the photos as before
+  ---
+  duration_ms: 13.5623
+  type: 'test'
+  ...
+# Subtest: normalize: «Escolher» without photos goes back to the trades but keeps the focus
+ok 135 - normalize: «Escolher» without photos goes back to the trades but keeps the focus
+  ---
+  duration_ms: 1.2961
+  type: 'test'
+  ...
+# Subtest: normalize: at most 64 photos keep a focus
+ok 136 - normalize: at most 64 photos keep a focus
+  ---
+  duration_ms: 1.9496
+  type: 'test'
+  ...
+# Subtest: videoPhotoFocus: the person's point, else the ad's framing, a library photo's or a little above the middle
+ok 137 - videoPhotoFocus: the person's point, else the ad's framing, a library photo's or a little above the middle
+  ---
+  duration_ms: 0.9942
+  type: 'test'
+  ...
+# Subtest: setVideoPhotoFocus: sets, replaces and clears one photo's point
+ok 138 - setVideoPhotoFocus: sets, replaces and clears one photo's point
+  ---
+  duration_ms: 4.952
+  type: 'test'
+  ...
+# Subtest: reusable phrase approvals are bound to exact wording and catalog upgrades preserve existing libraries
+ok 139 - reusable phrase approvals are bound to exact wording and catalog upgrades preserve existing libraries
+  ---
+  duration_ms: 13.1377
+  type: 'test'
+  ...
+# Subtest: suggestions require exact source, approved source and target, matching field, client and profession
+ok 140 - suggestions require exact source, approved source and target, matching field, client and profession
+  ---
+  duration_ms: 2.6648
+  type: 'test'
+  ...
+# Subtest: inserting a phrase changes only approved selected languages and requires review in its new context
+ok 141 - inserting a phrase changes only approved selected languages and requires review in its new context
+  ---
+  duration_ms: 5.0159
+  type: 'test'
+  ...
+# Subtest: all stock trades have complete Italian and Spanish text, and adding either language preserves custom wording
+ok 142 - all stock trades have complete Italian and Spanish text, and adding either language preserves custom wording
+  ---
+  duration_ms: 10.4844
+  type: 'test'
+  ...
+# Subtest: brands apply fonts and locale contacts, clearing previous company links and video contact overrides
+ok 143 - brands apply fonts and locale contacts, clearing previous company links and video contact overrides
+  ---
+  duration_ms: 10.383
+  type: 'test'
+  ...
+# Subtest: personal templates retain multilingual copy and media but create independent drafts
+ok 144 - personal templates retain multilingual copy and media but create independent drafts
+  ---
+  duration_ms: 4.5283
+  type: 'test'
+  ...
+# Subtest: brand rejects an incomplete WhatsApp number; locale message templates survive applying the brand
+ok 145 - brand rejects an incomplete WhatsApp number; locale message templates survive applying the brand
+  ---
+  duration_ms: 4.8903
+  type: 'test'
+  ...
+# Subtest: carousel wraps long words without losing Unicode characters
+ok 146 - carousel wraps long words without losing Unicode characters
+  ---
+  duration_ms: 1.0614
+  type: 'test'
+  ...
+# Subtest: carousel paginates long content, honors hidden sections and keeps every list item
+ok 147 - carousel paginates long content, honors hidden sections and keeps every list item
+  ---
+  duration_ms: 12.4104
+  type: 'test'
+  ...
+# Subtest: carousel respects QR visibility and puts QR only on the final contact slide
+ok 148 - carousel respects QR visibility and puts QR only on the final contact slide
+  ---
+  duration_ms: 1.9667
+  type: 'test'
+  ...
+# Subtest: campaign ZIP contains selected languages, numbered slides, exact captions and portable project
+ok 149 - campaign ZIP contains selected languages, numbered slides, exact captions and portable project
+  ---
+  duration_ms: 369.7767
+  type: 'test'
+  ...
+# Subtest: package uses a fixed snapshot, rejects empty selections and never returns a partial failed export
+ok 150 - package uses a fixed snapshot, rejects empty selections and never returns a partial failed export
+  ---
+  duration_ms: 9.2059
+  type: 'test'
+  ...
+# Subtest: cancellation prevents the next renderer and aborts the package
+ok 151 - cancellation prevents the next renderer and aborts the package
+  ---
+  duration_ms: 3.1482
+  type: 'test'
+  ...
+# Subtest: campaign creates each video using actual extension, soundtrack and timeline; silent fallback fails explicitly
+ok 152 - campaign creates each video using actual extension, soundtrack and timeline; silent fallback fails explicitly
+  ---
+  duration_ms: 38.9239
+  type: 'test'
+  ...
+# Subtest: publication migration validates dates, channels, languages and safe links
+ok 153 - publication migration validates dates, channels, languages and safe links
+  ---
+  duration_ms: 15.1504
+  type: 'test'
+  ...
+# Subtest: publication tasks track each language and channel, changed published content, due dates and closure
+ok 154 - publication tasks track each language and channel, changed published content, due dates and closure
+  ---
+  duration_ms: 8.2678
+  type: 'test'
+  ...
+# Subtest: portable rebase keeps current publication records current, without clearing genuine stale flags
+ok 155 - portable rebase keeps current publication records current, without clearing genuine stale flags
+  ---
+  duration_ms: 10.3822
+  type: 'test'
+  ...
+# Subtest: UI: save multiple brands and a model, rename it, then create an independent ad from home
+ok 156 - UI: save multiple brands and a model, rename it, then create an independent ad from home
+  ---
+  duration_ms: 3149.9931
+  type: 'test'
+  ...
+# Subtest: UI: common offer is saved once and changed salary prompts review of custom publication text
+ok 157 - UI: common offer is saved once and changed salary prompts review of custom publication text
+  ---
+  duration_ms: 2016.58
+  type: 'test'
+  ...
+# Subtest: UI: mobile preview can be collapsed while editing and restored without changing the ad
+ok 158 - UI: mobile preview can be collapsed while editing and restored without changing the ad
+  ---
+  duration_ms: 1133.7846
+  type: 'test'
+  ...
+# Subtest: UI: desktop panel divider accepts keyboard and pointer input, clamps width and keeps its preference
+ok 159 - UI: desktop panel divider accepts keyboard and pointer input, clamps width and keeps its preference
+  ---
+  duration_ms: 505.7308
+  type: 'test'
+  ...
+# Subtest: UI: workspace backup cancellation, preview and copy restore remain explicit and refresh home
+ok 160 - UI: workspace backup cancellation, preview and copy restore remain explicit and refresh home
+  ---
+  duration_ms: 363.1211
+  type: 'test'
+  ...
+# Subtest: UI: phone save failures stay actionable until retry succeeds; session-only storage never claims durable saving
+ok 161 - UI: phone save failures stay actionable until retry succeeds; session-only storage never claims durable saving
+  ---
+  duration_ms: 2517.6619
+  type: 'test'
+  ...
+# Subtest: UI: export focus stays inside the dialog and nested confirmation restores its trigger
+ok 162 - UI: export focus stays inside the dialog and nested confirmation restores its trigger
+  ---
+  duration_ms: 513.0301
+  type: 'test'
+  ...
+# Subtest: UI: video scrubbing pauses playback, moment navigation works and the chosen frame/title are saved per language
+ok 163 - UI: video scrubbing pauses playback, moment navigation works and the chosen frame/title are saved per language
+  ---
+  duration_ms: 1251.6864
+  type: 'test'
+  ...
+# Subtest: UI: choosing a cover waits for photos instead of freezing the provisional timeline
+ok 164 - UI: choosing a cover waits for photos instead of freezing the provisional timeline
+  ---
+  duration_ms: 288.0716
+  type: 'test'
+  ...
+# Subtest: UI: video has an explicit keyboard-operable pause and resume control
+ok 165 - UI: video has an explicit keyboard-operable pause and resume control
+  ---
+  duration_ms: 292.3497
+  type: 'test'
+  ...
+# Subtest: UI: carousel pages can be edited, split, joined, reordered, hidden and given an independent photograph
+ok 166 - UI: carousel pages can be edited, split, joined, reordered, hidden and given an independent photograph
+  ---
+  duration_ms: 1586.6559
+  type: 'test'
+  ...
+# Subtest: UI: production settings persist, unsupported video blocks only its selected package, cancellation recovers controls
+ok 167 - UI: production settings persist, unsupported video blocks only its selected package, cancellation recovers controls
+  ---
+  duration_ms: 1147.9006
+  type: 'test'
+  ...
+# Subtest: UI: captions stay per language after closing export and reopening the ad; regenerate supports undo
+ok 168 - UI: captions stay per language after closing export and reopening the ad; regenerate supports undo
+  ---
+  duration_ms: 749.6864
+  type: 'test'
+  ...
+# Subtest: UI: recovery restores versions and trashed ads through their visible controls on a phone
+ok 169 - UI: recovery restores versions and trashed ads through their visible controls on a phone
+  ---
+  duration_ms: 355.8175
+  type: 'test'
+  ...
+# Subtest: UI: restoring from the editor cannot be overwritten by an earlier autosave
+ok 170 - UI: restoring from the editor cannot be overwritten by an earlier autosave
+  ---
+  duration_ms: 1334.3207
+  type: 'test'
+  ...
+# Subtest: UI: phone export opens history and saves a manual version of the edited caption
+ok 171 - UI: phone export opens history and saves a manual version of the edited caption
+  ---
+  duration_ms: 344.3309
+  type: 'test'
+  ...
+# Subtest: UI: a save failure keeps the edited ad open instead of silently losing changes
+ok 172 - UI: a save failure keeps the edited ad open instead of silently losing changes
+  ---
+  duration_ms: 293.8161
+  type: 'test'
+  ...
+# Subtest: UI: portable export shows progress, prevents repeat clicks and allows retry after failure
+ok 173 - UI: portable export shows progress, prevents repeat clicks and allows retry after failure
+  ---
+  duration_ms: 350.0663
+  type: 'test'
+  ...
+# Subtest: UI: organise, combine filters, favourite and duplicate as a draft
+ok 174 - UI: organise, combine filters, favourite and duplicate as a draft
+  ---
+  duration_ms: 617.8244
+  type: 'test'
+  ...
+# Subtest: UI: reviewed translations become stale after source edits and review supports undo
+ok 175 - UI: reviewed translations become stale after source edits and review supports undo
+  ---
+  duration_ms: 1186.168
+  type: 'test'
+  ...
+# Subtest: UI: export warnings target a contact and the selected translation; edits refresh the warnings
+ok 176 - UI: export warnings target a contact and the selected translation; edits refresh the warnings
+  ---
+  duration_ms: 474.5073
+  type: 'test'
+  ...
+# Subtest: UI: concurrent changes suspend saves and saving a copy preserves both windows work
+ok 177 - UI: concurrent changes suspend saves and saving a copy preserves both windows work
+  ---
+  duration_ms: 1073.9129
+  type: 'test'
+  ...
+# Subtest: UI: reloading shows the saved version, then explicit takeover preserves it in history
+ok 178 - UI: reloading shows the saved version, then explicit takeover preserves it in history
+  ---
+  duration_ms: 423.4971
+  type: 'test'
+  ...
+# Subtest: UI: leaving a conflicted editor requires confirmation and never replaces the saved version
+ok 179 - UI: leaving a conflicted editor requires confirmation and never replaces the saved version
+  ---
+  duration_ms: 373.5195
+  type: 'test'
+  ...
+# Subtest: UI: offline settings show partial readiness, retry failures and display completion from worker state
+ok 180 - UI: offline settings show partial readiness, retry failures and display completion from worker state
+  ---
+  duration_ms: 232.4297
+  type: 'test'
+  ...
+# Subtest: UI: publication planning tracks pending languages, changed posts and manual closure from home
+ok 181 - UI: publication planning tracks pending languages, changed posts and manual closure from home
+  ---
+  duration_ms: 668.8744
+  type: 'test'
+  ...
+# Subtest: UI: photo search, metadata, favorites, usage and per-file import feedback
+ok 182 - UI: photo search, metadata, favorites, usage and per-file import feedback
+  ---
+  duration_ms: 748.9352
+  type: 'test'
+  ...
+# Subtest: UI: save approved phrases, suggest an exact translation and explicitly approve it in the new context
+ok 183 - UI: save approved phrases, suggest an exact translation and explicitly approve it in the new context
+  ---
+  duration_ms: 936.2809
+  type: 'test'
+  ...
+# Subtest: UI: compare formats edits one crop, can copy to all, and selects the format for continued editing
+ok 184 - UI: compare formats edits one crop, can copy to all, and selects the format for continued editing
+  ---
+  duration_ms: 1132.0642
+  type: 'test'
+  ...
+# Subtest: UI: file chooser is attached to the document and cancellation cleans it up
+ok 185 - UI: file chooser is attached to the document and cancellation cleans it up
+  ---
+  duration_ms: 79.0872
+  type: 'test'
+  ...
+# Subtest: personal carousel photos travel in project and workspace files and survive retained history cleanup
+ok 186 - personal carousel photos travel in project and workspace files and survive retained history cleanup
+  ---
+  duration_ms: 189.4578
+  type: 'test'
+  ...
+# Subtest: workspace backup travels with versions, trash, brands, templates, own audio and automatic stock photos
+ok 187 - workspace backup travels with versions, trash, brands, templates, own audio and automatic stock photos
+  ---
+  duration_ms: 108.6114
+  type: 'test'
+  ...
+# Subtest: concurrent editors claim atomically, reject stale writes and preserve the prior version on explicit takeover
+ok 188 - concurrent editors claim atomically, reject stale writes and preserve the prior version on explicit takeover
+  ---
+  duration_ms: 54.866
+  type: 'test'
+  ...
+# Subtest: editor heartbeat does not invalidate backup previews or leak session locks into backup files
+ok 189 - editor heartbeat does not invalidate backup previews or leak session locks into backup files
+  ---
+  duration_ms: 35.6105
+  type: 'test'
+  ...
+# Subtest: publication plans travel with projects and backups, restore with history and refuse stale planner writes
+ok 190 - publication plans travel with projects and backups, restore with history and refuse stale planner writes
+  ---
+  duration_ms: 139.6583
+  type: 'test'
+  ...
+# Subtest: photo library reports individual imports, detects duplicate content and merges concurrent metadata writes
+ok 191 - photo library reports individual imports, detects duplicate content and merges concurrent metadata writes
+  ---
+  duration_ms: 44.9697
+  type: 'test'
+  ...
+# Subtest: photo usage includes current edits, historical versions, trash and personal models; portable metadata travels
+ok 192 - photo usage includes current edits, historical versions, trash and personal models; portable metadata travels
+  ---
+  duration_ms: 99.0404
+  type: 'test'
+  ...
+# Subtest: workspace backup previews and restores reusable texts with context and wording approvals
+ok 193 - workspace backup previews and restores reusable texts with context and wording approvals
+  ---
+  duration_ms: 38.8339
+  type: 'test'
+  ...
+# Subtest: workspace restore previews ID collisions, preserves unrelated work and checkpoints replaced ads
+ok 194 - workspace restore previews ID collisions, preserves unrelated work and checkpoints replaced ads
+  ---
+  duration_ms: 44.2306
+  type: 'test'
+  ...
+# Subtest: workspace rejects malformed media, missing historical assets and stale previews without writing
+ok 195 - workspace rejects malformed media, missing historical assets and stale previews without writing
+  ---
+  duration_ms: 35.2278
+  type: 'test'
+  ...
+# Subtest: workspace quota failure rolls back ads, media and catalogue in the same transaction
+ok 196 - workspace quota failure rolls back ads, media and catalogue in the same transaction
+  ---
+  duration_ms: 40.0634
+  type: 'test'
+  ...
+# Subtest: workspace reports actual browser persistence separately from IndexedDB availability
+ok 197 - workspace reports actual browser persistence separately from IndexedDB availability
+  ---
+  duration_ms: 29.3126
+  type: 'test'
+  ...
+# Subtest: catalog migrates legacy brand once, merges concurrent writes and retains reusable assets through cleanup
+ok 198 - catalog migrates legacy brand once, merges concurrent writes and retains reusable assets through cleanup
+  ---
+  duration_ms: 34.6874
+  type: 'test'
+  ...
+# Subtest: campaign and review metadata survive storage, portable transfer and version restoration
+ok 199 - campaign and review metadata survive storage, portable transfer and version restoration
+  ---
+  duration_ms: 61.4761
+  type: 'test'
+  ...
+# Subtest: captions: custom and empty texts survive storage, file transfer and regeneration per language
+ok 200 - captions: custom and empty texts survive storage, file transfer and regeneration per language
+  ---
+  duration_ms: 44.0208
+  type: 'test'
+  ...
+# Subtest: portable: chosen own and bundled photos, sound, logo, order and crop travel to an empty device
+ok 201 - portable: chosen own and bundled photos, sound, logo, order and crop travel to an empty device
+  ---
+  duration_ms: 67.8105
+  type: 'test'
+  ...
+# Subtest: portable: automatic video photo selection remains frozen across different libraries
+ok 202 - portable: automatic video photo selection remains frozen across different libraries
+  ---
+  duration_ms: 36.9837
+  type: 'test'
+  ...
+# Subtest: portable: incomplete or unsafe archives fail before writing any data; v1 still opens
+ok 203 - portable: incomplete or unsafe archives fail before writing any data; v1 still opens
+  ---
+  duration_ms: 17.5138
+  type: 'test'
+  ...
+# Subtest: history: automatic saves group by minute; manual versions persist and restoration is reversible
+ok 204 - history: automatic saves group by minute; manual versions persist and restoration is reversible
+  ---
+  duration_ms: 50.7409
+  type: 'test'
+  ...
+# Subtest: history: at most 50 versions, including checkpoints, and old asset references stay alive
+ok 205 - history: at most 50 versions, including checkpoints, and old asset references stay alive
+  ---
+  duration_ms: 819.3061
+  type: 'test'
+  ...
+# Subtest: history: restoring an older version recovers captions, languages, photo and audio together
+ok 206 - history: restoring an older version recovers captions, languages, photo and audio together
+  ---
+  duration_ms: 24.9085
+  type: 'test'
+  ...
+# Subtest: trash: restart preserves ads and assets for 30 days, restore keeps history, stale edits cannot resurrect
+ok 207 - trash: restart preserves ads and assets for 30 days, restore keeps history, stale edits cannot resurrect
+  ---
+  duration_ms: 36.6489
+  type: 'test'
+  ...
+# Subtest: import: a failed transaction rolls back every asset, the project and library changes
+ok 208 - import: a failed transaction rolls back every asset, the project and library changes
+  ---
+  duration_ms: 13.7739
+  type: 'test'
+  ...
+# Subtest: memory fallback: saved projects and versions do not alias the editor objects
+ok 209 - memory fallback: saved projects and versions do not alias the editor objects
+  ---
+  duration_ms: 11.299
+  type: 'test'
+  ...
+# Subtest: common offer migrates older ads without changing image visibility and rejects invalid dates
+ok 210 - common offer migrates older ads without changing image visibility and rejects invalid dates
+  ---
+  duration_ms: 12.2423
+  type: 'test'
+  ...
+# Subtest: common offer controls each output independently and projects into hidden intro without mutating editable text
+ok 211 - common offer controls each output independently and projects into hidden intro without mutating editable text
+  ---
+  duration_ms: 10.5612
+  type: 'test'
+  ...
+# Subtest: common offer uses localized labels and reaches recipe highlights and older video text cards
+ok 212 - common offer uses localized labels and reaches recipe highlights and older video text cards
+  ---
+  duration_ms: 21.4955
+  type: 'test'
+  ...
+# Subtest: custom publication text warns on offer/contact changes, survives normalization and can be confirmed without rewriting
+ok 213 - custom publication text warns on offer/contact changes, survives normalization and can be confirmed without rewriting
+  ---
+  duration_ms: 27.6886
+  type: 'test'
+  ...
+# Subtest: changing a brand reopens caption review while preserving the custom text and approvals of unrelated languages
+ok 214 - changing a brand reopens caption review while preserving the custom text and approvals of unrelated languages
+  ---
+  duration_ms: 5.1037
+  type: 'test'
+  ...
+# Subtest: nouns: one singular noun per trade, in the ad language
+ok 215 - nouns: one singular noun per trade, in the ad language
+  ---
+  duration_ms: 3.8479
+  type: 'test'
+  ...
+# Subtest: nouns: every trade has a noun in pt, de, fr, it, en and es
+ok 216 - nouns: every trade has a noun in pt, de, fr, it, en and es
+  ---
+  duration_ms: 2.4908
+  type: 'test'
+  ...
+# Subtest: textsFor: main trade texts with every trade's positions, no duplicates
+ok 217 - textsFor: main trade texts with every trade's positions, no duplicates
+  ---
+  duration_ms: 2.3099
+  type: 'test'
+  ...
+# Subtest: translate: merged positions of every trade are translated
+ok 218 - translate: merged positions of every trade are translated
+  ---
+  duration_ms: 1.5522
+  type: 'test'
+  ...
+# Subtest: translate: a position the person changed stays as written
+ok 219 - translate: a position the person changed stays as written
+  ---
+  duration_ms: 0.658
+  type: 'test'
+  ...
+# Subtest: translate: old pos<i> keys still mean the first trade
+ok 220 - translate: old pos<i> keys still mean the first trade
+  ---
+  duration_ms: 0.9357
+  type: 'test'
+  ...
+# Subtest: hashtagsFor: general tags once, then each trade's tag
+ok 221 - hashtagsFor: general tags once, then each trade's tag
+  ---
+  duration_ms: 0.6364
+  type: 'test'
+  ...
+# Subtest: video moments represent both scene and recipe timelines and clamp to an actual export frame
+ok 222 - video moments represent both scene and recipe timelines and clamp to an actual export frame
+  ---
+  duration_ms: 3.3103
+  type: 'test'
+  ...
+# Subtest: cover choices normalize independently per language and survive portable project normalization
+ok 223 - cover choices normalize independently per language and survive portable project normalization
+  ---
+  duration_ms: 10.3903
+  type: 'test'
+  ...
+# Subtest: cover renderer uses the chosen video frame in 9:16 and adds only the cover title within the safe area
+ok 224 - cover renderer uses the chosen video frame in 9:16 and adds only the cover title within the safe area
+  ---
+  duration_ms: 4.6304
+  type: 'test'
+  ...
+# Subtest: campaign cover uses its saved frame and shares preparation with the video; unchosen languages keep automatic covers
+ok 225 - campaign cover uses its saved frame and shares preparation with the video; unchosen languages keep automatic covers
+  ---
+  duration_ms: 64.5321
+  type: 'test'
+  ...
+# Subtest: campaigns: normalizes old and malformed metadata without changing poster content
+ok 226 - campaigns: normalizes old and malformed metadata without changing poster content
+  ---
+  duration_ms: 14.2604
+  type: 'test'
+  ...
+# Subtest: campaigns: combined accent-insensitive search, filters and sort exclude trash
+ok 227 - campaigns: combined accent-insensitive search, filters and sort exclude trash
+  ---
+  duration_ms: 4.9055
+  type: 'test'
+  ...
+# Subtest: review: detects copied, missing, source changes, target changes and explicit confirmation
+ok 228 - review: detects copied, missing, source changes, target changes and explicit confirmation
+  ---
+  duration_ms: 9.6969
+  type: 'test'
+  ...
+# Subtest: review: changing a source before the first review is still detected
+ok 229 - review: changing a source before the first review is still detected
+  ---
+  duration_ms: 1.7734
+  type: 'test'
+  ...
+# Subtest: review: list additions, order and removal invalidate only the affected review
+ok 230 - review: list additions, order and removal invalidate only the affected review
+  ---
+  duration_ms: 2.0776
+  type: 'test'
+  ...
+# Subtest: review: custom and intentionally empty captions are reviewed without overwriting the other language
+ok 231 - review: custom and intentionally empty captions are reviewed without overwriting the other language
+  ---
+  duration_ms: 2.0318
+  type: 'test'
+  ...
+# Subtest: review: deleting and re-adding languages removes obsolete approvals and handles legacy ads
+ok 232 - review: deleting and re-adding languages removes obsolete approvals and handles legacy ads
+  ---
+  duration_ms: 3.062
+  type: 'test'
+  ...
+# Subtest: review: separate video text edits reopen review; inherited text needs no duplicate block
+ok 233 - review: separate video text edits reopen review; inherited text needs no duplicate block
+  ---
+  duration_ms: 5.3665
+  type: 'test'
+  ...
+# Subtest: preflight: sample contacts do not count as usable and their action targets the sample field
+ok 234 - preflight: sample contacts do not count as usable and their action targets the sample field
+  ---
+  duration_ms: 5.9942
+  type: 'test'
+  ...
+# Subtest: preflight: respects hidden WhatsApp, invalid QR and only the selected languages
+ok 235 - preflight: respects hidden WhatsApp, invalid QR and only the selected languages
+  ---
+  duration_ms: 5.0978
+  type: 'test'
+  ...
+# Subtest: preflight: video uses its own visible contacts and layout reports carry the right format
+ok 236 - preflight: video uses its own visible contacts and layout reports carry the right format
+  ---
+  duration_ms: 3.7344
+  type: 'test'
+  ...
+# Subtest: preflight: video omissions carry locale and format and are not poster warnings
+ok 237 - preflight: video omissions carry locale and format and are not poster warnings
+  ---
+  duration_ms: 3.5054
+  type: 'test'
+  ...
+1..237
+# tests 237
+# suites 0
+# pass 237
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 28453.2587

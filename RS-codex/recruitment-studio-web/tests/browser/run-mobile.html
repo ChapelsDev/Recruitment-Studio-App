@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- The app's own relative URLs (photos/library.js, photos/full/*.js) resolve from the app folder, as in index.html -->
+  <base href="../../">
+  <title>Recruitment Studio · testes no telemóvel</title>
+  <!-- Test page (not shipped): the whole app as in index.html, then the phone-size cases. -->
+  <!-- the cases test the «Sóbrio» motion (today's); the «Ilustrativo» and «Calmo» cases switch on their own -->
+  <script>try { localStorage.setItem('rs-appearance', JSON.stringify({ motion: 'sober' })); } catch (err) { /* blocked */ }</script>
+  <script src="js/appearance.js"></script>
+  <script>window.__themeAtHead = document.documentElement.dataset.theme; window.__motionAtHead = document.documentElement.dataset.motion;</script>
+  <link rel="stylesheet" href="assets/app.css">
+  <link id="fonts-css" rel="stylesheet" href="assets/fonts.css">
+  <script>try { sessionStorage.setItem('rs-intro', '1'); } catch (err) { /* no intro in tests */ }</script>
+</head>
+<body>
+  <div id="app"></div>
+  <script src="vendor/htm-preact.umd.js"></script>
+  <script src="vendor/qrcode.js"></script>
+  <script src="vendor/mp4-muxer.js"></script>
+  <script src="js/icons.js"></script>
+  <script src="js/util.js"></script>
+  <script src="js/trades.js"></script>
+  <script src="js/model.js"></script>
+  <script src="js/contact.js"></script>
+  <script src="js/workflow.js"></script>
+  <script src="js/motion-timeline.js"></script>
+  <script src="js/engine.js"></script>
+  <script src="js/templates.js"></script>
+  <script src="js/motion-kit.js"></script>
+  <script src="js/motion.js"></script>
+  <script src="js/recipes/tijolo.js"></script>
+  <script src="js/recipes/pixel.js"></script>
+  <script src="js/recipes/planta.js"></script>
+  <script src="js/recipes/apresentacao.js"></script>
+  <script src="js/recipes/colagem.js"></script>
+  <script src="js/recipes/numeros.js"></script>
+  <script src="js/recipes/partidas.js"></script>
+  <script src="js/recipes/notificacoes.js"></script>
+  <script src="js/recipes/grua.js"></script>
+  <script src="js/recipes/contrato.js"></script>
+  <script src="js/recipes/cracha.js"></script>
+  <script src="js/recipes/fita.js"></script>
+  <script src="js/recipes/esteira.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/reuse.js"></script>
+  <script src="js/production.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/backup.js"></script>
+  <script src="js/video.js"></script>
+  <script src="js/install.js"></script>
+  <script src="js/haptics.js"></script>
+  <script src="js/ui-motion.js"></script>
+  <script src="js/workflow-ui.js"></script>
+  <script src="js/production-ui.js"></script>
+  <script src="js/app.js"></script>
+  <script src="tests/browser/harness.js"></script>
+  <script src="tests/browser/helpers.js"></script>
+  <!-- Phone cases: tools/test-browser.mjs opens this page in a 360 × 740 window -->
+  <script src="tests/browser/ui-mobile.case.js"></script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+{
+  "origin": "http://127.0.0.1:18973",
+  "cache": "recruitment-studio-v25",
+  "worker": "http://127.0.0.1:18973/sw.js",
+  "photos": 63,
+  "firstPhotos": [
+    "http://127.0.0.1:18973/photos/full/canalizador-32a012baf4.js",
+    "http://127.0.0.1:18973/photos/full/canalizador-8e74992939.js"
+  ]
+}

@@ -1,0 +1,132 @@
+{
+  "v": 1,
+  "project": "TESTE QA 26-10 — Pedreiros e masseiros para reabilitação de edifícios históricos em Lisboa e arredores — PT/FR",
+  "createdAt": "2026-10-26T13:19:47.675Z",
+  "locales": [
+    "pt-PT",
+    "fr"
+  ],
+  "parts": {
+    "feed": true,
+    "story": true,
+    "video": true,
+    "cover": true,
+    "carousel": true,
+    "text": true,
+    "project": true
+  },
+  "carouselFormat": "square",
+  "slides": {
+    "pt-PT": 4,
+    "fr": 5
+  },
+  "covers": {
+    "pt-PT": {
+      "type": "frame",
+      "time": 7.8,
+      "title": "TESTE PT — 12 vagas em Lisboa",
+      "placement": "bottom"
+    },
+    "fr": {
+      "type": "frame",
+      "time": 0.8,
+      "title": "TEST FR — Rejoignez notre équipe",
+      "placement": "top"
+    }
+  },
+  "files": [
+    {
+      "name": "pt-PT/feed.png",
+      "bytes": 1411117
+    },
+    {
+      "name": "pt-PT/story.png",
+      "bytes": 1494404
+    },
+    {
+      "name": "pt-PT/cover.png",
+      "bytes": 3400162
+    },
+    {
+      "name": "pt-PT/carrossel/001.png",
+      "bytes": 152874
+    },
+    {
+      "name": "pt-PT/carrossel/002.png",
+      "bytes": 622473
+    },
+    {
+      "name": "pt-PT/carrossel/003.png",
+      "bytes": 101624
+    },
+    {
+      "name": "pt-PT/carrossel/004.png",
+      "bytes": 71218
+    },
+    {
+      "name": "pt-PT/publicacao.txt",
+      "bytes": 89
+    },
+    {
+      "name": "pt-PT/video.mp4",
+      "bytes": 22779974
+    },
+    {
+      "name": "fr/feed.png",
+      "bytes": 1412819
+    },
+    {
+      "name": "fr/story.png",
+      "bytes": 1484775
+    },
+    {
+      "name": "fr/cover.png",
+      "bytes": 3254796
+    },
+    {
+      "name": "fr/carrossel/001.png",
+      "bytes": 610911
+    },
+    {
+      "name": "fr/carrossel/002.png",
+      "bytes": 150409
+    },
+    {
+      "name": "fr/carrossel/003.png",
+      "bytes": 93534
+    },
+    {
+      "name": "fr/carrossel/004.png",
+      "bytes": 66254
+    },
+    {
+      "name": "fr/carrossel/005.png",
+      "bytes": 73851
+    },
+    {
+      "name": "fr/publicacao.txt",
+      "bytes": 696
+    },
+    {
+      "name": "fr/video.mp4",
+      "bytes": 22756516
+    },
+    {
+      "name": "projeto.anuncio",
+      "bytes": 7136228
+    }
+  ],
+  "warnings": [
+    "PT: ainda há contactos de exemplo. Substitua-os pelos seus.",
+    "PT: não há um contacto utilizável visível. Confirme telefone, email ou link.",
+    "FR: ainda há contactos de exemplo. Substitua-os pelos seus.",
+    "FR: não há um contacto utilizável visível. Confirme telefone, email ou link.",
+    "FR: 10 blocos por rever na tradução, com alterações no original.",
+    "Retrato · PT: há texto com 20 px no ficheiro (cerca de 6.8 px a 360 px de largura). Confirme a leitura ou aumente o texto.",
+    "Story · PT: há texto com 23 px no ficheiro (cerca de 7.6 px a 360 px de largura). Confirme a leitura ou aumente o texto.",
+    "Story · PT: o vídeo não inclui a introdução. Reveja o modelo, a duração ou os textos.",
+    "Retrato · FR: há texto com 21 px no ficheiro (cerca de 7.0 px a 360 px de largura). Confirme a leitura ou aumente o texto.",
+    "Story · FR: há texto com 23 px no ficheiro (cerca de 7.6 px a 360 px de largura). Confirme a leitura ou aumente o texto.",
+    "Story · FR: o vídeo não inclui a introdução. Reveja o modelo, a duração ou os textos."
+  ]
+}

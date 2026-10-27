@@ -1,0 +1,41 @@
+Recruitment Studio — entrega final de 26 de outubro de 2026
+
+Versão web: recruitment-studio-711c3bf99f
+Projeto preservado: recruitment-studio-v25, sem alterações nesta preparação.
+
+Distribuição gerada pela ferramenta existente:
+C:\Users\guilherme.andrade\Desktop\Dev\RS-codex\web-publicar\recruitment-studio\
+C:\Users\guilherme.andrade\Desktop\Dev\RS-codex\web-publicar\recruitment-studio-web.zip
+
+Nesta pasta de entrega:
+- recruitment-studio-web-711c3bf99f.zip: cópia identificada do ZIP final.
+- aplicacao-validada-v25.zip: cópia integral e verificada do projeto anterior
+  à preparação, com 3 804 ficheiros. Inclui material de desenvolvimento/evidência;
+  não é a pasta para publicar e não contém os dados do navegador.
+- NOTAS-DE-VERSAO.txt: conteúdo da entrega e distinção das validações.
+- ATUALIZAR-E-RECUAR.txt: cópia .rsbackup, atualização Windows/PWA, mudança de
+  PC/endereço e regresso à versão anterior.
+- MANUAL-UTILIZACAO.md e IMPLEMENTACAO.md: cópias da documentação original.
+- SHA256SUMS.txt: somas dos ficheiros desta entrega e da distribuição.
+- PRESERVACAO.json, VERIFICACAO.json, verificacao-zip.json e verificacao-http.json:
+  registos técnicos. Os manifestos listam tamanho e SHA-256 por ficheiro.
+- pacote-offline.png/.txt, pacote-console.json e servidor-desligado.json:
+  evidência da verificação curta do pacote na origem autorizada.
+- auditoria/: scripts locais usados na preservação/verificação; ficam fora
+  da distribuição. preservar.ps1 recusa substituir uma cópia existente.
+
+O ZIP final tem 139 ficheiros e 21 748 575 bytes (20,7 MiB). A pasta tem
+29 375 318 bytes (28,0 MiB). Os recursos necessários estão incluídos; testes,
+evidências, node_modules, ferramentas e manifestos npm ficam excluídos.
+
+Pendente: cópia .rsbackup dos dados reais de cada instalação. O utilizador usa
+.exe no Windows e PWA no telemóvel, podendo mudar de PC ou endereço; não foi
+identificada uma instalação/perfil concreta para exportar os anúncios de trabalho.
+O pacote é transportável. A transferência dos dados faz-se pela cópia global.
+
+Não havia pacote anterior em web-publicar que pudesse ser substituído. A versão
+habitual efetivamente instalada não foi identificada nem preservada como tal.
+Antes de a atualizar, conserve os seus ficheiros e dados conforme as instruções.
+
+Não foram feitos commits, publicação, substituição da instalação habitual ou
+eliminação de anúncios. O servidor temporário terminou desligado.

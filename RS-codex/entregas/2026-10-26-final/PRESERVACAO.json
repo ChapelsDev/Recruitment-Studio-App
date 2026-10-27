@@ -1,0 +1,17 @@
+{
+  "createdAt": "2026-10-26T14:33:31.1435540+00:00",
+  "localDate": "2026-10-26",
+  "timezone": "Europe/Lisbon",
+  "source": {
+    "root": "C:\\Users\\guilherme.andrade\\Desktop\\Dev\\RS-codex\\recruitment-studio-web",
+    "zip": "C:\\Users\\guilherme.andrade\\Desktop\\Dev\\RS-codex\\entregas\\2026-10-26-final\\aplicacao-validada-v25.zip",
+    "files": 3804,
+    "bytes": 219685625.0,
+    "zipSha256": "b3cbc4dba10aa7ded06603ac2b7234ff474567b84d855455ba1f33ca3d353a2a",
+    "verifiedEveryFile": true
+  },
+  "previousOutput": null,
+  "previousOutputExisted": false,
+  "browserDataIncluded": false,
+  "note": "Copia integral dos ficheiros do projeto; nao e uma copia dos dados guardados no navegador. A instalacao habitual ainda nao foi identificada."
+}

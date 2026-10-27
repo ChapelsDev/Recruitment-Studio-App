@@ -1,0 +1,127 @@
+Recruitment Studio — atualização, mudança de instalação e regresso
+26 de outubro de 2026 | pacote web 711c3bf99f
+
+O pacote pode ser usado noutro PC ou endereço. Não depende de um caminho fixo.
+Os dados pertencem ao armazenamento do navegador/perfil/aparelho onde se trabalha.
+Uma nova origem web (protocolo, domínio ou porta) tem outro armazenamento. Mudar
+apenas a subpasta da mesma origem não deve ser usado para separar bibliotecas.
+No modo file://, preserve também o caminho da pasta numa atualização; ao mover
+a pasta trate a operação como migração e leve uma cópia .rsbackup.
+Não há sincronização automática entre o Windows e o telemóvel.
+
+1. ANTES DE ATUALIZAR OU MUDAR DE PC/ENDEREÇO
+
+Em CADA instalação que contém trabalho (Windows e PWA, se ambas forem usadas):
+1) Abra-a como habitualmente e confirme que aparecem os anúncios esperados.
+   Registe aparelho, navegador, perfil e endereço completo; no Windows, registe
+   também a pasta do .exe. Aguarde Guardado nos editores e evite edições paralelas.
+2) No ecrã inicial, abra Cópias de segurança. Assinale Incluir histórico de versões
+   e Incluir anúncios na reciclagem. Escolha Guardar cópia global.
+3) Guarde o .rsbackup fora da pasta que vai atualizar. Identifique-o, por exemplo,
+   recruitment-studio-Windows-2026-10-26-antes.rsbackup ou
+   recruitment-studio-PWA-2026-10-26-antes.rsbackup. No telemóvel, confirme o ficheiro
+   na aplicação Ficheiros/Transferências e conserve uma segunda cópia fora do aparelho.
+4) Confirme que a descarga terminou. Use Abrir cópia para restaurar para verificar
+   a pré-visualização e os itens esperados, depois feche SEM executar o restauro.
+   A data da última cópia preparada, por si só, não prova que o ficheiro foi guardado.
+5) Preserve ainda uma cópia identificada dos ficheiros da instalação que vai ser
+   substituída e da configuração de alojamento/atalho. É a referência para regressar.
+
+Se a instalação antiga não tiver Cópias de segurança, não a substitua supondo que
+o ZIP guarda os dados. Guarde os .anuncio disponíveis e planeie a transferência
+dos restantes dados antes de atualizar. Não há garantia de restauro global numa
+versão antiga sem suporte a .rsbackup.
+
+Nesta entrega não foi criado um .rsbackup dos anúncios de trabalho: a instalação
+concreta não foi identificada. A origem 127.0.0.1:18973 contém anúncios fictícios
+de teste e não serve como cópia da biblioteca habitual.
+
+2. ATUALIZAR NO WINDOWS, MANTENDO O .EXE HABITUAL
+
+Depois das cópias anteriores, feche as janelas da aplicação. Extraia o ZIP web
+para uma pasta temporária e copie o CONTEÚDO para a pasta habitual da aplicação,
+onde já estão index.html e Recruitment Studio.exe. Preserve o executável, os
+scripts .cmd, o atalho e o perfil do navegador. Não coloque uma pasta adicional
+entre o .exe e index.html. O ZIP web não inclui o iniciador Windows.
+
+Abra pelo mesmo .exe/atalho. Confirme os anúncios e recursos esperados, abra um
+anúncio e confira a pré-visualização. Não importe a cópia global se os dados já
+estiverem presentes. No modo file://, o funcionamento offline depende da pasta
+completa; a cache do service worker e a indicação da versão web não se aplicam.
+
+Para preparar OUTRO PC com .exe, extraia o ZIP web para a pasta pretendida e junte
+Recruitment Studio.exe, Abrir Recruitment Studio.cmd e Criar atalho no ambiente
+de trabalho.cmd, existentes no projeto e na cópia aplicacao-validada-v25.zip.
+Mantenha-os ao lado de index.html; não é necessário copiar node_modules, tests
+ou tools. Abra com o perfil pretendido e siga a migração do ponto 4. O iniciador
+usa o navegador disponível; uma mudança de perfil não transporta a biblioteca.
+
+3. ATUALIZAR A PWA NO MESMO ENDEREÇO
+
+Esta ação de alojamento/publicação ficou expressamente fora da preparação atual.
+Quando for executada, preserve esquema, domínio, porta, subpasta, âmbito da PWA
+e perfil/aparelho habitual. Não desinstale a PWA nem limpe os dados do sítio.
+
+Substitua o conjunto de ficheiros servido pelo conteúdo completo da pasta gerada,
+incluindo sw.js, manifest.webmanifest, assets, vendor, js, photos e licenses.
+Prefira uma substituição consistente do conjunto, sem servir uma mistura de
+versões. Mantenha sw.js com revalidação/sem cache HTTP; o pacote traz web.config
+para IIS e _headers para alojamentos que suportem esse formato. Reveja a aplicação
+dessas regras no alojamento concreto. Não publique testes, evidências ou cópias.
+
+Abra a PWA com ligação. No início, a aplicação deteta a nova versão e recarrega;
+se estiver no editor, conclua a gravação e use Atualizar quando a app o propuser.
+Confirme Versão 711c3bf99f no ecrã inicial, os anúncios e os recursos próprios.
+Em Definições > Disponível sem rede, use Preparar todos os recursos se necessário
+e confirme 63/63 fotografias e aplicação disponível. Depois confirme a reabertura
+sem ligação no próprio aparelho antes de depender dela durante o trabalho.
+
+4. MIGRAR PARA OUTRO PC, PERFIL OU ORIGEM WEB
+
+Exporte a cópia da instalação de origem ANTES de a abandonar. Prepare o programa
+no novo PC ou aloje o pacote num endereço HTTPS adequado à PWA. Abra a nova
+instalação no perfil pretendido e escolha Cópias de segurança > Abrir cópia para
+restaurar. Confira os itens e use Adicionar como cópias independentes.
+
+Se o destino já tiver dados, faça primeiro uma cópia desse destino. Substituir
+itens com o mesmo identificador é uma escolha diferente: atualiza correspondências,
+incluindo marcas/modelos; não a use para resolver duplicados sem conferir a lista.
+Importar repetidamente como cópias independentes cria cópias adicionais.
+
+Confira anúncios, línguas, imagens, áudio, marcas/modelos, textos guardados,
+histórico/reciclagem incluídos e planeamento. Prepare os recursos offline no novo
+aparelho. Conserve a instalação antiga e a cópia até validar a nova biblioteca.
+Transferir a pasta do código ou instalar a PWA noutro endereço não transfere os
+anúncios automaticamente. As bibliotecas do Windows e da PWA devem ser tratadas
+separadamente, ou reunidas conscientemente através da importação.
+
+5. REGRESSAR À VERSÃO ANTERIOR
+
+1) Suspenda edições e, se possível, exporte uma NOVA cópia .rsbackup, identificada
+   como depois-da-atualizacao, para preservar o trabalho entretanto realizado.
+2) Feche a aplicação. Reponha o conjunto completo de ficheiros guardado imediatamente
+   antes da atualização, na mesma pasta/endereço. No Windows preserve o atalho e
+   perfil; na web reponha também o sw.js dessa versão e as regras de cache aplicáveis.
+3) Na PWA, volte a abrir com ligação, permita a atualização da cache e confirme a
+   versão anterior esperada. A cache antiga pode já ter sido substituída: o regresso
+   depende dos ficheiros preservados e não do botão Voltar do navegador.
+4) Confira os dados. Voltar ao código anterior não desfaz alterações nos anúncios
+   nem garante compatibilidade com formatos posteriores. Não limpe IndexedDB,
+   armazenamento local ou dados do sítio para forçar a atualização.
+5) Se os dados também precisarem de recuperação, preserve primeiro o estado atual.
+   Só restaure o .rsbackup anterior numa versão que o reconheça, após conferir a
+   pré-visualização. O modo Substituir atualiza correspondências e mantém outros
+   itens; não equivale a repor uma imagem exata de toda a base de dados.
+
+aplicacao-validada-v25.zip preserva o projeto tal como estava antes desta preparação,
+incluindo executável, documentação, testes/evidências e dependências locais. Serve
+para recuperar esse projeto; NÃO prova qual versão estava na instalação habitual.
+Não havia web-publicar anterior neste destino. A cópia do código habitual para
+regresso continua a ter de ser feita quando essa instalação for escolhida.
+
+6. ESTADO DESTA ENTREGA
+
+Pacote e integridade verificados; origem intacta; servidor de teste desligado.
+Sem publicação, substituição da instalação habitual ou commits.
+Falta escolher a instalação concreta, guardar/verificar as respetivas cópias
+de dados e de código anteriores, e executar a atualização numa etapa posterior.

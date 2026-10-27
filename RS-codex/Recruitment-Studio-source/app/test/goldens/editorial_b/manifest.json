@@ -1,0 +1,274 @@
+{
+  "schema_version": 1,
+  "baseline_kind": "parent-visually-inspected realrenderer synthetic hostfixture;notfullBpixelreferenceornativeapprovedgoldens",
+  "producer": "CanvasVariantRenderer.render; original GREEN71/full882, samefrozen tests aftertwo! deletion71/full882 again",
+  "fixture_test_sha256": {
+    "app/test/features/composition/variant_renderer_test.dart": "25d80b0f0c7ce27ef215000c951e5e66f214174adb460bb8d58a40d9bc6c5223",
+    "app/test/features/composition/variant_renderer_test_fixtures.dart": "c7a6a130ad0d65b0009407aef22a7fac1ee324bea0cdc83883ccc2ee2a204f60"
+  },
+  "fixture_source_HEAD": "bf87d27149eed7ac1376e6f30faa69b991f38879",
+  "visual_approval": {
+    "reviewer": "parent integrator",
+    "contact_sheet_all12": true,
+    "full_resolution_supplement": [
+      "portrait-pt-PT.png",
+      "story-de-DE.png"
+    ],
+    "unclipped": true,
+    "manual_accents_observed": true,
+    "paired_PNG_JPG_geometry_observed": true,
+    "approved_for": "explicit testfixture baseline only",
+    "manual_content_no_autotranslation": true
+  },
+  "reference_B": {
+    "sha256": "544f90fcca623ed9993d9138d84192c71b3a2c52730bf02ff98cb7fe1d53ec65",
+    "scope": "cream/teal/editorial-serif/rightimage/footer compositional intent, NOTpixel-equivalencebecausefixturecontentdiffers"
+  },
+  "native_Windows_Android": "NOT_RUN",
+  "fullsevenlocale_realvariant_tests": 42,
+  "allsevenlocale_visualgoldens": "NOT_APPROVED",
+  "automatic_baseline_regeneration": "forbiddenwithoutnewnamedvisualreview",
+  "count": 12,
+  "members": [
+    {
+      "repo_path": "app/test/goldens/editorial_b/portrait-de-DE.jpg",
+      "bytes": 112721,
+      "sha256": "54c39e5a3a4d4cf282dd35eb771e3e4246b231ca54c56981d0c3fe3bd54939b2",
+      "metadata": {
+        "format": "portrait",
+        "locale": "de-DE",
+        "encoding": "jpg",
+        "width": 1080,
+        "height": 1350,
+        "bundleFingerprint": "{\"project\":{\"schemaVersion\":1,\"modelVersion\":\"editorial-b-v1\",\"id\":\"t05-manual\",\"revision\":0,\"name\":\"INTERNAL NEVER PUBLISH\",\"photo\":{\"id\":\"t05-photo\",\"kind\":\"photo\",\"mediaType\":\"jpeg\",\"width\":600,\"height\":800,\"sha256\":\"7024a525fbfee6f643cb240d898554b4a60a4da89ce1a6238eaa34bd29544526\"},\"logo\":{\"id\":\"t05-logo\",\"kind\":\"logo\",\"mediaType\":\"png\",\"width\":240,\"height\":80,\"sha256\":\"24c6ceb20fa87fd34f88cad1db0ca2dd47d803e76ba2aecd26ac50cedf182ef9\"},\"cropByFormat\":{},\"contactIds\":[\"mail\"],\"localeOrder\":[\"pt-PT\",\"en\",\"fr\",\"it\",\"de-DE\",\"de-CH\",\"es\"],\"editions\":{\"pt-PT\":{\"headline\":\"Equipa São João\\nOfício e precisão\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"pt-PT@invalid.test\"}},\"en\":{\"headline\":\"Craft and care\\nRiverstone team\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"en@invalid.test\"}},\"fr\":{\"headline\":\"Équipe œuvre\\nSavoir-faire\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"fr@invalid.test\"}},\"it\":{\"headline\":\"Squadra qualità\\nArte e mestiere\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"it@invalid.test\"}},\"de-DE\":{\"headline\":\"Zürich Straße\\nPräzision\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"de-DE@invalid.test\"}},\"de-CH\":{\"headline\":\"Zürich Müller\\nHandwerk\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"de-CH@invalid.test\"}},\"es\":{\"headline\":\"Equipo José\\nOficio y calidad\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"es@invalid.test\"}}},\"sections\":[{\"id\":\"craft\",\"visible\":true,\"titles\":{\"pt-PT\":\"Prática œuvre\",\"en\":\"Prática œuvre\",\"fr\":\"Prática œuvre\",\"it\":\"Prática œuvre\",\"de-DE\":\"Prática œuvre\",\"de-CH\":\"Prática œuvre\",\"es\":\"Prática œuvre\"},\"items\":[{\"id\":\"a\",\"texts\":{\"pt-PT\":\"Müller-São João\",\"en\":\"Müller-São João\",\"fr\":\"Müller-São João\",\"it\":\"Müller-São João\",\"de-DE\":\"Müller-São João\",\"de-CH\":\"Müller-São João\",\"es\":\"Müller-São João\"}}]}],\"style\":{\"ink\":4279713336,\"accent\":4280310608,\"paper\":4294242793,\"bodyPx\":30,\"logoScale\":1.0}},\"resources\":{\"t05-photo\":\"7024a525fbfee6f643cb240d898554b4a60a4da89ce1a6238eaa34bd29544526\",\"t05-logo\":\"24c6ceb20fa87fd34f88cad1db0ca2dd47d803e76ba2aecd26ac50cedf182ef9\"}}",
+        "manualHeadline": "Zürich Straße\nPräzision",
+        "jpgQuality": 95,
+        "sha256": "54c39e5a3a4d4cf282dd35eb771e3e4246b231ca54c56981d0c3fe3bd54939b2",
+        "bytes": 112721,
+        "visualApproval": false,
+        "evidenceKind": "real T05 renderer; provisional host image"
+      },
+      "origin": "/home/hermes/workspace/recruitment-evidence/T05-renderer-01/author/generated/portrait-de-DE.jpg"
+    },
+    {
+      "repo_path": "app/test/goldens/editorial_b/portrait-de-DE.png",
+      "bytes": 54603,
+      "sha256": "2e202f60d480b2e62d257cd3ad60a24dbe7c7d845b49817f59d5b901eb7cc3e6",
+      "metadata": {
+        "format": "portrait",
+        "locale": "de-DE",
+        "encoding": "png",
+        "width": 1080,
+        "height": 1350,
+        "bundleFingerprint": "{\"project\":{\"schemaVersion\":1,\"modelVersion\":\"editorial-b-v1\",\"id\":\"t05-manual\",\"revision\":0,\"name\":\"INTERNAL NEVER PUBLISH\",\"photo\":{\"id\":\"t05-photo\",\"kind\":\"photo\",\"mediaType\":\"png\",\"width\":600,\"height\":800,\"sha256\":\"ce68ed5981b1861d749b2bcb7b7ae0d603317eebc3e427b1a29f084def643c03\"},\"logo\":{\"id\":\"t05-logo\",\"kind\":\"logo\",\"mediaType\":\"png\",\"width\":240,\"height\":80,\"sha256\":\"24c6ceb20fa87fd34f88cad1db0ca2dd47d803e76ba2aecd26ac50cedf182ef9\"},\"cropByFormat\":{},\"contactIds\":[\"mail\"],\"localeOrder\":[\"pt-PT\",\"en\",\"fr\",\"it\",\"de-DE\",\"de-CH\",\"es\"],\"editions\":{\"pt-PT\":{\"headline\":\"Equipa São João\\nOfício e precisão\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"pt-PT@invalid.test\"}},\"en\":{\"headline\":\"Craft and care\\nRiverstone team\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"en@invalid.test\"}},\"fr\":{\"headline\":\"Équipe œuvre\\nSavoir-faire\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"fr@invalid.test\"}},\"it\":{\"headline\":\"Squadra qualità\\nArte e mestiere\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"it@invalid.test\"}},\"de-DE\":{\"headline\":\"Zürich Straße\\nPräzision\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"de-DE@invalid.test\"}},\"de-CH\":{\"headline\":\"Zürich Müller\\nHandwerk\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"de-CH@invalid.test\"}},\"es\":{\"headline\":\"Equipo José\\nOficio y calidad\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"es@invalid.test\"}}},\"sections\":[{\"id\":\"craft\",\"visible\":true,\"titles\":{\"pt-PT\":\"Prática œuvre\",\"en\":\"Prática œuvre\",\"fr\":\"Prática œuvre\",\"it\":\"Prática œuvre\",\"de-DE\":\"Prática œuvre\",\"de-CH\":\"Prática œuvre\",\"es\":\"Prática œuvre\"},\"items\":[{\"id\":\"a\",\"texts\":{\"pt-PT\":\"Müller-São João\",\"en\":\"Müller-São João\",\"fr\":\"Müller-São João\",\"it\":\"Müller-São João\",\"de-DE\":\"Müller-São João\",\"de-CH\":\"Müller-São João\",\"es\":\"Müller-São João\"}}]}],\"style\":{\"ink\":4279713336,\"accent\":4280310608,\"paper\":4294242793,\"bodyPx\":30,\"logoScale\":1.0}},\"resources\":{\"t05-photo\":\"ce68ed5981b1861d749b2bcb7b7ae0d603317eebc3e427b1a29f084def643c03\",\"t05-logo\":\"24c6ceb20fa87fd34f88cad1db0ca2dd47d803e76ba2aecd26ac50cedf182ef9\"}}",
+        "manualHeadline": "Zürich Straße\nPräzision",
+        "jpgQuality": 95,
+        "sha256": "2e202f60d480b2e62d257cd3ad60a24dbe7c7d845b49817f59d5b901eb7cc3e6",
+        "bytes": 54603,
+        "visualApproval": false,
+        "evidenceKind": "real T05 renderer; provisional host image"
+      },
+      "origin": "/home/hermes/workspace/recruitment-evidence/T05-renderer-01/author/generated/portrait-de-DE.png"
+    },
+    {
+      "repo_path": "app/test/goldens/editorial_b/portrait-pt-PT.jpg",
+      "bytes": 123570,
+      "sha256": "a81c797e0e424a9a461658eb3b463eea4581328da81b9115c5fe699583934eb6",
+      "metadata": {
+        "format": "portrait",
+        "locale": "pt-PT",
+        "encoding": "jpg",
+        "width": 1080,
+        "height": 1350,
+        "bundleFingerprint": "{\"project\":{\"schemaVersion\":1,\"modelVersion\":\"editorial-b-v1\",\"id\":\"t05-manual\",\"revision\":0,\"name\":\"INTERNAL NEVER PUBLISH\",\"photo\":{\"id\":\"t05-photo\",\"kind\":\"photo\",\"mediaType\":\"jpeg\",\"width\":600,\"height\":800,\"sha256\":\"7024a525fbfee6f643cb240d898554b4a60a4da89ce1a6238eaa34bd29544526\"},\"logo\":{\"id\":\"t05-logo\",\"kind\":\"logo\",\"mediaType\":\"png\",\"width\":240,\"height\":80,\"sha256\":\"24c6ceb20fa87fd34f88cad1db0ca2dd47d803e76ba2aecd26ac50cedf182ef9\"},\"cropByFormat\":{},\"contactIds\":[\"mail\"],\"localeOrder\":[\"pt-PT\",\"en\",\"fr\",\"it\",\"de-DE\",\"de-CH\",\"es\"],\"editions\":{\"pt-PT\":{\"headline\":\"Equipa São João\\nOfício e precisão\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"pt-PT@invalid.test\"}},\"en\":{\"headline\":\"Craft and care\\nRiverstone team\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"en@invalid.test\"}},\"fr\":{\"headline\":\"Équipe œuvre\\nSavoir-faire\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"fr@invalid.test\"}},\"it\":{\"headline\":\"Squadra qualità\\nArte e mestiere\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"it@invalid.test\"}},\"de-DE\":{\"headline\":\"Zürich Straße\\nPräzision\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"de-DE@invalid.test\"}},\"de-CH\":{\"headline\":\"Zürich Müller\\nHandwerk\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"de-CH@invalid.test\"}},\"es\":{\"headline\":\"Equipo José\\nOficio y calidad\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"es@invalid.test\"}}},\"sections\":[{\"id\":\"craft\",\"visible\":true,\"titles\":{\"pt-PT\":\"Prática œuvre\",\"en\":\"Prática œuvre\",\"fr\":\"Prática œuvre\",\"it\":\"Prática œuvre\",\"de-DE\":\"Prática œuvre\",\"de-CH\":\"Prática œuvre\",\"es\":\"Prática œuvre\"},\"items\":[{\"id\":\"a\",\"texts\":{\"pt-PT\":\"Müller-São João\",\"en\":\"Müller-São João\",\"fr\":\"Müller-São João\",\"it\":\"Müller-São João\",\"de-DE\":\"Müller-São João\",\"de-CH\":\"Müller-São João\",\"es\":\"Müller-São João\"}}]}],\"style\":{\"ink\":4279713336,\"accent\":4280310608,\"paper\":4294242793,\"bodyPx\":30,\"logoScale\":1.0}},\"resources\":{\"t05-photo\":\"7024a525fbfee6f643cb240d898554b4a60a4da89ce1a6238eaa34bd29544526\",\"t05-logo\":\"24c6ceb20fa87fd34f88cad1db0ca2dd47d803e76ba2aecd26ac50cedf182ef9\"}}",
+        "manualHeadline": "Equipa São João\nOfício e precisão",
+        "jpgQuality": 95,
+        "sha256": "a81c797e0e424a9a461658eb3b463eea4581328da81b9115c5fe699583934eb6",
+        "bytes": 123570,
+        "visualApproval": false,
+        "evidenceKind": "real T05 renderer; provisional host image"
+      },
+      "origin": "/home/hermes/workspace/recruitment-evidence/T05-renderer-01/author/generated/portrait-pt-PT.jpg"
+    },
+    {
+      "repo_path": "app/test/goldens/editorial_b/portrait-pt-PT.png",
+      "bytes": 65480,
+      "sha256": "936132df4e406e618a11e849fd4f07d7c8348fd74d99dd7da52c5a8a97bccd2b",
+      "metadata": {
+        "format": "portrait",
+        "locale": "pt-PT",
+        "encoding": "png",
+        "width": 1080,
+        "height": 1350,
+        "bundleFingerprint": "{\"project\":{\"schemaVersion\":1,\"modelVersion\":\"editorial-b-v1\",\"id\":\"t05-manual\",\"revision\":0,\"name\":\"INTERNAL NEVER PUBLISH\",\"photo\":{\"id\":\"t05-photo\",\"kind\":\"photo\",\"mediaType\":\"png\",\"width\":600,\"height\":800,\"sha256\":\"ce68ed5981b1861d749b2bcb7b7ae0d603317eebc3e427b1a29f084def643c03\"},\"logo\":{\"id\":\"t05-logo\",\"kind\":\"logo\",\"mediaType\":\"png\",\"width\":240,\"height\":80,\"sha256\":\"24c6ceb20fa87fd34f88cad1db0ca2dd47d803e76ba2aecd26ac50cedf182ef9\"},\"cropByFormat\":{},\"contactIds\":[\"mail\"],\"localeOrder\":[\"pt-PT\",\"en\",\"fr\",\"it\",\"de-DE\",\"de-CH\",\"es\"],\"editions\":{\"pt-PT\":{\"headline\":\"Equipa São João\\nOfício e precisão\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"pt-PT@invalid.test\"}},\"en\":{\"headline\":\"Craft and care\\nRiverstone team\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"en@invalid.test\"}},\"fr\":{\"headline\":\"Équipe œuvre\\nSavoir-faire\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"fr@invalid.test\"}},\"it\":{\"headline\":\"Squadra qualità\\nArte e mestiere\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"it@invalid.test\"}},\"de-DE\":{\"headline\":\"Zürich Straße\\nPräzision\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"de-DE@invalid.test\"}},\"de-CH\":{\"headline\":\"Zürich Müller\\nHandwerk\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"de-CH@invalid.test\"}},\"es\":{\"headline\":\"Equipo José\\nOficio y calidad\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"es@invalid.test\"}}},\"sections\":[{\"id\":\"craft\",\"visible\":true,\"titles\":{\"pt-PT\":\"Prática œuvre\",\"en\":\"Prática œuvre\",\"fr\":\"Prática œuvre\",\"it\":\"Prática œuvre\",\"de-DE\":\"Prática œuvre\",\"de-CH\":\"Prática œuvre\",\"es\":\"Prática œuvre\"},\"items\":[{\"id\":\"a\",\"texts\":{\"pt-PT\":\"Müller-São João\",\"en\":\"Müller-São João\",\"fr\":\"Müller-São João\",\"it\":\"Müller-São João\",\"de-DE\":\"Müller-São João\",\"de-CH\":\"Müller-São João\",\"es\":\"Müller-São João\"}}]}],\"style\":{\"ink\":4279713336,\"accent\":4280310608,\"paper\":4294242793,\"bodyPx\":30,\"logoScale\":1.0}},\"resources\":{\"t05-photo\":\"ce68ed5981b1861d749b2bcb7b7ae0d603317eebc3e427b1a29f084def643c03\",\"t05-logo\":\"24c6ceb20fa87fd34f88cad1db0ca2dd47d803e76ba2aecd26ac50cedf182ef9\"}}",
+        "manualHeadline": "Equipa São João\nOfício e precisão",
+        "jpgQuality": 95,
+        "sha256": "936132df4e406e618a11e849fd4f07d7c8348fd74d99dd7da52c5a8a97bccd2b",
+        "bytes": 65480,
+        "visualApproval": false,
+        "evidenceKind": "real T05 renderer; provisional host image"
+      },
+      "origin": "/home/hermes/workspace/recruitment-evidence/T05-renderer-01/author/generated/portrait-pt-PT.png"
+    },
+    {
+      "repo_path": "app/test/goldens/editorial_b/square-de-DE.jpg",
+      "bytes": 91970,
+      "sha256": "348539b2df65cfea28c27e18bfeca12554057427a9e46bdd820dac17a275cc76",
+      "metadata": {
+        "format": "square",
+        "locale": "de-DE",
+        "encoding": "jpg",
+        "width": 1080,
+        "height": 1080,
+        "bundleFingerprint": "{\"project\":{\"schemaVersion\":1,\"modelVersion\":\"editorial-b-v1\",\"id\":\"t05-manual\",\"revision\":0,\"name\":\"INTERNAL NEVER PUBLISH\",\"photo\":{\"id\":\"t05-photo\",\"kind\":\"photo\",\"mediaType\":\"jpeg\",\"width\":600,\"height\":800,\"sha256\":\"7024a525fbfee6f643cb240d898554b4a60a4da89ce1a6238eaa34bd29544526\"},\"logo\":{\"id\":\"t05-logo\",\"kind\":\"logo\",\"mediaType\":\"png\",\"width\":240,\"height\":80,\"sha256\":\"24c6ceb20fa87fd34f88cad1db0ca2dd47d803e76ba2aecd26ac50cedf182ef9\"},\"cropByFormat\":{},\"contactIds\":[\"mail\"],\"localeOrder\":[\"pt-PT\",\"en\",\"fr\",\"it\",\"de-DE\",\"de-CH\",\"es\"],\"editions\":{\"pt-PT\":{\"headline\":\"Equipa São João\\nOfício e precisão\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"pt-PT@invalid.test\"}},\"en\":{\"headline\":\"Craft and care\\nRiverstone team\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"en@invalid.test\"}},\"fr\":{\"headline\":\"Équipe œuvre\\nSavoir-faire\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"fr@invalid.test\"}},\"it\":{\"headline\":\"Squadra qualità\\nArte e mestiere\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"it@invalid.test\"}},\"de-DE\":{\"headline\":\"Zürich Straße\\nPräzision\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"de-DE@invalid.test\"}},\"de-CH\":{\"headline\":\"Zürich Müller\\nHandwerk\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"de-CH@invalid.test\"}},\"es\":{\"headline\":\"Equipo José\\nOficio y calidad\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"es@invalid.test\"}}},\"sections\":[{\"id\":\"craft\",\"visible\":true,\"titles\":{\"pt-PT\":\"Prática œuvre\",\"en\":\"Prática œuvre\",\"fr\":\"Prática œuvre\",\"it\":\"Prática œuvre\",\"de-DE\":\"Prática œuvre\",\"de-CH\":\"Prática œuvre\",\"es\":\"Prática œuvre\"},\"items\":[{\"id\":\"a\",\"texts\":{\"pt-PT\":\"Müller-São João\",\"en\":\"Müller-São João\",\"fr\":\"Müller-São João\",\"it\":\"Müller-São João\",\"de-DE\":\"Müller-São João\",\"de-CH\":\"Müller-São João\",\"es\":\"Müller-São João\"}}]}],\"style\":{\"ink\":4279713336,\"accent\":4280310608,\"paper\":4294242793,\"bodyPx\":30,\"logoScale\":1.0}},\"resources\":{\"t05-photo\":\"7024a525fbfee6f643cb240d898554b4a60a4da89ce1a6238eaa34bd29544526\",\"t05-logo\":\"24c6ceb20fa87fd34f88cad1db0ca2dd47d803e76ba2aecd26ac50cedf182ef9\"}}",
+        "manualHeadline": "Zürich Straße\nPräzision",
+        "jpgQuality": 95,
+        "sha256": "348539b2df65cfea28c27e18bfeca12554057427a9e46bdd820dac17a275cc76",
+        "bytes": 91970,
+        "visualApproval": false,
+        "evidenceKind": "real T05 renderer; provisional host image"
+      },
+      "origin": "/home/hermes/workspace/recruitment-evidence/T05-renderer-01/author/generated/square-de-DE.jpg"
+    },
+    {
+      "repo_path": "app/test/goldens/editorial_b/square-de-DE.png",
+      "bytes": 48812,
+      "sha256": "95cde34490a7afd6ef4eb15457bd46e6617d881bb95d8cb6f068ea7cc6f69fc2",
+      "metadata": {
+        "format": "square",
+        "locale": "de-DE",
+        "encoding": "png",
+        "width": 1080,
+        "height": 1080,
+        "bundleFingerprint": "{\"project\":{\"schemaVersion\":1,\"modelVersion\":\"editorial-b-v1\",\"id\":\"t05-manual\",\"revision\":0,\"name\":\"INTERNAL NEVER PUBLISH\",\"photo\":{\"id\":\"t05-photo\",\"kind\":\"photo\",\"mediaType\":\"png\",\"width\":600,\"height\":800,\"sha256\":\"ce68ed5981b1861d749b2bcb7b7ae0d603317eebc3e427b1a29f084def643c03\"},\"logo\":{\"id\":\"t05-logo\",\"kind\":\"logo\",\"mediaType\":\"png\",\"width\":240,\"height\":80,\"sha256\":\"24c6ceb20fa87fd34f88cad1db0ca2dd47d803e76ba2aecd26ac50cedf182ef9\"},\"cropByFormat\":{},\"contactIds\":[\"mail\"],\"localeOrder\":[\"pt-PT\",\"en\",\"fr\",\"it\",\"de-DE\",\"de-CH\",\"es\"],\"editions\":{\"pt-PT\":{\"headline\":\"Equipa São João\\nOfício e precisão\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"pt-PT@invalid.test\"}},\"en\":{\"headline\":\"Craft and care\\nRiverstone team\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"en@invalid.test\"}},\"fr\":{\"headline\":\"Équipe œuvre\\nSavoir-faire\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"fr@invalid.test\"}},\"it\":{\"headline\":\"Squadra qualità\\nArte e mestiere\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"it@invalid.test\"}},\"de-DE\":{\"headline\":\"Zürich Straße\\nPräzision\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"de-DE@invalid.test\"}},\"de-CH\":{\"headline\":\"Zürich Müller\\nHandwerk\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"de-CH@invalid.test\"}},\"es\":{\"headline\":\"Equipo José\\nOficio y calidad\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"es@invalid.test\"}}},\"sections\":[{\"id\":\"craft\",\"visible\":true,\"titles\":{\"pt-PT\":\"Prática œuvre\",\"en\":\"Prática œuvre\",\"fr\":\"Prática œuvre\",\"it\":\"Prática œuvre\",\"de-DE\":\"Prática œuvre\",\"de-CH\":\"Prática œuvre\",\"es\":\"Prática œuvre\"},\"items\":[{\"id\":\"a\",\"texts\":{\"pt-PT\":\"Müller-São João\",\"en\":\"Müller-São João\",\"fr\":\"Müller-São João\",\"it\":\"Müller-São João\",\"de-DE\":\"Müller-São João\",\"de-CH\":\"Müller-São João\",\"es\":\"Müller-São João\"}}]}],\"style\":{\"ink\":4279713336,\"accent\":4280310608,\"paper\":4294242793,\"bodyPx\":30,\"logoScale\":1.0}},\"resources\":{\"t05-photo\":\"ce68ed5981b1861d749b2bcb7b7ae0d603317eebc3e427b1a29f084def643c03\",\"t05-logo\":\"24c6ceb20fa87fd34f88cad1db0ca2dd47d803e76ba2aecd26ac50cedf182ef9\"}}",
+        "manualHeadline": "Zürich Straße\nPräzision",
+        "jpgQuality": 95,
+        "sha256": "95cde34490a7afd6ef4eb15457bd46e6617d881bb95d8cb6f068ea7cc6f69fc2",
+        "bytes": 48812,
+        "visualApproval": false,
+        "evidenceKind": "real T05 renderer; provisional host image"
+      },
+      "origin": "/home/hermes/workspace/recruitment-evidence/T05-renderer-01/author/generated/square-de-DE.png"
+    },
+    {
+      "repo_path": "app/test/goldens/editorial_b/square-pt-PT.jpg",
+      "bytes": 101179,
+      "sha256": "1436edc5c0826a261a1f1eb0b7955449adc5e07dc3c25759ebd5495d07f3619c",
+      "metadata": {
+        "format": "square",
+        "locale": "pt-PT",
+        "encoding": "jpg",
+        "width": 1080,
+        "height": 1080,
+        "bundleFingerprint": "{\"project\":{\"schemaVersion\":1,\"modelVersion\":\"editorial-b-v1\",\"id\":\"t05-manual\",\"revision\":0,\"name\":\"INTERNAL NEVER PUBLISH\",\"photo\":{\"id\":\"t05-photo\",\"kind\":\"photo\",\"mediaType\":\"jpeg\",\"width\":600,\"height\":800,\"sha256\":\"7024a525fbfee6f643cb240d898554b4a60a4da89ce1a6238eaa34bd29544526\"},\"logo\":{\"id\":\"t05-logo\",\"kind\":\"logo\",\"mediaType\":\"png\",\"width\":240,\"height\":80,\"sha256\":\"24c6ceb20fa87fd34f88cad1db0ca2dd47d803e76ba2aecd26ac50cedf182ef9\"},\"cropByFormat\":{},\"contactIds\":[\"mail\"],\"localeOrder\":[\"pt-PT\",\"en\",\"fr\",\"it\",\"de-DE\",\"de-CH\",\"es\"],\"editions\":{\"pt-PT\":{\"headline\":\"Equipa São João\\nOfício e precisão\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"pt-PT@invalid.test\"}},\"en\":{\"headline\":\"Craft and care\\nRiverstone team\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"en@invalid.test\"}},\"fr\":{\"headline\":\"Équipe œuvre\\nSavoir-faire\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"fr@invalid.test\"}},\"it\":{\"headline\":\"Squadra qualità\\nArte e mestiere\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"it@invalid.test\"}},\"de-DE\":{\"headline\":\"Zürich Straße\\nPräzision\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"de-DE@invalid.test\"}},\"de-CH\":{\"headline\":\"Zürich Müller\\nHandwerk\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"de-CH@invalid.test\"}},\"es\":{\"headline\":\"Equipo José\\nOficio y calidad\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"es@invalid.test\"}}},\"sections\":[{\"id\":\"craft\",\"visible\":true,\"titles\":{\"pt-PT\":\"Prática œuvre\",\"en\":\"Prática œuvre\",\"fr\":\"Prática œuvre\",\"it\":\"Prática œuvre\",\"de-DE\":\"Prática œuvre\",\"de-CH\":\"Prática œuvre\",\"es\":\"Prática œuvre\"},\"items\":[{\"id\":\"a\",\"texts\":{\"pt-PT\":\"Müller-São João\",\"en\":\"Müller-São João\",\"fr\":\"Müller-São João\",\"it\":\"Müller-São João\",\"de-DE\":\"Müller-São João\",\"de-CH\":\"Müller-São João\",\"es\":\"Müller-São João\"}}]}],\"style\":{\"ink\":4279713336,\"accent\":4280310608,\"paper\":4294242793,\"bodyPx\":30,\"logoScale\":1.0}},\"resources\":{\"t05-photo\":\"7024a525fbfee6f643cb240d898554b4a60a4da89ce1a6238eaa34bd29544526\",\"t05-logo\":\"24c6ceb20fa87fd34f88cad1db0ca2dd47d803e76ba2aecd26ac50cedf182ef9\"}}",
+        "manualHeadline": "Equipa São João\nOfício e precisão",
+        "jpgQuality": 95,
+        "sha256": "1436edc5c0826a261a1f1eb0b7955449adc5e07dc3c25759ebd5495d07f3619c",
+        "bytes": 101179,
+        "visualApproval": false,
+        "evidenceKind": "real T05 renderer; provisional host image"
+      },
+      "origin": "/home/hermes/workspace/recruitment-evidence/T05-renderer-01/author/generated/square-pt-PT.jpg"
+    },
+    {
+      "repo_path": "app/test/goldens/editorial_b/square-pt-PT.png",
+      "bytes": 56277,
+      "sha256": "ad91c849ae3f5a8326e324f50d5317d7587bb6c9e0e3bdd92c92daeefe1ff517",
+      "metadata": {
+        "format": "square",
+        "locale": "pt-PT",
+        "encoding": "png",
+        "width": 1080,
+        "height": 1080,
+        "bundleFingerprint": "{\"project\":{\"schemaVersion\":1,\"modelVersion\":\"editorial-b-v1\",\"id\":\"t05-manual\",\"revision\":0,\"name\":\"INTERNAL NEVER PUBLISH\",\"photo\":{\"id\":\"t05-photo\",\"kind\":\"photo\",\"mediaType\":\"png\",\"width\":600,\"height\":800,\"sha256\":\"ce68ed5981b1861d749b2bcb7b7ae0d603317eebc3e427b1a29f084def643c03\"},\"logo\":{\"id\":\"t05-logo\",\"kind\":\"logo\",\"mediaType\":\"png\",\"width\":240,\"height\":80,\"sha256\":\"24c6ceb20fa87fd34f88cad1db0ca2dd47d803e76ba2aecd26ac50cedf182ef9\"},\"cropByFormat\":{},\"contactIds\":[\"mail\"],\"localeOrder\":[\"pt-PT\",\"en\",\"fr\",\"it\",\"de-DE\",\"de-CH\",\"es\"],\"editions\":{\"pt-PT\":{\"headline\":\"Equipa São João\\nOfício e precisão\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"pt-PT@invalid.test\"}},\"en\":{\"headline\":\"Craft and care\\nRiverstone team\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"en@invalid.test\"}},\"fr\":{\"headline\":\"Équipe œuvre\\nSavoir-faire\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"fr@invalid.test\"}},\"it\":{\"headline\":\"Squadra qualità\\nArte e mestiere\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"it@invalid.test\"}},\"de-DE\":{\"headline\":\"Zürich Straße\\nPräzision\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"de-DE@invalid.test\"}},\"de-CH\":{\"headline\":\"Zürich Müller\\nHandwerk\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"de-CH@invalid.test\"}},\"es\":{\"headline\":\"Equipo José\\nOficio y calidad\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"es@invalid.test\"}}},\"sections\":[{\"id\":\"craft\",\"visible\":true,\"titles\":{\"pt-PT\":\"Prática œuvre\",\"en\":\"Prática œuvre\",\"fr\":\"Prática œuvre\",\"it\":\"Prática œuvre\",\"de-DE\":\"Prática œuvre\",\"de-CH\":\"Prática œuvre\",\"es\":\"Prática œuvre\"},\"items\":[{\"id\":\"a\",\"texts\":{\"pt-PT\":\"Müller-São João\",\"en\":\"Müller-São João\",\"fr\":\"Müller-São João\",\"it\":\"Müller-São João\",\"de-DE\":\"Müller-São João\",\"de-CH\":\"Müller-São João\",\"es\":\"Müller-São João\"}}]}],\"style\":{\"ink\":4279713336,\"accent\":4280310608,\"paper\":4294242793,\"bodyPx\":30,\"logoScale\":1.0}},\"resources\":{\"t05-photo\":\"ce68ed5981b1861d749b2bcb7b7ae0d603317eebc3e427b1a29f084def643c03\",\"t05-logo\":\"24c6ceb20fa87fd34f88cad1db0ca2dd47d803e76ba2aecd26ac50cedf182ef9\"}}",
+        "manualHeadline": "Equipa São João\nOfício e precisão",
+        "jpgQuality": 95,
+        "sha256": "ad91c849ae3f5a8326e324f50d5317d7587bb6c9e0e3bdd92c92daeefe1ff517",
+        "bytes": 56277,
+        "visualApproval": false,
+        "evidenceKind": "real T05 renderer; provisional host image"
+      },
+      "origin": "/home/hermes/workspace/recruitment-evidence/T05-renderer-01/author/generated/square-pt-PT.png"
+    },
+    {
+      "repo_path": "app/test/goldens/editorial_b/story-de-DE.jpg",
+      "bytes": 132681,
+      "sha256": "766decf283b5b87869b77a4b3fd81c5f4aad1c14ac0ec6a696d5468a7986d7a9",
+      "metadata": {
+        "format": "story",
+        "locale": "de-DE",
+        "encoding": "jpg",
+        "width": 1080,
+        "height": 1920,
+        "bundleFingerprint": "{\"project\":{\"schemaVersion\":1,\"modelVersion\":\"editorial-b-v1\",\"id\":\"t05-manual\",\"revision\":0,\"name\":\"INTERNAL NEVER PUBLISH\",\"photo\":{\"id\":\"t05-photo\",\"kind\":\"photo\",\"mediaType\":\"jpeg\",\"width\":600,\"height\":800,\"sha256\":\"7024a525fbfee6f643cb240d898554b4a60a4da89ce1a6238eaa34bd29544526\"},\"logo\":{\"id\":\"t05-logo\",\"kind\":\"logo\",\"mediaType\":\"png\",\"width\":240,\"height\":80,\"sha256\":\"24c6ceb20fa87fd34f88cad1db0ca2dd47d803e76ba2aecd26ac50cedf182ef9\"},\"cropByFormat\":{},\"contactIds\":[\"mail\"],\"localeOrder\":[\"pt-PT\",\"en\",\"fr\",\"it\",\"de-DE\",\"de-CH\",\"es\"],\"editions\":{\"pt-PT\":{\"headline\":\"Equipa São João\\nOfício e precisão\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"pt-PT@invalid.test\"}},\"en\":{\"headline\":\"Craft and care\\nRiverstone team\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"en@invalid.test\"}},\"fr\":{\"headline\":\"Équipe œuvre\\nSavoir-faire\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"fr@invalid.test\"}},\"it\":{\"headline\":\"Squadra qualità\\nArte e mestiere\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"it@invalid.test\"}},\"de-DE\":{\"headline\":\"Zürich Straße\\nPräzision\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"de-DE@invalid.test\"}},\"de-CH\":{\"headline\":\"Zürich Müller\\nHandwerk\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"de-CH@invalid.test\"}},\"es\":{\"headline\":\"Equipo José\\nOficio y calidad\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"es@invalid.test\"}}},\"sections\":[{\"id\":\"craft\",\"visible\":true,\"titles\":{\"pt-PT\":\"Prática œuvre\",\"en\":\"Prática œuvre\",\"fr\":\"Prática œuvre\",\"it\":\"Prática œuvre\",\"de-DE\":\"Prática œuvre\",\"de-CH\":\"Prática œuvre\",\"es\":\"Prática œuvre\"},\"items\":[{\"id\":\"a\",\"texts\":{\"pt-PT\":\"Müller-São João\",\"en\":\"Müller-São João\",\"fr\":\"Müller-São João\",\"it\":\"Müller-São João\",\"de-DE\":\"Müller-São João\",\"de-CH\":\"Müller-São João\",\"es\":\"Müller-São João\"}}]}],\"style\":{\"ink\":4279713336,\"accent\":4280310608,\"paper\":4294242793,\"bodyPx\":30,\"logoScale\":1.0}},\"resources\":{\"t05-photo\":\"7024a525fbfee6f643cb240d898554b4a60a4da89ce1a6238eaa34bd29544526\",\"t05-logo\":\"24c6ceb20fa87fd34f88cad1db0ca2dd47d803e76ba2aecd26ac50cedf182ef9\"}}",
+        "manualHeadline": "Zürich Straße\nPräzision",
+        "jpgQuality": 95,
+        "sha256": "766decf283b5b87869b77a4b3fd81c5f4aad1c14ac0ec6a696d5468a7986d7a9",
+        "bytes": 132681,
+        "visualApproval": false,
+        "evidenceKind": "real T05 renderer; provisional host image"
+      },
+      "origin": "/home/hermes/workspace/recruitment-evidence/T05-renderer-01/author/generated/story-de-DE.jpg"
+    },
+    {
+      "repo_path": "app/test/goldens/editorial_b/story-de-DE.png",
+      "bytes": 61261,
+      "sha256": "2425787ebe68410f73fa26f93ce3b17da114ee36f8bbc0457e85e1d9782bae85",
+      "metadata": {
+        "format": "story",
+        "locale": "de-DE",
+        "encoding": "png",
+        "width": 1080,
+        "height": 1920,
+        "bundleFingerprint": "{\"project\":{\"schemaVersion\":1,\"modelVersion\":\"editorial-b-v1\",\"id\":\"t05-manual\",\"revision\":0,\"name\":\"INTERNAL NEVER PUBLISH\",\"photo\":{\"id\":\"t05-photo\",\"kind\":\"photo\",\"mediaType\":\"png\",\"width\":600,\"height\":800,\"sha256\":\"ce68ed5981b1861d749b2bcb7b7ae0d603317eebc3e427b1a29f084def643c03\"},\"logo\":{\"id\":\"t05-logo\",\"kind\":\"logo\",\"mediaType\":\"png\",\"width\":240,\"height\":80,\"sha256\":\"24c6ceb20fa87fd34f88cad1db0ca2dd47d803e76ba2aecd26ac50cedf182ef9\"},\"cropByFormat\":{},\"contactIds\":[\"mail\"],\"localeOrder\":[\"pt-PT\",\"en\",\"fr\",\"it\",\"de-DE\",\"de-CH\",\"es\"],\"editions\":{\"pt-PT\":{\"headline\":\"Equipa São João\\nOfício e precisão\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"pt-PT@invalid.test\"}},\"en\":{\"headline\":\"Craft and care\\nRiverstone team\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"en@invalid.test\"}},\"fr\":{\"headline\":\"Équipe œuvre\\nSavoir-faire\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"fr@invalid.test\"}},\"it\":{\"headline\":\"Squadra qualità\\nArte e mestiere\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"it@invalid.test\"}},\"de-DE\":{\"headline\":\"Zürich Straße\\nPräzision\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"de-DE@invalid.test\"}},\"de-CH\":{\"headline\":\"Zürich Müller\\nHandwerk\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"de-CH@invalid.test\"}},\"es\":{\"headline\":\"Equipo José\\nOficio y calidad\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"es@invalid.test\"}}},\"sections\":[{\"id\":\"craft\",\"visible\":true,\"titles\":{\"pt-PT\":\"Prática œuvre\",\"en\":\"Prática œuvre\",\"fr\":\"Prática œuvre\",\"it\":\"Prática œuvre\",\"de-DE\":\"Prática œuvre\",\"de-CH\":\"Prática œuvre\",\"es\":\"Prática œuvre\"},\"items\":[{\"id\":\"a\",\"texts\":{\"pt-PT\":\"Müller-São João\",\"en\":\"Müller-São João\",\"fr\":\"Müller-São João\",\"it\":\"Müller-São João\",\"de-DE\":\"Müller-São João\",\"de-CH\":\"Müller-São João\",\"es\":\"Müller-São João\"}}]}],\"style\":{\"ink\":4279713336,\"accent\":4280310608,\"paper\":4294242793,\"bodyPx\":30,\"logoScale\":1.0}},\"resources\":{\"t05-photo\":\"ce68ed5981b1861d749b2bcb7b7ae0d603317eebc3e427b1a29f084def643c03\",\"t05-logo\":\"24c6ceb20fa87fd34f88cad1db0ca2dd47d803e76ba2aecd26ac50cedf182ef9\"}}",
+        "manualHeadline": "Zürich Straße\nPräzision",
+        "jpgQuality": 95,
+        "sha256": "2425787ebe68410f73fa26f93ce3b17da114ee36f8bbc0457e85e1d9782bae85",
+        "bytes": 61261,
+        "visualApproval": false,
+        "evidenceKind": "real T05 renderer; provisional host image"
+      },
+      "origin": "/home/hermes/workspace/recruitment-evidence/T05-renderer-01/author/generated/story-de-DE.png"
+    },
+    {
+      "repo_path": "app/test/goldens/editorial_b/story-pt-PT.jpg",
+      "bytes": 144626,
+      "sha256": "48819bbdae170bec75e45fae553421cb3386e249064d84cad0f4b78d31168764",
+      "metadata": {
+        "format": "story",
+        "locale": "pt-PT",
+        "encoding": "jpg",
+        "width": 1080,
+        "height": 1920,
+        "bundleFingerprint": "{\"project\":{\"schemaVersion\":1,\"modelVersion\":\"editorial-b-v1\",\"id\":\"t05-manual\",\"revision\":0,\"name\":\"INTERNAL NEVER PUBLISH\",\"photo\":{\"id\":\"t05-photo\",\"kind\":\"photo\",\"mediaType\":\"jpeg\",\"width\":600,\"height\":800,\"sha256\":\"7024a525fbfee6f643cb240d898554b4a60a4da89ce1a6238eaa34bd29544526\"},\"logo\":{\"id\":\"t05-logo\",\"kind\":\"logo\",\"mediaType\":\"png\",\"width\":240,\"height\":80,\"sha256\":\"24c6ceb20fa87fd34f88cad1db0ca2dd47d803e76ba2aecd26ac50cedf182ef9\"},\"cropByFormat\":{},\"contactIds\":[\"mail\"],\"localeOrder\":[\"pt-PT\",\"en\",\"fr\",\"it\",\"de-DE\",\"de-CH\",\"es\"],\"editions\":{\"pt-PT\":{\"headline\":\"Equipa São João\\nOfício e precisão\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"pt-PT@invalid.test\"}},\"en\":{\"headline\":\"Craft and care\\nRiverstone team\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"en@invalid.test\"}},\"fr\":{\"headline\":\"Équipe œuvre\\nSavoir-faire\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"fr@invalid.test\"}},\"it\":{\"headline\":\"Squadra qualità\\nArte e mestiere\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"it@invalid.test\"}},\"de-DE\":{\"headline\":\"Zürich Straße\\nPräzision\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"de-DE@invalid.test\"}},\"de-CH\":{\"headline\":\"Zürich Müller\\nHandwerk\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"de-CH@invalid.test\"}},\"es\":{\"headline\":\"Equipo José\\nOficio y calidad\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"es@invalid.test\"}}},\"sections\":[{\"id\":\"craft\",\"visible\":true,\"titles\":{\"pt-PT\":\"Prática œuvre\",\"en\":\"Prática œuvre\",\"fr\":\"Prática œuvre\",\"it\":\"Prática œuvre\",\"de-DE\":\"Prática œuvre\",\"de-CH\":\"Prática œuvre\",\"es\":\"Prática œuvre\"},\"items\":[{\"id\":\"a\",\"texts\":{\"pt-PT\":\"Müller-São João\",\"en\":\"Müller-São João\",\"fr\":\"Müller-São João\",\"it\":\"Müller-São João\",\"de-DE\":\"Müller-São João\",\"de-CH\":\"Müller-São João\",\"es\":\"Müller-São João\"}}]}],\"style\":{\"ink\":4279713336,\"accent\":4280310608,\"paper\":4294242793,\"bodyPx\":30,\"logoScale\":1.0}},\"resources\":{\"t05-photo\":\"7024a525fbfee6f643cb240d898554b4a60a4da89ce1a6238eaa34bd29544526\",\"t05-logo\":\"24c6ceb20fa87fd34f88cad1db0ca2dd47d803e76ba2aecd26ac50cedf182ef9\"}}",
+        "manualHeadline": "Equipa São João\nOfício e precisão",
+        "jpgQuality": 95,
+        "sha256": "48819bbdae170bec75e45fae553421cb3386e249064d84cad0f4b78d31168764",
+        "bytes": 144626,
+        "visualApproval": false,
+        "evidenceKind": "real T05 renderer; provisional host image"
+      },
+      "origin": "/home/hermes/workspace/recruitment-evidence/T05-renderer-01/author/generated/story-pt-PT.jpg"
+    },
+    {
+      "repo_path": "app/test/goldens/editorial_b/story-pt-PT.png",
+      "bytes": 71550,
+      "sha256": "c3d4055a9d00e7dc8ff337e1c4c027696d3deb1cb68043af7124df7d4021b6c6",
+      "metadata": {
+        "format": "story",
+        "locale": "pt-PT",
+        "encoding": "png",
+        "width": 1080,
+        "height": 1920,
+        "bundleFingerprint": "{\"project\":{\"schemaVersion\":1,\"modelVersion\":\"editorial-b-v1\",\"id\":\"t05-manual\",\"revision\":0,\"name\":\"INTERNAL NEVER PUBLISH\",\"photo\":{\"id\":\"t05-photo\",\"kind\":\"photo\",\"mediaType\":\"png\",\"width\":600,\"height\":800,\"sha256\":\"ce68ed5981b1861d749b2bcb7b7ae0d603317eebc3e427b1a29f084def643c03\"},\"logo\":{\"id\":\"t05-logo\",\"kind\":\"logo\",\"mediaType\":\"png\",\"width\":240,\"height\":80,\"sha256\":\"24c6ceb20fa87fd34f88cad1db0ca2dd47d803e76ba2aecd26ac50cedf182ef9\"},\"cropByFormat\":{},\"contactIds\":[\"mail\"],\"localeOrder\":[\"pt-PT\",\"en\",\"fr\",\"it\",\"de-DE\",\"de-CH\",\"es\"],\"editions\":{\"pt-PT\":{\"headline\":\"Equipa São João\\nOfício e precisão\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"pt-PT@invalid.test\"}},\"en\":{\"headline\":\"Craft and care\\nRiverstone team\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"en@invalid.test\"}},\"fr\":{\"headline\":\"Équipe œuvre\\nSavoir-faire\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"fr@invalid.test\"}},\"it\":{\"headline\":\"Squadra qualità\\nArte e mestiere\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"it@invalid.test\"}},\"de-DE\":{\"headline\":\"Zürich Straße\\nPräzision\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"de-DE@invalid.test\"}},\"de-CH\":{\"headline\":\"Zürich Müller\\nHandwerk\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"de-CH@invalid.test\"}},\"es\":{\"headline\":\"Equipo José\\nOficio y calidad\",\"location\":\"São João – Zürich\",\"contacts\":{\"mail\":\"es@invalid.test\"}}},\"sections\":[{\"id\":\"craft\",\"visible\":true,\"titles\":{\"pt-PT\":\"Prática œuvre\",\"en\":\"Prática œuvre\",\"fr\":\"Prática œuvre\",\"it\":\"Prática œuvre\",\"de-DE\":\"Prática œuvre\",\"de-CH\":\"Prática œuvre\",\"es\":\"Prática œuvre\"},\"items\":[{\"id\":\"a\",\"texts\":{\"pt-PT\":\"Müller-São João\",\"en\":\"Müller-São João\",\"fr\":\"Müller-São João\",\"it\":\"Müller-São João\",\"de-DE\":\"Müller-São João\",\"de-CH\":\"Müller-São João\",\"es\":\"Müller-São João\"}}]}],\"style\":{\"ink\":4279713336,\"accent\":4280310608,\"paper\":4294242793,\"bodyPx\":30,\"logoScale\":1.0}},\"resources\":{\"t05-photo\":\"ce68ed5981b1861d749b2bcb7b7ae0d603317eebc3e427b1a29f084def643c03\",\"t05-logo\":\"24c6ceb20fa87fd34f88cad1db0ca2dd47d803e76ba2aecd26ac50cedf182ef9\"}}",
+        "manualHeadline": "Equipa São João\nOfício e precisão",
+        "jpgQuality": 95,
+        "sha256": "c3d4055a9d00e7dc8ff337e1c4c027696d3deb1cb68043af7124df7d4021b6c6",
+        "bytes": 71550,
+        "visualApproval": false,
+        "evidenceKind": "real T05 renderer; provisional host image"
+      },
+      "origin": "/home/hermes/workspace/recruitment-evidence/T05-renderer-01/author/generated/story-pt-PT.png"
+    }
+  ]
+}

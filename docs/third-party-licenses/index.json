@@ -1,0 +1,1965 @@
+{
+  "schema_version": 1,
+  "kind": "CURRENT_SOURCE_NOTICE_SNAPSHOT_NOT_FINAL_NATIVE_RELEASE",
+  "created_utc": "2026-10-06T18:21:37.077344+00:00",
+  "baseline_source_commit": "0cbb44718302bb21a4482708b2b236dc924f8785",
+  "inputs": {
+    "app/pubspec.yaml": {
+      "sha256": "70f08b744c8ca01d51f316df4eed033ddf7b93440f2a9e50482df460b522cae6",
+      "bytes": 4590
+    },
+    "app/pubspec.lock": {
+      "sha256": "441ed702075134624333e423a4313ef78abf75e723a671bb847277287c0376c1",
+      "bytes": 16640
+    },
+    "app/.dart_tool/package_config.json": {
+      "sha256": "26502c30c229de34ce6ac006e31efadb973cf843e2c7dd6ca0a4956cfa4bd631",
+      "bytes": 16922
+    }
+  },
+  "counts": {
+    "locked_packages": 74,
+    "hosted_packages": 67,
+    "sdk_packages": 7,
+    "font_files": 5,
+    "font_families": 2,
+    "notice_texts": 75,
+    "verbatim_notice_bytes": 1445648
+  },
+  "packages": [
+    {
+      "name": "archive",
+      "locked_version": "4.3.0",
+      "dependency_kind": "direct main",
+      "source_kind": "hosted",
+      "version_binding": "EXACT_HOSTED_PACKAGE_PUBSPEC_VERSION",
+      "metadata_declared_version": "4.3.0",
+      "license_binding": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+      "notice_ids": [
+        "L005",
+        "L006"
+      ]
+    },
+    {
+      "name": "args",
+      "locked_version": "2.7.0",
+      "dependency_kind": "transitive",
+      "source_kind": "hosted",
+      "version_binding": "EXACT_HOSTED_PACKAGE_PUBSPEC_VERSION",
+      "metadata_declared_version": "2.7.0",
+      "license_binding": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+      "notice_ids": [
+        "L007"
+      ]
+    },
+    {
+      "name": "async",
+      "locked_version": "2.13.1",
+      "dependency_kind": "transitive",
+      "source_kind": "hosted",
+      "version_binding": "EXACT_HOSTED_PACKAGE_PUBSPEC_VERSION",
+      "metadata_declared_version": "2.13.1",
+      "license_binding": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+      "notice_ids": [
+        "L008"
+      ]
+    },
+    {
+      "name": "boolean_selector",
+      "locked_version": "2.1.2",
+      "dependency_kind": "transitive",
+      "source_kind": "hosted",
+      "version_binding": "EXACT_HOSTED_PACKAGE_PUBSPEC_VERSION",
+      "metadata_declared_version": "2.1.2",
+      "license_binding": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+      "notice_ids": [
+        "L009"
+      ]
+    },
+    {
+      "name": "characters",
+      "locked_version": "1.4.1",
+      "dependency_kind": "transitive",
+      "source_kind": "hosted",
+      "version_binding": "EXACT_HOSTED_PACKAGE_PUBSPEC_VERSION",
+      "metadata_declared_version": "1.4.1",
+      "license_binding": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+      "notice_ids": [
+        "L010"
+      ]
+    },
+    {
+      "name": "clock",
+      "locked_version": "1.1.3",
+      "dependency_kind": "transitive",
+      "source_kind": "hosted",
+      "version_binding": "EXACT_HOSTED_PACKAGE_PUBSPEC_VERSION",
+      "metadata_declared_version": "1.1.3",
+      "license_binding": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+      "notice_ids": [
+        "L011"
+      ]
+    },
+    {
+      "name": "code_assets",
+      "locked_version": "1.2.1",
+      "dependency_kind": "transitive",
+      "source_kind": "hosted",
+      "version_binding": "EXACT_HOSTED_PACKAGE_PUBSPEC_VERSION",
+      "metadata_declared_version": "1.2.1",
+      "license_binding": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+      "notice_ids": [
+        "L012"
+      ]
+    },
+    {
+      "name": "collection",
+      "locked_version": "1.19.1",
+      "dependency_kind": "transitive",
+      "source_kind": "hosted",
+      "version_binding": "EXACT_HOSTED_PACKAGE_PUBSPEC_VERSION",
+      "metadata_declared_version": "1.19.1",
+      "license_binding": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+      "notice_ids": [
+        "L013"
+      ]
+    },
+    {
+      "name": "cross_file",
+      "locked_version": "0.3.5+5",
+      "dependency_kind": "transitive",
+      "source_kind": "hosted",
+      "version_binding": "EXACT_HOSTED_PACKAGE_PUBSPEC_VERSION",
+      "metadata_declared_version": "0.3.5+5",
+      "license_binding": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+      "notice_ids": [
+        "L014"
+      ]
+    },
+    {
+      "name": "crypto",
+      "locked_version": "3.0.7",
+      "dependency_kind": "direct main",
+      "source_kind": "hosted",
+      "version_binding": "EXACT_HOSTED_PACKAGE_PUBSPEC_VERSION",
+      "metadata_declared_version": "3.0.7",
+      "license_binding": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+      "notice_ids": [
+        "L015"
+      ]
+    },
+    {
+      "name": "cupertino_icons",
+      "locked_version": "1.0.9",
+      "dependency_kind": "direct main",
+      "source_kind": "hosted",
+      "version_binding": "EXACT_HOSTED_PACKAGE_PUBSPEC_VERSION",
+      "metadata_declared_version": "1.0.9",
+      "license_binding": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+      "notice_ids": [
+        "L016"
+      ]
+    },
+    {
+      "name": "fake_async",
+      "locked_version": "1.3.3",
+      "dependency_kind": "transitive",
+      "source_kind": "hosted",
+      "version_binding": "EXACT_HOSTED_PACKAGE_PUBSPEC_VERSION",
+      "metadata_declared_version": "1.3.3",
+      "license_binding": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+      "notice_ids": [
+        "L017"
+      ]
+    },
+    {
+      "name": "ffi",
+      "locked_version": "2.2.0",
+      "dependency_kind": "transitive",
+      "source_kind": "hosted",
+      "version_binding": "EXACT_HOSTED_PACKAGE_PUBSPEC_VERSION",
+      "metadata_declared_version": "2.2.0",
+      "license_binding": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+      "notice_ids": [
+        "L018"
+      ]
+    },
+    {
+      "name": "file",
+      "locked_version": "7.0.1",
+      "dependency_kind": "transitive",
+      "source_kind": "hosted",
+      "version_binding": "EXACT_HOSTED_PACKAGE_PUBSPEC_VERSION",
+      "metadata_declared_version": "7.0.1",
+      "license_binding": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+      "notice_ids": [
+        "L019"
+      ]
+    },
+    {
+      "name": "file_selector",
+      "locked_version": "1.1.0",
+      "dependency_kind": "direct main",
+      "source_kind": "hosted",
+      "version_binding": "EXACT_HOSTED_PACKAGE_PUBSPEC_VERSION",
+      "metadata_declared_version": "1.1.0",
+      "license_binding": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+      "notice_ids": [
+        "L020"
+      ]
+    },
+    {
+      "name": "file_selector_android",
+      "locked_version": "0.5.2+11",
+      "dependency_kind": "transitive",
+      "source_kind": "hosted",
+      "version_binding": "EXACT_HOSTED_PACKAGE_PUBSPEC_VERSION",
+      "metadata_declared_version": "0.5.2+11",
+      "license_binding": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+      "notice_ids": [
+        "L021"
+      ]
+    },
+    {
+      "name": "file_selector_ios",
+      "locked_version": "0.5.3+6",
+      "dependency_kind": "transitive",
+      "source_kind": "hosted",
+      "version_binding": "EXACT_HOSTED_PACKAGE_PUBSPEC_VERSION",
+      "metadata_declared_version": "0.5.3+6",
+      "license_binding": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+      "notice_ids": [
+        "L022"
+      ]
+    },
+    {
+      "name": "file_selector_linux",
+      "locked_version": "0.9.4+1",
+      "dependency_kind": "transitive",
+      "source_kind": "hosted",
+      "version_binding": "EXACT_HOSTED_PACKAGE_PUBSPEC_VERSION",
+      "metadata_declared_version": "0.9.4+1",
+      "license_binding": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+      "notice_ids": [
+        "L023"
+      ]
+    },
+    {
+      "name": "file_selector_macos",
+      "locked_version": "0.9.5+1",
+      "dependency_kind": "transitive",
+      "source_kind": "hosted",
+      "version_binding": "EXACT_HOSTED_PACKAGE_PUBSPEC_VERSION",
+      "metadata_declared_version": "0.9.5+1",
+      "license_binding": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+      "notice_ids": [
+        "L024"
+      ]
+    },
+    {
+      "name": "file_selector_platform_interface",
+      "locked_version": "2.7.0",
+      "dependency_kind": "transitive",
+      "source_kind": "hosted",
+      "version_binding": "EXACT_HOSTED_PACKAGE_PUBSPEC_VERSION",
+      "metadata_declared_version": "2.7.0",
+      "license_binding": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+      "notice_ids": [
+        "L025"
+      ]
+    },
+    {
+      "name": "file_selector_web",
+      "locked_version": "0.9.5",
+      "dependency_kind": "transitive",
+      "source_kind": "hosted",
+      "version_binding": "EXACT_HOSTED_PACKAGE_PUBSPEC_VERSION",
+      "metadata_declared_version": "0.9.5",
+      "license_binding": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+      "notice_ids": [
+        "L026"
+      ]
+    },
+    {
+      "name": "file_selector_windows",
+      "locked_version": "0.9.3+6",
+      "dependency_kind": "transitive",
+      "source_kind": "hosted",
+      "version_binding": "EXACT_HOSTED_PACKAGE_PUBSPEC_VERSION",
+      "metadata_declared_version": "0.9.3+6",
+      "license_binding": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+      "notice_ids": [
+        "L027"
+      ]
+    },
+    {
+      "name": "flutter",
+      "locked_version": "0.0.0",
+      "dependency_kind": "direct main",
+      "source_kind": "sdk",
+      "version_binding": "SDK_SOLVER_SENTINEL_0.0.0_WITH_CURRENT_FLUTTER_ROOT",
+      "metadata_declared_version": null,
+      "license_binding": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+      "notice_ids": [
+        "L004"
+      ]
+    },
+    {
+      "name": "flutter_driver",
+      "locked_version": "0.0.0",
+      "dependency_kind": "transitive",
+      "source_kind": "sdk",
+      "version_binding": "SDK_SOLVER_SENTINEL_0.0.0_WITH_CURRENT_FLUTTER_ROOT",
+      "metadata_declared_version": null,
+      "license_binding": "INHERITED_FROM_FLUTTER_SDK_ROOT",
+      "notice_ids": [
+        "L001"
+      ]
+    },
+    {
+      "name": "flutter_lints",
+      "locked_version": "6.0.0",
+      "dependency_kind": "direct dev",
+      "source_kind": "hosted",
+      "version_binding": "EXACT_HOSTED_PACKAGE_PUBSPEC_VERSION",
+      "metadata_declared_version": "6.0.0",
+      "license_binding": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+      "notice_ids": [
+        "L028"
+      ]
+    },
+    {
+      "name": "flutter_test",
+      "locked_version": "0.0.0",
+      "dependency_kind": "direct dev",
+      "source_kind": "sdk",
+      "version_binding": "SDK_SOLVER_SENTINEL_0.0.0_WITH_CURRENT_FLUTTER_ROOT",
+      "metadata_declared_version": null,
+      "license_binding": "INHERITED_FROM_FLUTTER_SDK_ROOT",
+      "notice_ids": [
+        "L001"
+      ]
+    },
+    {
+      "name": "flutter_web_plugins",
+      "locked_version": "0.0.0",
+      "dependency_kind": "transitive",
+      "source_kind": "sdk",
+      "version_binding": "SDK_SOLVER_SENTINEL_0.0.0_WITH_CURRENT_FLUTTER_ROOT",
+      "metadata_declared_version": null,
+      "license_binding": "INHERITED_FROM_FLUTTER_SDK_ROOT",
+      "notice_ids": [
+        "L001"
+      ]
+    },
+    {
+      "name": "fuchsia_remote_debug_protocol",
+      "locked_version": "0.0.0",
+      "dependency_kind": "transitive",
+      "source_kind": "sdk",
+      "version_binding": "SDK_SOLVER_SENTINEL_0.0.0_WITH_CURRENT_FLUTTER_ROOT",
+      "metadata_declared_version": null,
+      "license_binding": "INHERITED_FROM_FLUTTER_SDK_ROOT",
+      "notice_ids": [
+        "L001"
+      ]
+    },
+    {
+      "name": "hooks",
+      "locked_version": "2.0.2",
+      "dependency_kind": "transitive",
+      "source_kind": "hosted",
+      "version_binding": "EXACT_HOSTED_PACKAGE_PUBSPEC_VERSION",
+      "metadata_declared_version": "2.0.2",
+      "license_binding": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+      "notice_ids": [
+        "L029"
+      ]
+    },
+    {
+      "name": "http",
+      "locked_version": "1.6.0",
+      "dependency_kind": "transitive",
+      "source_kind": "hosted",
+      "version_binding": "EXACT_HOSTED_PACKAGE_PUBSPEC_VERSION",
+      "metadata_declared_version": "1.6.0",
+      "license_binding": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+      "notice_ids": [
+        "L030"
+      ]
+    },
+    {
+      "name": "http_parser",
+      "locked_version": "4.1.2",
+      "dependency_kind": "transitive",
+      "source_kind": "hosted",
+      "version_binding": "EXACT_HOSTED_PACKAGE_PUBSPEC_VERSION",
+      "metadata_declared_version": "4.1.2",
+      "license_binding": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+      "notice_ids": [
+        "L031"
+      ]
+    },
+    {
+      "name": "image",
+      "locked_version": "4.10.1",
+      "dependency_kind": "direct main",
+      "source_kind": "hosted",
+      "version_binding": "EXACT_HOSTED_PACKAGE_PUBSPEC_VERSION",
+      "metadata_declared_version": "4.10.1",
+      "license_binding": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+      "notice_ids": [
+        "L032",
+        "L033"
+      ]
+    },
+    {
+      "name": "integration_test",
+      "locked_version": "0.0.0",
+      "dependency_kind": "direct dev",
+      "source_kind": "sdk",
+      "version_binding": "SDK_SOLVER_SENTINEL_0.0.0_WITH_CURRENT_FLUTTER_ROOT",
+      "metadata_declared_version": null,
+      "license_binding": "INHERITED_FROM_FLUTTER_SDK_ROOT",
+      "notice_ids": [
+        "L001"
+      ]
+    },
+    {
+      "name": "jni",
+      "locked_version": "1.0.3",
+      "dependency_kind": "transitive",
+      "source_kind": "hosted",
+      "version_binding": "EXACT_HOSTED_PACKAGE_PUBSPEC_VERSION",
+      "metadata_declared_version": "1.0.3",
+      "license_binding": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+      "notice_ids": [
+        "L034"
+      ]
+    },
+    {
+      "name": "jni_flutter",
+      "locked_version": "1.0.3",
+      "dependency_kind": "transitive",
+      "source_kind": "hosted",
+      "version_binding": "EXACT_HOSTED_PACKAGE_PUBSPEC_VERSION",
+      "metadata_declared_version": "1.0.3",
+      "license_binding": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+      "notice_ids": [
+        "L035"
+      ]
+    },
+    {
+      "name": "jni_util",
+      "locked_version": "1.0.0",
+      "dependency_kind": "transitive",
+      "source_kind": "hosted",
+      "version_binding": "EXACT_HOSTED_PACKAGE_PUBSPEC_VERSION",
+      "metadata_declared_version": "1.0.0",
+      "license_binding": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+      "notice_ids": [
+        "L036"
+      ]
+    },
+    {
+      "name": "leak_tracker",
+      "locked_version": "11.0.2",
+      "dependency_kind": "transitive",
+      "source_kind": "hosted",
+      "version_binding": "EXACT_HOSTED_PACKAGE_PUBSPEC_VERSION",
+      "metadata_declared_version": "11.0.2",
+      "license_binding": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+      "notice_ids": [
+        "L037"
+      ]
+    },
+    {
+      "name": "leak_tracker_flutter_testing",
+      "locked_version": "3.0.10",
+      "dependency_kind": "transitive",
+      "source_kind": "hosted",
+      "version_binding": "EXACT_HOSTED_PACKAGE_PUBSPEC_VERSION",
+      "metadata_declared_version": "3.0.10",
+      "license_binding": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+      "notice_ids": [
+        "L038"
+      ]
+    },
+    {
+      "name": "leak_tracker_testing",
+      "locked_version": "3.0.2",
+      "dependency_kind": "transitive",
+      "source_kind": "hosted",
+      "version_binding": "EXACT_HOSTED_PACKAGE_PUBSPEC_VERSION",
+      "metadata_declared_version": "3.0.2",
+      "license_binding": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+      "notice_ids": [
+        "L039"
+      ]
+    },
+    {
+      "name": "lints",
+      "locked_version": "6.1.0",
+      "dependency_kind": "transitive",
+      "source_kind": "hosted",
+      "version_binding": "EXACT_HOSTED_PACKAGE_PUBSPEC_VERSION",
+      "metadata_declared_version": "6.1.0",
+      "license_binding": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+      "notice_ids": [
+        "L040"
+      ]
+    },
+    {
+      "name": "logging",
+      "locked_version": "1.3.0",
+      "dependency_kind": "transitive",
+      "source_kind": "hosted",
+      "version_binding": "EXACT_HOSTED_PACKAGE_PUBSPEC_VERSION",
+      "metadata_declared_version": "1.3.0",
+      "license_binding": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+      "notice_ids": [
+        "L041"
+      ]
+    },
+    {
+      "name": "matcher",
+      "locked_version": "0.12.20",
+      "dependency_kind": "transitive",
+      "source_kind": "hosted",
+      "version_binding": "EXACT_HOSTED_PACKAGE_PUBSPEC_VERSION",
+      "metadata_declared_version": "0.12.20",
+      "license_binding": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+      "notice_ids": [
+        "L042"
+      ]
+    },
+    {
+      "name": "material_color_utilities",
+      "locked_version": "0.13.0",
+      "dependency_kind": "transitive",
+      "source_kind": "hosted",
+      "version_binding": "EXACT_HOSTED_PACKAGE_PUBSPEC_VERSION",
+      "metadata_declared_version": "0.13.0",
+      "license_binding": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+      "notice_ids": [
+        "L043"
+      ]
+    },
+    {
+      "name": "meta",
+      "locked_version": "1.18.3",
+      "dependency_kind": "transitive",
+      "source_kind": "hosted",
+      "version_binding": "EXACT_HOSTED_PACKAGE_PUBSPEC_VERSION",
+      "metadata_declared_version": "1.18.3",
+      "license_binding": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+      "notice_ids": [
+        "L044"
+      ]
+    },
+    {
+      "name": "objective_c",
+      "locked_version": "9.5.0",
+      "dependency_kind": "transitive",
+      "source_kind": "hosted",
+      "version_binding": "EXACT_HOSTED_PACKAGE_PUBSPEC_VERSION",
+      "metadata_declared_version": "9.5.0",
+      "license_binding": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+      "notice_ids": [
+        "L045"
+      ]
+    },
+    {
+      "name": "package_config",
+      "locked_version": "3.0.0",
+      "dependency_kind": "transitive",
+      "source_kind": "hosted",
+      "version_binding": "EXACT_HOSTED_PACKAGE_PUBSPEC_VERSION",
+      "metadata_declared_version": "3.0.0",
+      "license_binding": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+      "notice_ids": [
+        "L046"
+      ]
+    },
+    {
+      "name": "path",
+      "locked_version": "1.9.1",
+      "dependency_kind": "transitive",
+      "source_kind": "hosted",
+      "version_binding": "EXACT_HOSTED_PACKAGE_PUBSPEC_VERSION",
+      "metadata_declared_version": "1.9.1",
+      "license_binding": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+      "notice_ids": [
+        "L047"
+      ]
+    },
+    {
+      "name": "path_provider",
+      "locked_version": "2.1.6",
+      "dependency_kind": "direct main",
+      "source_kind": "hosted",
+      "version_binding": "EXACT_HOSTED_PACKAGE_PUBSPEC_VERSION",
+      "metadata_declared_version": "2.1.6",
+      "license_binding": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+      "notice_ids": [
+        "L048"
+      ]
+    },
+    {
+      "name": "path_provider_android",
+      "locked_version": "2.3.1",
+      "dependency_kind": "transitive",
+      "source_kind": "hosted",
+      "version_binding": "EXACT_HOSTED_PACKAGE_PUBSPEC_VERSION",
+      "metadata_declared_version": "2.3.1",
+      "license_binding": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+      "notice_ids": [
+        "L049"
+      ]
+    },
+    {
+      "name": "path_provider_foundation",
+      "locked_version": "2.6.0",
+      "dependency_kind": "transitive",
+      "source_kind": "hosted",
+      "version_binding": "EXACT_HOSTED_PACKAGE_PUBSPEC_VERSION",
+      "metadata_declared_version": "2.6.0",
+      "license_binding": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+      "notice_ids": [
+        "L050"
+      ]
+    },
+    {
+      "name": "path_provider_linux",
+      "locked_version": "2.2.2",
+      "dependency_kind": "transitive",
+      "source_kind": "hosted",
+      "version_binding": "EXACT_HOSTED_PACKAGE_PUBSPEC_VERSION",
+      "metadata_declared_version": "2.2.2",
+      "license_binding": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+      "notice_ids": [
+        "L051"
+      ]
+    },
+    {
+      "name": "path_provider_platform_interface",
+      "locked_version": "2.1.3",
+      "dependency_kind": "transitive",
+      "source_kind": "hosted",
+      "version_binding": "EXACT_HOSTED_PACKAGE_PUBSPEC_VERSION",
+      "metadata_declared_version": "2.1.3",
+      "license_binding": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+      "notice_ids": [
+        "L052"
+      ]
+    },
+    {
+      "name": "path_provider_windows",
+      "locked_version": "2.3.0",
+      "dependency_kind": "transitive",
+      "source_kind": "hosted",
+      "version_binding": "EXACT_HOSTED_PACKAGE_PUBSPEC_VERSION",
+      "metadata_declared_version": "2.3.0",
+      "license_binding": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+      "notice_ids": [
+        "L053"
+      ]
+    },
+    {
+      "name": "platform",
+      "locked_version": "3.2.0",
+      "dependency_kind": "transitive",
+      "source_kind": "hosted",
+      "version_binding": "EXACT_HOSTED_PACKAGE_PUBSPEC_VERSION",
+      "metadata_declared_version": "3.2.0",
+      "license_binding": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+      "notice_ids": [
+        "L054"
+      ]
+    },
+    {
+      "name": "plugin_platform_interface",
+      "locked_version": "2.1.8",
+      "dependency_kind": "transitive",
+      "source_kind": "hosted",
+      "version_binding": "EXACT_HOSTED_PACKAGE_PUBSPEC_VERSION",
+      "metadata_declared_version": "2.1.8",
+      "license_binding": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+      "notice_ids": [
+        "L055"
+      ]
+    },
+    {
+      "name": "posix",
+      "locked_version": "6.5.2",
+      "dependency_kind": "transitive",
+      "source_kind": "hosted",
+      "version_binding": "EXACT_HOSTED_PACKAGE_PUBSPEC_VERSION",
+      "metadata_declared_version": "6.5.2",
+      "license_binding": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+      "notice_ids": [
+        "L056"
+      ]
+    },
+    {
+      "name": "process",
+      "locked_version": "5.0.6",
+      "dependency_kind": "transitive",
+      "source_kind": "hosted",
+      "version_binding": "EXACT_HOSTED_PACKAGE_PUBSPEC_VERSION",
+      "metadata_declared_version": "5.0.6",
+      "license_binding": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+      "notice_ids": [
+        "L057"
+      ]
+    },
+    {
+      "name": "pub_semver",
+      "locked_version": "2.2.1",
+      "dependency_kind": "transitive",
+      "source_kind": "hosted",
+      "version_binding": "EXACT_HOSTED_PACKAGE_PUBSPEC_VERSION",
+      "metadata_declared_version": "2.2.1",
+      "license_binding": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+      "notice_ids": [
+        "L058"
+      ]
+    },
+    {
+      "name": "record_use",
+      "locked_version": "0.6.0",
+      "dependency_kind": "transitive",
+      "source_kind": "hosted",
+      "version_binding": "EXACT_HOSTED_PACKAGE_PUBSPEC_VERSION",
+      "metadata_declared_version": "0.6.0",
+      "license_binding": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+      "notice_ids": [
+        "L059"
+      ]
+    },
+    {
+      "name": "sky_engine",
+      "locked_version": "0.0.0",
+      "dependency_kind": "transitive",
+      "source_kind": "sdk",
+      "version_binding": "SDK_SOLVER_SENTINEL_0.0.0_WITH_CURRENT_FLUTTER_ROOT",
+      "metadata_declared_version": null,
+      "license_binding": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+      "notice_ids": [
+        "L003"
+      ]
+    },
+    {
+      "name": "source_span",
+      "locked_version": "1.10.2",
+      "dependency_kind": "transitive",
+      "source_kind": "hosted",
+      "version_binding": "EXACT_HOSTED_PACKAGE_PUBSPEC_VERSION",
+      "metadata_declared_version": "1.10.2",
+      "license_binding": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+      "notice_ids": [
+        "L060"
+      ]
+    },
+    {
+      "name": "stack_trace",
+      "locked_version": "1.12.2",
+      "dependency_kind": "transitive",
+      "source_kind": "hosted",
+      "version_binding": "EXACT_HOSTED_PACKAGE_PUBSPEC_VERSION",
+      "metadata_declared_version": "1.12.2",
+      "license_binding": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+      "notice_ids": [
+        "L061"
+      ]
+    },
+    {
+      "name": "stream_channel",
+      "locked_version": "2.1.4",
+      "dependency_kind": "transitive",
+      "source_kind": "hosted",
+      "version_binding": "EXACT_HOSTED_PACKAGE_PUBSPEC_VERSION",
+      "metadata_declared_version": "2.1.4",
+      "license_binding": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+      "notice_ids": [
+        "L062"
+      ]
+    },
+    {
+      "name": "string_scanner",
+      "locked_version": "1.4.1",
+      "dependency_kind": "transitive",
+      "source_kind": "hosted",
+      "version_binding": "EXACT_HOSTED_PACKAGE_PUBSPEC_VERSION",
+      "metadata_declared_version": "1.4.1",
+      "license_binding": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+      "notice_ids": [
+        "L063"
+      ]
+    },
+    {
+      "name": "sync_http",
+      "locked_version": "0.3.1",
+      "dependency_kind": "transitive",
+      "source_kind": "hosted",
+      "version_binding": "EXACT_HOSTED_PACKAGE_PUBSPEC_VERSION",
+      "metadata_declared_version": "0.3.1",
+      "license_binding": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+      "notice_ids": [
+        "L064"
+      ]
+    },
+    {
+      "name": "term_glyph",
+      "locked_version": "1.2.2",
+      "dependency_kind": "transitive",
+      "source_kind": "hosted",
+      "version_binding": "EXACT_HOSTED_PACKAGE_PUBSPEC_VERSION",
+      "metadata_declared_version": "1.2.2",
+      "license_binding": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+      "notice_ids": [
+        "L065"
+      ]
+    },
+    {
+      "name": "test_api",
+      "locked_version": "0.7.12",
+      "dependency_kind": "transitive",
+      "source_kind": "hosted",
+      "version_binding": "EXACT_HOSTED_PACKAGE_PUBSPEC_VERSION",
+      "metadata_declared_version": "0.7.12",
+      "license_binding": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+      "notice_ids": [
+        "L066"
+      ]
+    },
+    {
+      "name": "typed_data",
+      "locked_version": "1.4.0",
+      "dependency_kind": "transitive",
+      "source_kind": "hosted",
+      "version_binding": "EXACT_HOSTED_PACKAGE_PUBSPEC_VERSION",
+      "metadata_declared_version": "1.4.0",
+      "license_binding": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+      "notice_ids": [
+        "L067"
+      ]
+    },
+    {
+      "name": "vector_math",
+      "locked_version": "2.4.0",
+      "dependency_kind": "transitive",
+      "source_kind": "hosted",
+      "version_binding": "EXACT_HOSTED_PACKAGE_PUBSPEC_VERSION",
+      "metadata_declared_version": "2.4.0",
+      "license_binding": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+      "notice_ids": [
+        "L068"
+      ]
+    },
+    {
+      "name": "vm_service",
+      "locked_version": "15.3.0",
+      "dependency_kind": "transitive",
+      "source_kind": "hosted",
+      "version_binding": "EXACT_HOSTED_PACKAGE_PUBSPEC_VERSION",
+      "metadata_declared_version": "15.3.0",
+      "license_binding": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+      "notice_ids": [
+        "L069"
+      ]
+    },
+    {
+      "name": "web",
+      "locked_version": "1.1.1",
+      "dependency_kind": "transitive",
+      "source_kind": "hosted",
+      "version_binding": "EXACT_HOSTED_PACKAGE_PUBSPEC_VERSION",
+      "metadata_declared_version": "1.1.1",
+      "license_binding": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+      "notice_ids": [
+        "L070"
+      ]
+    },
+    {
+      "name": "webdriver",
+      "locked_version": "3.2.0",
+      "dependency_kind": "transitive",
+      "source_kind": "hosted",
+      "version_binding": "EXACT_HOSTED_PACKAGE_PUBSPEC_VERSION",
+      "metadata_declared_version": "3.2.0",
+      "license_binding": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+      "notice_ids": [
+        "L071"
+      ]
+    },
+    {
+      "name": "xdg_directories",
+      "locked_version": "1.1.0",
+      "dependency_kind": "transitive",
+      "source_kind": "hosted",
+      "version_binding": "EXACT_HOSTED_PACKAGE_PUBSPEC_VERSION",
+      "metadata_declared_version": "1.1.0",
+      "license_binding": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+      "notice_ids": [
+        "L072"
+      ]
+    },
+    {
+      "name": "yaml",
+      "locked_version": "3.1.4",
+      "dependency_kind": "transitive",
+      "source_kind": "hosted",
+      "version_binding": "EXACT_HOSTED_PACKAGE_PUBSPEC_VERSION",
+      "metadata_declared_version": "3.1.4",
+      "license_binding": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+      "notice_ids": [
+        "L073"
+      ]
+    }
+  ],
+  "fonts": [
+    {
+      "family": "DM Sans",
+      "asset": "assets/fonts/DM-Sans-400.ttf",
+      "sha256": "b0ae3e89a7d3ef2b1838bb4b1ceb0b17cc3435af061eee809d76aa623ff116e9",
+      "bytes": 48280,
+      "notice_id": "L074"
+    },
+    {
+      "family": "DM Sans",
+      "asset": "assets/fonts/DM-Sans-500.ttf",
+      "sha256": "376427b5322148d8de1e03f263bcca4935a2d60ba71d9f94f4947ab664c711ae",
+      "bytes": 48308,
+      "notice_id": "L074"
+    },
+    {
+      "family": "DM Sans",
+      "asset": "assets/fonts/DM-Sans-600.ttf",
+      "sha256": "b79a2ea7a38f33fd96a282fadb9ce97626bb0724a44d21075859f0e50239993a",
+      "bytes": 48280,
+      "notice_id": "L074"
+    },
+    {
+      "family": "DM Sans",
+      "asset": "assets/fonts/DM-Sans-700.ttf",
+      "sha256": "2a8e7f713ee79fbccdef3cef5c787aff47580299f7da60144961e7db2ec08211",
+      "bytes": 48200,
+      "notice_id": "L074"
+    },
+    {
+      "family": "DM Serif Display",
+      "asset": "assets/fonts/DM-Serif-Display-400.ttf",
+      "sha256": "c03775f8cc3db88cfea259b231abe13f94e6a3d3cb01c09477a2e42a1f5919e1",
+      "bytes": 70348,
+      "notice_id": "L075"
+    }
+  ],
+  "notices": [
+    {
+      "id": "L001",
+      "file": "texts/L001--LICENSE",
+      "sha256": "a598db94b6290ffbe10b5ecf911057b6a943351c727fdda9e5f2891d68700a20",
+      "bytes": 1519,
+      "origins": [
+        {
+          "kind": "INHERITED_FROM_FLUTTER_SDK_ROOT",
+          "package": "flutter_driver",
+          "source_filename": "LICENSE"
+        },
+        {
+          "kind": "INHERITED_FROM_FLUTTER_SDK_ROOT",
+          "package": "flutter_test",
+          "source_filename": "LICENSE"
+        },
+        {
+          "kind": "INHERITED_FROM_FLUTTER_SDK_ROOT",
+          "package": "flutter_web_plugins",
+          "source_filename": "LICENSE"
+        },
+        {
+          "kind": "INHERITED_FROM_FLUTTER_SDK_ROOT",
+          "package": "fuchsia_remote_debug_protocol",
+          "source_filename": "LICENSE"
+        },
+        {
+          "kind": "INHERITED_FROM_FLUTTER_SDK_ROOT",
+          "package": "integration_test",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L002",
+      "file": "texts/L002--LICENSE",
+      "sha256": "2cfa3ee8e7512e6d44c854b986510810fadc815f93f890373b3a81c1b6ccd256",
+      "bytes": 1502,
+      "origins": [
+        {
+          "kind": "DART_SDK_SOURCE_NOTICE",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L003",
+      "file": "texts/L003--LICENSE",
+      "sha256": "3c0040023a5789bf56d6bf41fd44f08b21758523d41f128fb7dd6beb398d1191",
+      "bytes": 1269349,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "sky_engine",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L004",
+      "file": "texts/L004--LICENSE",
+      "sha256": "a598db94b6290ffbe10b5ecf911057b6a943351c727fdda9e5f2891d68700a20",
+      "bytes": 1519,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "flutter",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L005",
+      "file": "texts/L005--LICENSE",
+      "sha256": "32f97d332eae7453ec4079858e6f1d74be85beeb6d3881068b47d02a379cccea",
+      "bytes": 1101,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "archive",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L006",
+      "file": "texts/L006--LICENSE-other.md",
+      "sha256": "ebe5a199af245d7e3e761673fbf3db341427060407e50713861ab24bb2cb1552",
+      "bytes": 4678,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "archive",
+          "source_filename": "LICENSE-other.md"
+        }
+      ]
+    },
+    {
+      "id": "L007",
+      "file": "texts/L007--LICENSE",
+      "sha256": "dfb09c74e29386cd3e2719f32d4995d59526179753931d31840757c77fbf2791",
+      "bytes": 1504,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "args",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L008",
+      "file": "texts/L008--LICENSE",
+      "sha256": "ff15faa32a2e638107b7789592b14426162a75ba620044ee2340a20ec6ce5e73",
+      "bytes": 1504,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "async",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L009",
+      "file": "texts/L009--LICENSE",
+      "sha256": "b71519245009a3b8f126196a5408ec031e216e8e0d985085958c6543f82a8a2a",
+      "bytes": 1503,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "boolean_selector",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L010",
+      "file": "texts/L010--LICENSE",
+      "sha256": "0371d1da6a57fb791db29d29b95333429205f51f3cb2eb3a0c12d91838a38744",
+      "bytes": 1504,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "characters",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L011",
+      "file": "texts/L011--LICENSE",
+      "sha256": "58d1e17ffe5109a7ae296caafcadfdbe6a7d176f0bc4ab01e12a689b0499d8bd",
+      "bytes": 11357,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "clock",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L012",
+      "file": "texts/L012--LICENSE",
+      "sha256": "21ae23b0b9ff67a2dc75ab085d1e8db8ac548c5faf370af17f28dd2ef3b52b7b",
+      "bytes": 1503,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "code_assets",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L013",
+      "file": "texts/L013--LICENSE",
+      "sha256": "ff15faa32a2e638107b7789592b14426162a75ba620044ee2340a20ec6ce5e73",
+      "bytes": 1504,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "collection",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L014",
+      "file": "texts/L014--LICENSE",
+      "sha256": "420f7739f169097f0aad1242045169cd643c8f1d94e62866fad265ae4c369b7d",
+      "bytes": 1497,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "cross_file",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L015",
+      "file": "texts/L015--LICENSE",
+      "sha256": "ad6a71997da90924b2cfb1fb47ec46537f70faf469efe016168794ae45ed6888",
+      "bytes": 1503,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "crypto",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L016",
+      "file": "texts/L016--LICENSE",
+      "sha256": "310d6ab6483280280c9db122bded0a63c09558bc5743720f61dbcbb494db370a",
+      "bytes": 1086,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "cupertino_icons",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L017",
+      "file": "texts/L017--LICENSE",
+      "sha256": "58d1e17ffe5109a7ae296caafcadfdbe6a7d176f0bc4ab01e12a689b0499d8bd",
+      "bytes": 11357,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "fake_async",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L018",
+      "file": "texts/L018--LICENSE",
+      "sha256": "0371d1da6a57fb791db29d29b95333429205f51f3cb2eb3a0c12d91838a38744",
+      "bytes": 1504,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "ffi",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L019",
+      "file": "texts/L019--LICENSE",
+      "sha256": "f6df86b1412172537273e8e80ee2fb8a66aa7307ce0b39ea5ddab47ca41b8c49",
+      "bytes": 1523,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "file",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L020",
+      "file": "texts/L020--LICENSE",
+      "sha256": "420f7739f169097f0aad1242045169cd643c8f1d94e62866fad265ae4c369b7d",
+      "bytes": 1497,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "file_selector",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L021",
+      "file": "texts/L021--LICENSE",
+      "sha256": "8e139d4c7faa5e7a76752e743a745113f46e658071733bfae4914a04da12ae0e",
+      "bytes": 12943,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "file_selector_android",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L022",
+      "file": "texts/L022--LICENSE",
+      "sha256": "420f7739f169097f0aad1242045169cd643c8f1d94e62866fad265ae4c369b7d",
+      "bytes": 1497,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "file_selector_ios",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L023",
+      "file": "texts/L023--LICENSE",
+      "sha256": "420f7739f169097f0aad1242045169cd643c8f1d94e62866fad265ae4c369b7d",
+      "bytes": 1497,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "file_selector_linux",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L024",
+      "file": "texts/L024--LICENSE",
+      "sha256": "420f7739f169097f0aad1242045169cd643c8f1d94e62866fad265ae4c369b7d",
+      "bytes": 1497,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "file_selector_macos",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L025",
+      "file": "texts/L025--LICENSE",
+      "sha256": "420f7739f169097f0aad1242045169cd643c8f1d94e62866fad265ae4c369b7d",
+      "bytes": 1497,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "file_selector_platform_interface",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L026",
+      "file": "texts/L026--LICENSE",
+      "sha256": "420f7739f169097f0aad1242045169cd643c8f1d94e62866fad265ae4c369b7d",
+      "bytes": 1497,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "file_selector_web",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L027",
+      "file": "texts/L027--LICENSE",
+      "sha256": "420f7739f169097f0aad1242045169cd643c8f1d94e62866fad265ae4c369b7d",
+      "bytes": 1497,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "file_selector_windows",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L028",
+      "file": "texts/L028--LICENSE",
+      "sha256": "89519eca6f7b9529b35bdddd623a58c3af06a88c458dbd6531ddb4675acf75a9",
+      "bytes": 1519,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "flutter_lints",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L029",
+      "file": "texts/L029--LICENSE",
+      "sha256": "21ae23b0b9ff67a2dc75ab085d1e8db8ac548c5faf370af17f28dd2ef3b52b7b",
+      "bytes": 1503,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "hooks",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L030",
+      "file": "texts/L030--LICENSE",
+      "sha256": "3c32b53167c7dae9190c38dab5dd9fe1789c53623ebc7d1babcb29914c5b3f16",
+      "bytes": 1504,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "http",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L031",
+      "file": "texts/L031--LICENSE",
+      "sha256": "3c32b53167c7dae9190c38dab5dd9fe1789c53623ebc7d1babcb29914c5b3f16",
+      "bytes": 1504,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "http_parser",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L032",
+      "file": "texts/L032--LICENSE",
+      "sha256": "f3c17da84e0780e1c334325c73098257c32221d62498ed55ef3c1361904925aa",
+      "bytes": 1122,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "image",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L033",
+      "file": "texts/L033--LICENSE-other.md",
+      "sha256": "dea0e9e446e57c0987d241d5471e47e7b66796fb286706ec993c3fa6696cb08e",
+      "bytes": 8488,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "image",
+          "source_filename": "LICENSE-other.md"
+        }
+      ]
+    },
+    {
+      "id": "L034",
+      "file": "texts/L034--LICENSE",
+      "sha256": "08a004aa8956c3cf3b24f7f69c966247233953e18e6afaa61191ea47b7eb70f6",
+      "bytes": 1503,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "jni",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L035",
+      "file": "texts/L035--LICENSE",
+      "sha256": "b1fcb475d67817411f335ac92872507011e574c4cb29cfdaaf7707b75641932c",
+      "bytes": 1503,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "jni_flutter",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L036",
+      "file": "texts/L036--LICENSE",
+      "sha256": "b1fcb475d67817411f335ac92872507011e574c4cb29cfdaaf7707b75641932c",
+      "bytes": 1503,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "jni_util",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L037",
+      "file": "texts/L037--LICENSE",
+      "sha256": "08a004aa8956c3cf3b24f7f69c966247233953e18e6afaa61191ea47b7eb70f6",
+      "bytes": 1503,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "leak_tracker",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L038",
+      "file": "texts/L038--LICENSE",
+      "sha256": "08a004aa8956c3cf3b24f7f69c966247233953e18e6afaa61191ea47b7eb70f6",
+      "bytes": 1503,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "leak_tracker_flutter_testing",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L039",
+      "file": "texts/L039--LICENSE",
+      "sha256": "08a004aa8956c3cf3b24f7f69c966247233953e18e6afaa61191ea47b7eb70f6",
+      "bytes": 1503,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "leak_tracker_testing",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L040",
+      "file": "texts/L040--LICENSE",
+      "sha256": "421fe78c3b5df297f8b4ab2c74f2450a274ee6d245a113091f6b9f90570af193",
+      "bytes": 1503,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "lints",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L041",
+      "file": "texts/L041--LICENSE",
+      "sha256": "dfb09c74e29386cd3e2719f32d4995d59526179753931d31840757c77fbf2791",
+      "bytes": 1504,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "logging",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L042",
+      "file": "texts/L042--LICENSE",
+      "sha256": "3c32b53167c7dae9190c38dab5dd9fe1789c53623ebc7d1babcb29914c5b3f16",
+      "bytes": 1504,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "matcher",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L043",
+      "file": "texts/L043--LICENSE",
+      "sha256": "d103f246ef4c18dab8af0c1dcf6a8af884e5cff554da7261a48ac43c17d98f2e",
+      "bytes": 11317,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "material_color_utilities",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L044",
+      "file": "texts/L044--LICENSE",
+      "sha256": "b71519245009a3b8f126196a5408ec031e216e8e0d985085958c6543f82a8a2a",
+      "bytes": 1503,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "meta",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L045",
+      "file": "texts/L045--LICENSE",
+      "sha256": "1cda25a8de6880c5338de0b4a06ee89e8537c213eb1379c16a4c035bfd198b5c",
+      "bytes": 1503,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "objective_c",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L046",
+      "file": "texts/L046--LICENSE",
+      "sha256": "0371d1da6a57fb791db29d29b95333429205f51f3cb2eb3a0c12d91838a38744",
+      "bytes": 1504,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "package_config",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L047",
+      "file": "texts/L047--LICENSE",
+      "sha256": "3c32b53167c7dae9190c38dab5dd9fe1789c53623ebc7d1babcb29914c5b3f16",
+      "bytes": 1504,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "path",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L048",
+      "file": "texts/L048--LICENSE",
+      "sha256": "420f7739f169097f0aad1242045169cd643c8f1d94e62866fad265ae4c369b7d",
+      "bytes": 1497,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "path_provider",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L049",
+      "file": "texts/L049--LICENSE",
+      "sha256": "420f7739f169097f0aad1242045169cd643c8f1d94e62866fad265ae4c369b7d",
+      "bytes": 1497,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "path_provider_android",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L050",
+      "file": "texts/L050--LICENSE",
+      "sha256": "420f7739f169097f0aad1242045169cd643c8f1d94e62866fad265ae4c369b7d",
+      "bytes": 1497,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "path_provider_foundation",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L051",
+      "file": "texts/L051--LICENSE",
+      "sha256": "420f7739f169097f0aad1242045169cd643c8f1d94e62866fad265ae4c369b7d",
+      "bytes": 1497,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "path_provider_linux",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L052",
+      "file": "texts/L052--LICENSE",
+      "sha256": "420f7739f169097f0aad1242045169cd643c8f1d94e62866fad265ae4c369b7d",
+      "bytes": 1497,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "path_provider_platform_interface",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L053",
+      "file": "texts/L053--LICENSE",
+      "sha256": "89519eca6f7b9529b35bdddd623a58c3af06a88c458dbd6531ddb4675acf75a9",
+      "bytes": 1519,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "path_provider_windows",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L054",
+      "file": "texts/L054--LICENSE",
+      "sha256": "143839f62c9b7f88143ea9f688361c27050888acde7696b34e04414bd254fafc",
+      "bytes": 1524,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "platform",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L055",
+      "file": "texts/L055--LICENSE",
+      "sha256": "89519eca6f7b9529b35bdddd623a58c3af06a88c458dbd6531ddb4675acf75a9",
+      "bytes": 1519,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "plugin_platform_interface",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L056",
+      "file": "texts/L056--LICENSE",
+      "sha256": "aaf6271abd048deb3125828613f1797b7556472de6c7acd7103bd43e9cb6a84b",
+      "bytes": 1069,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "posix",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L057",
+      "file": "texts/L057--LICENSE",
+      "sha256": "5f018bbc25a55406d7a4e1d3229135439e315210b0050ca56dbb367a4934e85d",
+      "bytes": 1502,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "process",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L058",
+      "file": "texts/L058--LICENSE",
+      "sha256": "3c32b53167c7dae9190c38dab5dd9fe1789c53623ebc7d1babcb29914c5b3f16",
+      "bytes": 1504,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "pub_semver",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L059",
+      "file": "texts/L059--LICENSE",
+      "sha256": "1cda25a8de6880c5338de0b4a06ee89e8537c213eb1379c16a4c035bfd198b5c",
+      "bytes": 1503,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "record_use",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L060",
+      "file": "texts/L060--LICENSE",
+      "sha256": "3c32b53167c7dae9190c38dab5dd9fe1789c53623ebc7d1babcb29914c5b3f16",
+      "bytes": 1504,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "source_span",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L061",
+      "file": "texts/L061--LICENSE",
+      "sha256": "ff0b91d4f3c32b25cb6ec84985e8da89b0ba2a2b2f7eef353cda5e5423a20390",
+      "bytes": 1503,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "stack_trace",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L062",
+      "file": "texts/L062--LICENSE",
+      "sha256": "ff15faa32a2e638107b7789592b14426162a75ba620044ee2340a20ec6ce5e73",
+      "bytes": 1504,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "stream_channel",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L063",
+      "file": "texts/L063--LICENSE",
+      "sha256": "3c32b53167c7dae9190c38dab5dd9fe1789c53623ebc7d1babcb29914c5b3f16",
+      "bytes": 1504,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "string_scanner",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L064",
+      "file": "texts/L064--LICENSE",
+      "sha256": "b9b748d4dd6f725387bf69e96df4e4ebff167ae83547954242a731504d037644",
+      "bytes": 1503,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "sync_http",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L065",
+      "file": "texts/L065--LICENSE",
+      "sha256": "ea97a7558a7bd7cee4e2355f7529e3cbebb0dcbb546ddb9a90f10c9eb6b08da5",
+      "bytes": 1504,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "term_glyph",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L066",
+      "file": "texts/L066--LICENSE",
+      "sha256": "ff1b9f0df9036c04be424b1e3ce12789bea880ad5ffc3a48e069ae2d40a087a4",
+      "bytes": 1504,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "test_api",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L067",
+      "file": "texts/L067--LICENSE",
+      "sha256": "ff15faa32a2e638107b7789592b14426162a75ba620044ee2340a20ec6ce5e73",
+      "bytes": 1504,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "typed_data",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L068",
+      "file": "texts/L068--LICENSE",
+      "sha256": "420f7739f169097f0aad1242045169cd643c8f1d94e62866fad265ae4c369b7d",
+      "bytes": 1497,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "vector_math",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L069",
+      "file": "texts/L069--LICENSE",
+      "sha256": "ad6a71997da90924b2cfb1fb47ec46537f70faf469efe016168794ae45ed6888",
+      "bytes": 1503,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "vm_service",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L070",
+      "file": "texts/L070--LICENSE",
+      "sha256": "aa913ff50d7542eb8cc35b9f48a80928ac6819ba9057f85d424655e3e8dc271c",
+      "bytes": 1502,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "web",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L071",
+      "file": "texts/L071--LICENSE",
+      "sha256": "74cb46b123c9fa918ea8e0a0f5be736a1cd661edf145ccc723dc7ce30324ebab",
+      "bytes": 11340,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "webdriver",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L072",
+      "file": "texts/L072--LICENSE",
+      "sha256": "89519eca6f7b9529b35bdddd623a58c3af06a88c458dbd6531ddb4675acf75a9",
+      "bytes": 1519,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "xdg_directories",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L073",
+      "file": "texts/L073--LICENSE",
+      "sha256": "d47b93335401b052d79a2f5a3710e4cf7b5aed782faedf84d40fbdd6eb934ec7",
+      "bytes": 1106,
+      "origins": [
+        {
+          "kind": "PACKAGE_ROOT_VERBATIM_LICENSE_OR_NOTICE",
+          "package": "yaml",
+          "source_filename": "LICENSE"
+        }
+      ]
+    },
+    {
+      "id": "L074",
+      "file": "texts/L074--dmsans-OFL.txt",
+      "sha256": "9af36190332437f5ecd09974de43c1f7c77a310a996cdd8ceb25628b458840e1",
+      "bytes": 4482,
+      "origins": [
+        {
+          "kind": "BUNDLED_FONT_OFL_SOURCE",
+          "font_family": "DM Sans",
+          "source_filename": "dmsans-OFL.txt"
+        }
+      ]
+    },
+    {
+      "id": "L075",
+      "file": "texts/L075--dmserifdisplay-OFL.txt",
+      "sha256": "a3e5cdd67d4571dd0a24fcc968de0efde7ae97ef752daf0906e4767619dd7231",
+      "bytes": 4605,
+      "origins": [
+        {
+          "kind": "BUNDLED_FONT_OFL_SOURCE",
+          "font_family": "DM Serif Display",
+          "source_filename": "dmserifdisplay-OFL.txt"
+        }
+      ]
+    }
+  ],
+  "scope_flags": {
+    "includes_development_and_transitive_packages": true,
+    "SDK_versions_are_not_0_0_0_product_versions": true,
+    "package_archive_integrity_reverified": false,
+    "native_engine_and_plugin_binary_notice_closure_verified": false,
+    "application_license_selected": false,
+    "legal_approval": false,
+    "independent_notice_reviews_completed_at_snapshot_capture": false,
+    "final_T15_or_product_acceptance": false
+  },
+  "regeneration_trigger": "Any dependency lock/config/SDK/engine/plugin/font or final binary/package change requires a new source-bound notice inventory and final build-copy verification; unchanged source names alone do not preserve closure."
+}

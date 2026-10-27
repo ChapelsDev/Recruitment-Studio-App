@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Recruitment Studio · «Balão a entrar»: a white speech bubble enters from the
+       top-left corner (tilted 10°, cut by the edges), three black «typing» dots,
+       its tail towards the bottom right; orange behind. Master for 64 px and up. -->
+  <defs>
+    <linearGradient id="or" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff8a3a"/><stop offset="1" stop-color="#dc4a00"/></linearGradient>
+    <radialGradient id="glow" cx=".25" cy=".2" r=".8"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset=".6" stop-color="#fff" stop-opacity="0"/></radialGradient>
+    <clipPath id="sq"><rect width="512" height="512" rx="114"/></clipPath>
+  </defs>
+  <rect width="512" height="512" rx="114" fill="url(#or)"/>
+  <rect width="512" height="512" rx="114" fill="url(#glow)"/>
+  <g clip-path="url(#sq)">
+    <g transform="rotate(10 160 160)">
+      <rect x="-150" y="-110" width="530" height="410" rx="124" fill="#fff"/>
+      <path d="M250 270 L430 430 L330 240 Z" fill="#fff"/>
+      <circle cx="110" cy="150" r="32" fill="#111317"/>
+      <circle cx="205" cy="150" r="32" fill="#111317"/>
+      <circle cx="300" cy="150" r="32" fill="#111317"/>
+    </g>
+  </g>
+  <rect x="1.5" y="1.5" width="509" height="509" rx="112" fill="none" stroke="#fff" stroke-opacity=".18" stroke-width="3"/>
+</svg>

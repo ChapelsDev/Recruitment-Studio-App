@@ -1,0 +1,2 @@
+# Build-only: create a dedicated venv; never bundle with the Flutter application.
+fonttools==4.60.2

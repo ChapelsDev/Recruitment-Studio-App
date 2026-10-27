@@ -1,0 +1,53 @@
+{
+  "id": "./",
+  "name": "Recruitment Studio",
+  "short_name": "Recruitment",
+  "description": "Anúncios e vídeos de recrutamento para o Facebook e o Instagram, feitos no telemóvel ou no computador, mesmo sem rede.",
+  "lang": "pt-PT",
+  "dir": "ltr",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0f1114",
+  "theme_color": "#0f1114",
+  "categories": [
+    "business",
+    "productivity"
+  ],
+  "icons": [
+    {
+      "src": "assets/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icons/maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "assets/screenshots/phone.png",
+      "sizes": "1080x1920",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "O editor no telemóvel: o anúncio por cima, os textos por baixo"
+    },
+    {
+      "src": "assets/screenshots/wide.png",
+      "sizes": "1920x1080",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "O editor no computador, com a pré-visualização ao vivo"
+    }
+  ]
+}

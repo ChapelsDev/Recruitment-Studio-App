@@ -1,0 +1,28 @@
+{
+  "A": {
+    "name": "Industrial refinado",
+    "background": "#f2f1ed",
+    "surface": "#ffffff",
+    "ink": "#232b2d",
+    "muted": "#626b6c",
+    "accent": "#e9b647",
+    "onAccent": "#232b2d",
+    "border": "#d6d9d5",
+    "fontBody": "IBM Plex Sans",
+    "fontDisplay": "Barlow Condensed",
+    "radius": 4
+  },
+  "B": {
+    "name": "Editorial contemporâneo",
+    "background": "#f4f1e9",
+    "surface": "#fffdf7",
+    "ink": "#173e38",
+    "muted": "#626b63",
+    "accent": "#205b50",
+    "onAccent": "#ffffff",
+    "border": "#d8ddd4",
+    "fontBody": "DM Sans",
+    "fontDisplay": "DM Serif Display",
+    "radius": 8
+  }
+}

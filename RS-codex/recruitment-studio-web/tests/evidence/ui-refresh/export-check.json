@@ -1,0 +1,101 @@
+{
+  "pngs": [
+    {
+      "name": "pt-PT/carrossel/001.png",
+      "width": 1080,
+      "height": 1080,
+      "bytes": 1113860
+    },
+    {
+      "name": "pt-PT/carrossel/002.png",
+      "width": 1080,
+      "height": 1080,
+      "bytes": 637099
+    },
+    {
+      "name": "pt-PT/carrossel/003.png",
+      "width": 1080,
+      "height": 1080,
+      "bytes": 123369
+    },
+    {
+      "name": "pt-PT/carrossel/004.png",
+      "width": 1080,
+      "height": 1080,
+      "bytes": 83088
+    },
+    {
+      "name": "pt-PT/carrossel/005.png",
+      "width": 1080,
+      "height": 1080,
+      "bytes": 119512
+    },
+    {
+      "name": "pt-PT/carrossel/006.png",
+      "width": 1080,
+      "height": 1080,
+      "bytes": 454908
+    },
+    {
+      "name": "pt-PT/carrossel/007.png",
+      "width": 1080,
+      "height": 1080,
+      "bytes": 454342
+    }
+  ],
+  "manifest": {
+    "v": 1,
+    "project": "TESTE UI — Carrosséis e navegação",
+    "createdAt": "2026-10-26T15:31:03.457Z",
+    "locales": [
+      "pt-PT"
+    ],
+    "parts": {
+      "carousel": true,
+      "text": true
+    },
+    "carouselFormat": "square",
+    "slides": {
+      "pt-PT": 7
+    },
+    "covers": {},
+    "files": [
+      {
+        "name": "pt-PT/carrossel/001.png",
+        "bytes": 1113860
+      },
+      {
+        "name": "pt-PT/carrossel/002.png",
+        "bytes": 637099
+      },
+      {
+        "name": "pt-PT/carrossel/003.png",
+        "bytes": 123369
+      },
+      {
+        "name": "pt-PT/carrossel/004.png",
+        "bytes": 83088
+      },
+      {
+        "name": "pt-PT/carrossel/005.png",
+        "bytes": 119512
+      },
+      {
+        "name": "pt-PT/carrossel/006.png",
+        "bytes": 454908
+      },
+      {
+        "name": "pt-PT/carrossel/007.png",
+        "bytes": 454342
+      },
+      {
+        "name": "pt-PT/publicacao.txt",
+        "bytes": 494
+      }
+    ],
+    "warnings": [
+      "PT: ainda há contactos de exemplo. Substitua-os pelos seus.",
+      "PT: não há um contacto utilizável visível. Confirme telefone, email ou link."
+    ]
+  }
+}

@@ -1,0 +1,32 @@
+
+7-Zip 25.01 (x64) : Copyright (c) 1999-2025 Igor Pavlov : 2025-08-03
+
+Scanning the drive:
+551 folders, 3804 files, 219685625 bytes (210 MiB)
+
+Creating archive: C:\Users\guilherme.andrade\Desktop\Dev\RS-codex\entregas\2026-10-26-final\aplicacao-validada-v25.zip
+
+Add new data to archive: 551 folders, 3804 files, 219685625 bytes (210 MiB)
+
+
+Files read from disk: 3804
+Archive size: 197605218 bytes (189 MiB)
+Everything is Ok
+
+7-Zip 25.01 (x64) : Copyright (c) 1999-2025 Igor Pavlov : 2025-08-03
+
+Scanning the drive for archives:
+1 file, 197605218 bytes (189 MiB)
+
+Testing archive: C:\Users\guilherme.andrade\Desktop\Dev\RS-codex\entregas\2026-10-26-final\aplicacao-validada-v25.zip
+--
+Path = C:\Users\guilherme.andrade\Desktop\Dev\RS-codex\entregas\2026-10-26-final\aplicacao-validada-v25.zip
+Type = zip
+Physical Size = 197605218
+
+Everything is Ok
+
+Folders: 551
+Files: 3804
+Size:       219685625
+Compressed: 197605218

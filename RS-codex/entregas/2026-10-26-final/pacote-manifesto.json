@@ -1,0 +1,697 @@
+[
+  {
+    "path": "LEIA-ME.txt",
+    "bytes": 502,
+    "sha256": "1afddd7aefb3a7558114abebba8c89921d57e2957e24afc13f6851e2121c9495"
+  },
+  {
+    "path": "_headers",
+    "bytes": 97,
+    "sha256": "8ce0ab5884f2189618992a570ad899934e5798d8d51d27163fada020f2299bd6"
+  },
+  {
+    "path": "assets/app.css",
+    "bytes": 137453,
+    "sha256": "266e384ab1a38ba0e0ab7be6bab9b4d34bbdbca920489af6d75caefd7763e64c"
+  },
+  {
+    "path": "assets/app.ico",
+    "bytes": 36082,
+    "sha256": "d808802f52df2969a9fad333aab95b5126d5841f2b3dbb1b6b26ddbfb344596e"
+  },
+  {
+    "path": "assets/brand/icon-maskable.svg",
+    "bytes": 1095,
+    "sha256": "fbfc6d472f3fa3e818e4a4fd1bc46cb4bae1100d19122b9cbf110bde43485f9f"
+  },
+  {
+    "path": "assets/brand/icon-small.svg",
+    "bytes": 950,
+    "sha256": "e59772c1d984d36f6b96d821a5dec2a207da788616c10d4909a26060d7f55672"
+  },
+  {
+    "path": "assets/brand/icon.svg",
+    "bytes": 1414,
+    "sha256": "ca0a2459fba247d6539c8620a5f36ff2a4dc91ef510dce3e97c1f26236bbd513"
+  },
+  {
+    "path": "assets/fonts.css",
+    "bytes": 729070,
+    "sha256": "779dde8bc8bff6d5658baee7e7cbfb87f83da4d35dbed40e780b512db4c2cfff"
+  },
+  {
+    "path": "assets/icons/icon-128.png",
+    "bytes": 7019,
+    "sha256": "2bfc43ce028c1a0ab5bd432755c23a299286237f29fb26391a10047a2274e652"
+  },
+  {
+    "path": "assets/icons/icon-16.png",
+    "bytes": 654,
+    "sha256": "37057b0e277c0448b31f41664520102c7c3d0e7ba52f1a5581ffac7433161bfb"
+  },
+  {
+    "path": "assets/icons/icon-180.png",
+    "bytes": 13529,
+    "sha256": "5c886fd2aebe76a5b46d6e802d5fc7bd053bea179ff1fab0cb04c19b0edfaa3f"
+  },
+  {
+    "path": "assets/icons/icon-192.png",
+    "bytes": 15646,
+    "sha256": "d2998f8cbf3f46839ea800c4b5dc5c24325a28cbdf67857c0e72cacd080d07c3"
+  },
+  {
+    "path": "assets/icons/icon-24.png",
+    "bytes": 991,
+    "sha256": "6c37febe4552822099f07ce9928b9d44f14bfbf6f6ce3030f28e7430da11709c"
+  },
+  {
+    "path": "assets/icons/icon-256.png",
+    "bytes": 21088,
+    "sha256": "16763124ddd268e003b5a0030cea8391148fce6e31c60fc522abaa8357de6bfe"
+  },
+  {
+    "path": "assets/icons/icon-32.png",
+    "bytes": 1326,
+    "sha256": "3a0b3ec8371086b7f77f214dc5e6ecf0a6d43b33ec47303fe4fb191e87c3a452"
+  },
+  {
+    "path": "assets/icons/icon-48.png",
+    "bytes": 2161,
+    "sha256": "eba16bbb20c9d3a06a0bca6f008ba4a7157319e458ffff848b12d76210950a52"
+  },
+  {
+    "path": "assets/icons/icon-512.png",
+    "bytes": 64288,
+    "sha256": "a04d2a550c4792de645cf78535532ef07d0cdb617a03a78fcf4e0d8a11fdc225"
+  },
+  {
+    "path": "assets/icons/icon-64.png",
+    "bytes": 2725,
+    "sha256": "8ad680697136c3139a15bf9c36401892deaaa34974da998b643aa45eed4928d3"
+  },
+  {
+    "path": "assets/icons/maskable-512.png",
+    "bytes": 75637,
+    "sha256": "e6cfa85e8f3532039159c9379b3c391c9f9d2835b9b7390f46c1c552a561e533"
+  },
+  {
+    "path": "assets/screenshots/phone.png",
+    "bytes": 388805,
+    "sha256": "988edbe84391995ec08375b6dc81c3f5081ff2f4566fc93366bd31f97b79e56a"
+  },
+  {
+    "path": "assets/screenshots/wide.png",
+    "bytes": 598004,
+    "sha256": "43430964a095d59b14ffaa80a588200b478242f50794057995f7daed32d5cd7b"
+  },
+  {
+    "path": "index.html",
+    "bytes": 5015,
+    "sha256": "d767f8423b134bf39f93d5b5025e79564966fdf5f1848f15575f7128644dc5dc"
+  },
+  {
+    "path": "js/app.js",
+    "bytes": 261913,
+    "sha256": "265c389f65edec2b8356266c1278b8cde3099bb2977f7b91733c03b552a1612a"
+  },
+  {
+    "path": "js/appearance.js",
+    "bytes": 4916,
+    "sha256": "1fe7385e09274ef29a3ace12f6fa1dd971c82850dc2f3253ff20ba066daa773b"
+  },
+  {
+    "path": "js/backup.js",
+    "bytes": 11488,
+    "sha256": "fd32ade290670dfd759539f6d1c9d05471c89b010c53e92c215c5ba54048945c"
+  },
+  {
+    "path": "js/contact.js",
+    "bytes": 4323,
+    "sha256": "4ac646f0d18c9c407315c64394ad5649d7a8dd6aded230296b4d90925db7bcc2"
+  },
+  {
+    "path": "js/engine.js",
+    "bytes": 52957,
+    "sha256": "7e27745b366e0d07885dcd771401bf1ee8b98070f0591c668de6519bf4475ea6"
+  },
+  {
+    "path": "js/haptics.js",
+    "bytes": 6827,
+    "sha256": "23b6557eb3790e83a9dfc970089c350d659540a1ce78f1083cca42cf8e15942f"
+  },
+  {
+    "path": "js/icons.js",
+    "bytes": 29920,
+    "sha256": "dc7539719da8566261157e107608bd3ee3494910061325097647f87ca30f7626"
+  },
+  {
+    "path": "js/install.js",
+    "bytes": 12657,
+    "sha256": "f786546866dc04d844d2b98866ddcfca17d9c12e6cdac889b1a34a9dd36a75d6"
+  },
+  {
+    "path": "js/model.js",
+    "bytes": 47733,
+    "sha256": "55e0b66134e66b47f8ba4f56bc80a0b5bfa4187f71cffdd8026fa76ecc3c2974"
+  },
+  {
+    "path": "js/motion-kit.js",
+    "bytes": 26996,
+    "sha256": "136f8bde8141cd401c6610e0dde3898342cf8be3a2d392e725f849a3f78ae8e9"
+  },
+  {
+    "path": "js/motion-timeline.js",
+    "bytes": 18813,
+    "sha256": "f27a2347355b9b71aa6bf849bba46c7798edc97edcf0a8c009de1b660dda1bfd"
+  },
+  {
+    "path": "js/motion.js",
+    "bytes": 74724,
+    "sha256": "24e55343ad8a538ff113f4acaa0caccc1607b0a1a7d0cc94f923931e68a8de77"
+  },
+  {
+    "path": "js/production-ui.js",
+    "bytes": 46141,
+    "sha256": "4aac032a454175194d8d011546a035daab20ccdecce09e02ce8ac9a9426b80e1"
+  },
+  {
+    "path": "js/production.js",
+    "bytes": 23378,
+    "sha256": "967228a384299c381ebc0c7a7ab8223dc980d9f20c8e1920c23de4107af63dce"
+  },
+  {
+    "path": "js/recipes/apresentacao.js",
+    "bytes": 38537,
+    "sha256": "eea78595e107353c0d741142d495d3454502f491abc252fc471758b9c4905da6"
+  },
+  {
+    "path": "js/recipes/colagem.js",
+    "bytes": 40480,
+    "sha256": "5ea1f4d1917713f507102b0464920ac51f820cc7b4f93e25505f3dbf403ed7b4"
+  },
+  {
+    "path": "js/recipes/contrato.js",
+    "bytes": 22314,
+    "sha256": "96e0e20ffcf651b28fb10ae025809990ba2b1b6ab202c41b5951ecade0916386"
+  },
+  {
+    "path": "js/recipes/cracha.js",
+    "bytes": 18628,
+    "sha256": "0a73a0641fb4eecdae6895b058bd5b1557e1bc09d3c3ff0fd86f3a2165f25255"
+  },
+  {
+    "path": "js/recipes/esteira.js",
+    "bytes": 21224,
+    "sha256": "afe129933a1fc5c83410aaf6cf769e693a799504f7471221b8fb0d51f3815ba7"
+  },
+  {
+    "path": "js/recipes/fita.js",
+    "bytes": 18741,
+    "sha256": "ebf69b37c59d6bab58d26faf3ba5e50f63166370a23873d40ac91ec3779ff94b"
+  },
+  {
+    "path": "js/recipes/grua.js",
+    "bytes": 23164,
+    "sha256": "da70baf15fb5f80ca04f869eb72fbb92ca956bc4f43280fdfbad00edd0813a0c"
+  },
+  {
+    "path": "js/recipes/notificacoes.js",
+    "bytes": 18625,
+    "sha256": "230aaaa95738528e15119ccbaa7097e31ec03cb3eab734ed7dae7f5732e901fa"
+  },
+  {
+    "path": "js/recipes/numeros.js",
+    "bytes": 17801,
+    "sha256": "22b82b61dd9620cae5dcc93ec8b28fc7ff2c9d57c5f362508b377f42b8c0781d"
+  },
+  {
+    "path": "js/recipes/partidas.js",
+    "bytes": 18730,
+    "sha256": "275c6cf03dcddb89bbc2624690ea6300ce050e7b9b4aa6b28cbe5d301b4fc76c"
+  },
+  {
+    "path": "js/recipes/pixel.js",
+    "bytes": 36068,
+    "sha256": "8a1d13653a43165b897a1997c9f60029207343f3d619807e18d788f2e2d9302a"
+  },
+  {
+    "path": "js/recipes/planta.js",
+    "bytes": 36351,
+    "sha256": "e5e1c551ca38d0a228764ca8da9ef7ba8cc8b749d1b22b26437ec6107aa8cd92"
+  },
+  {
+    "path": "js/recipes/tijolo.js",
+    "bytes": 41045,
+    "sha256": "21a0aebb9a5333666958cc66a39f9ae1932468cf9110dbcf8b02a966d823366b"
+  },
+  {
+    "path": "js/reuse.js",
+    "bytes": 7719,
+    "sha256": "e130e7bc58a07c3590d8236ca783a8b6fc0ce97dee7778935c6bf7b62bb7b85a"
+  },
+  {
+    "path": "js/sound.js",
+    "bytes": 13531,
+    "sha256": "5b9b3d814bb299a697afb5e1b0692a9079e9dbb3bd3f811b69b65a7f0421fccb"
+  },
+  {
+    "path": "js/store.js",
+    "bytes": 39925,
+    "sha256": "3ad66dc73e23209759d464a8a27aeba004e5be1cd045095973b6cd8f37807bbd"
+  },
+  {
+    "path": "js/templates.js",
+    "bytes": 33344,
+    "sha256": "eed2d5a64416268e0bd8a07a38fc32a23721ac5514552c59c18f3e20e3da4dbb"
+  },
+  {
+    "path": "js/trades.js",
+    "bytes": 25926,
+    "sha256": "b15bd5f89261c8180bcbf8262c972cbf325f788a22d677be75592f0887e74c76"
+  },
+  {
+    "path": "js/ui-motion.js",
+    "bytes": 30334,
+    "sha256": "07a404184f648f0518d8f326bca9684a232df7bd698c302cd4d514dd7f09cec1"
+  },
+  {
+    "path": "js/util.js",
+    "bytes": 10672,
+    "sha256": "eae9276865cf21054e38b1285d99b105dba90a3fc7c860f56cdb54baf731caa2"
+  },
+  {
+    "path": "js/video.js",
+    "bytes": 10986,
+    "sha256": "e1d45f563a87a78470e97702fd00b05d884c72616a8d01fd0c98ef5b1b700c2f"
+  },
+  {
+    "path": "js/workflow-ui.js",
+    "bytes": 21299,
+    "sha256": "3686a31ac7d6941486d57530f617c937dabe736b97ef7dd72e545f6fe6cb86d2"
+  },
+  {
+    "path": "js/workflow.js",
+    "bytes": 14227,
+    "sha256": "7b5fafe0dd1afc27c82325f2800ca44c1df2ab076d782fdaf8a2ccb04657136c"
+  },
+  {
+    "path": "licenses/anton-OFL.txt",
+    "bytes": 4390,
+    "sha256": "9267baca92b7a7ce9db6dd9e6cc32c9fe3ddf1ac96e421d5f87c5746b9089d6a"
+  },
+  {
+    "path": "licenses/barlow-OFL.txt",
+    "bytes": 6014,
+    "sha256": "4877e0c1b66f0b16cc3ebc4801c4def24c06252f618b9229428b20c7387aa0c0"
+  },
+  {
+    "path": "licenses/barlow-condensed-OFL.txt",
+    "bytes": 6167,
+    "sha256": "046ee27d8bddc6b6ee08eee53c96dbf3ec1f6df561644e018507dd8ffcb11d31"
+  },
+  {
+    "path": "licenses/dm-sans-OFL.txt",
+    "bytes": 4502,
+    "sha256": "6fbd040a29c2037a765dfb9f2561e9965b5c95c6dcb5dce516089d63d5f17af7"
+  },
+  {
+    "path": "licenses/dm-serif-display-OFL.txt",
+    "bytes": 4599,
+    "sha256": "e9d4ced9825bf03a6b634c37fe8ae974f6d1b80fbb0bd3ae9b089987e4dc541b"
+  },
+  {
+    "path": "licenses/htm-Apache-2.0.txt",
+    "bytes": 11341,
+    "sha256": "740725f7252e750af735d0028cc534970772f513331e9f68150fede8fb3ce00f"
+  },
+  {
+    "path": "licenses/lucide-ISC.txt",
+    "bytes": 3208,
+    "sha256": "b495047bd93a9b06913511076f504daba17d5bbeb3e0650f3bb53a4220329c57"
+  },
+  {
+    "path": "licenses/montserrat-OFL.txt",
+    "bytes": 4509,
+    "sha256": "f429f739351287574c0c3175a9222bb3e49c7cad3f568a04f2c08d74c107724e"
+  },
+  {
+    "path": "licenses/mp4-muxer-MIT.txt",
+    "bytes": 1065,
+    "sha256": "75c54aae7ef6ad652f684f9dd3b71e4dcef86ccebd88cf441ceed7f5eec037c5"
+  },
+  {
+    "path": "licenses/qrcode-generator-MIT.txt",
+    "bytes": 255,
+    "sha256": "fbd1971ca8d8f56b77912db46605d8707fdaa0685f3240a1507e4dca5a0e484f"
+  },
+  {
+    "path": "manifest.webmanifest",
+    "bytes": 1335,
+    "sha256": "bd64f0c83897dbd0a1e0885f9a108fac6261977ead83542a3f8eacd2e2d59007"
+  },
+  {
+    "path": "photos/full/canalizador-32a012baf4.js",
+    "bytes": 343202,
+    "sha256": "4488f0fc6d4b34b92b1da22aefc41b1b8e4a01d6b61233e8a12d884eaf26c041"
+  },
+  {
+    "path": "photos/full/canalizador-8e74992939.js",
+    "bytes": 381822,
+    "sha256": "041b34d8fda4cbb629db610523275dccad1c3a7ecd2ec9884d5ffb7b46675b81"
+  },
+  {
+    "path": "photos/full/canalizador-c595005c83.js",
+    "bytes": 394494,
+    "sha256": "3bcead3911590ab455a060bef0443ee4484ef9572332b49900b151cb759bcdf6"
+  },
+  {
+    "path": "photos/full/canalizador-de5f4c7577.js",
+    "bytes": 359914,
+    "sha256": "dc1efa699de8d5411f9d2323d73b292c852346e8f31c1272c4df0ebcf5cffb1d"
+  },
+  {
+    "path": "photos/full/canalizador-e13ade9b68.js",
+    "bytes": 374430,
+    "sha256": "8e2c7055f86e6d9e636da6ca75eac4801d56b97d2ea803159242f3b1632ae4fb"
+  },
+  {
+    "path": "photos/full/carpinteiro-22395ea264.js",
+    "bytes": 299714,
+    "sha256": "267233b12acbbb8a19f60078f81dd54b92eaa18fe4f61f145f942b4d4f35f3b4"
+  },
+  {
+    "path": "photos/full/cofragem-0e4d9544a0.js",
+    "bytes": 458527,
+    "sha256": "3c77b1233350bc9ae177393321a8d5c2b98a02e933ee6ae3278fb5cad31cc85f"
+  },
+  {
+    "path": "photos/full/cofragem-4fc160185e.js",
+    "bytes": 425991,
+    "sha256": "7ada654859bff58cf7bc918bdde4c42694cd8da2d8dfc95db7d83627e4597709"
+  },
+  {
+    "path": "photos/full/cofragem-a8ac6b0b5d.js",
+    "bytes": 453855,
+    "sha256": "a71c4c31cbcbd9579d68e6f42e930f601115caea5ecfecece0bf667b4ff57ddf"
+  },
+  {
+    "path": "photos/full/cofragem-b66e136af9.js",
+    "bytes": 394003,
+    "sha256": "c807372e3be2446cb227185fcb8d5053b0d19314a466801a917663bb070cb2dc"
+  },
+  {
+    "path": "photos/full/eletricista-0df2ff3432.js",
+    "bytes": 391642,
+    "sha256": "d64908447228958af781697ed34a498bb64e941207224ca6eebc4207ab1a79e2"
+  },
+  {
+    "path": "photos/full/eletricista-108e73a50b.js",
+    "bytes": 377642,
+    "sha256": "04ebbe230a6736bc896554c0d2b16af1362f92139b7eebb3d3c2ac1b787ddb89"
+  },
+  {
+    "path": "photos/full/eletricista-21ce4b8bd1.js",
+    "bytes": 350810,
+    "sha256": "369aa7bb354bc8b1848c4c4c8ca1779acc27d4e8f5b2428fe8e8b93cb2a723db"
+  },
+  {
+    "path": "photos/full/eletricista-3cfe1dc79c.js",
+    "bytes": 363438,
+    "sha256": "2167083a402e88c2202a1cc3a5b0b0fa9be791ce89845949440a703898524690"
+  },
+  {
+    "path": "photos/full/ferro-04413b9f0a.js",
+    "bytes": 444428,
+    "sha256": "ceef7edbafc443d939fdee42e2bcdd36a692fed54a0c855a6382b2a6a80e7735"
+  },
+  {
+    "path": "photos/full/ferro-8f605d5591.js",
+    "bytes": 460116,
+    "sha256": "175b7d20ccf9386b070c431525426d8ee683542a6a7d299484023ad1450a7795"
+  },
+  {
+    "path": "photos/full/ferro-af0fda197d.js",
+    "bytes": 443664,
+    "sha256": "98e238150e5aebf8ac8e3e10ec39cea823bb89f1d9565c4767600fcd284664a5"
+  },
+  {
+    "path": "photos/full/ferro-bd936ff79e.js",
+    "bytes": 495160,
+    "sha256": "3d7cd20cd2a240399a022318ffdb39e9351748ddd1d3381fe057d99625c2c593"
+  },
+  {
+    "path": "photos/full/ladrilhador-8dff90ee92.js",
+    "bytes": 346594,
+    "sha256": "9b27eb01d6a54cc972c6507af5fddb7e13babd43b60ca81e82fa2107c86db93c"
+  },
+  {
+    "path": "photos/full/ladrilhador-a61f3ac124.js",
+    "bytes": 353338,
+    "sha256": "05b4eca21f2a24cec96975af39134ec8420b43d306cb681079ca165fb038dc87"
+  },
+  {
+    "path": "photos/full/ladrilhador-a68b146c7e.js",
+    "bytes": 390434,
+    "sha256": "03f89fc34a4ce89bae266cfdd0f3e10b3ccd952e870e5183577cce06458aed05"
+  },
+  {
+    "path": "photos/full/ladrilhador-c13c3177e3.js",
+    "bytes": 317302,
+    "sha256": "ff06f78171771aafbe002f08d07ea9f26b8cd76c91bb506c19afda6c9740dd60"
+  },
+  {
+    "path": "photos/full/maquinas-0bd443016d.js",
+    "bytes": 367251,
+    "sha256": "26dfd9e9e504e380d1b0b5326920b8aff9f28f210c9ebafd98b7644224f8bc78"
+  },
+  {
+    "path": "photos/full/maquinas-2764b280ea.js",
+    "bytes": 428763,
+    "sha256": "6fbbfe9be4189e3183458fc22e5760cc7b654526c4b422700a6e02912848a7ca"
+  },
+  {
+    "path": "photos/full/maquinas-6a9276f7e1.js",
+    "bytes": 536003,
+    "sha256": "0ffdeffaf84e74d4019e7febcea86ce618c2bf668016fa5e4d16490967b53675"
+  },
+  {
+    "path": "photos/full/maquinas-c27ac2552b.js",
+    "bytes": 432695,
+    "sha256": "702d32cdbe47b8c94d8e0ce13fba6f20250270eaaa6ef3421b49cfba767c1a1e"
+  },
+  {
+    "path": "photos/full/obras-130cf1c1fb.js",
+    "bytes": 399120,
+    "sha256": "3eb1ea10738ce90c5bd421d9253ab28f1af17bcc58819bae5dadc7fb3f9f28dc"
+  },
+  {
+    "path": "photos/full/obras-200241e3fb.js",
+    "bytes": 342748,
+    "sha256": "649e183a95b64103a03f5db935ea4b754c45e8458c329917f2b626f2a58f47ca"
+  },
+  {
+    "path": "photos/full/obras-2d43468ed5.js",
+    "bytes": 405728,
+    "sha256": "5eb5bb3da716d6a9d1aee0102d3072f0e9eab411ef335f96381b015536f0dd87"
+  },
+  {
+    "path": "photos/full/obras-8208cf9934.js",
+    "bytes": 375280,
+    "sha256": "58fd9ea4dd48c35a0d77b3f7cbf9d45d10d816134628f1d508aae1f0273e1962"
+  },
+  {
+    "path": "photos/full/obras-d7d8e33fdf.js",
+    "bytes": 362096,
+    "sha256": "656403df7d53dbe2947992349d6a4b4d33e524bd871022d533ef70b4e8e2e76e"
+  },
+  {
+    "path": "photos/full/obras-fd01a992f3.js",
+    "bytes": 366948,
+    "sha256": "9b07126370069526ecc6e853396dff1ecb9eefc8c369ee839658b079f1dc46fc"
+  },
+  {
+    "path": "photos/full/pedreiro-07fb32e958.js",
+    "bytes": 421583,
+    "sha256": "d503423844bdf0fe7be4a3c2a764ab8984617b4b53bc72941041d2ad7beb5440"
+  },
+  {
+    "path": "photos/full/pedreiro-47ed079912.js",
+    "bytes": 374359,
+    "sha256": "2583d62ddbab6fd05333d9f1e4f2fa475d0093c31f5924bc55a658eb77fe37ec"
+  },
+  {
+    "path": "photos/full/pedreiro-52f52f6ad2.js",
+    "bytes": 397439,
+    "sha256": "2c950089df0377371bb0d1b9667d5ee7c29745c4cb2792fe716777c5053b71e0"
+  },
+  {
+    "path": "photos/full/pedreiro-bd3c0096e0.js",
+    "bytes": 373991,
+    "sha256": "4ea8004f7995d425f6909b52ae93442c8a37635e1c0664d31bfe92ad62aef876"
+  },
+  {
+    "path": "photos/full/pintor-14b632b095.js",
+    "bytes": 352537,
+    "sha256": "284e29d38df5b06b737de91d62241ae5e1776613cec4ea40b6040672592606e3"
+  },
+  {
+    "path": "photos/full/pintor-183f52e5e2.js",
+    "bytes": 265925,
+    "sha256": "5a0dcdcbd9ce8a115748021c818e3b5e846fea6709936f62055882ede0da1104"
+  },
+  {
+    "path": "photos/full/pintor-46c82b73b3.js",
+    "bytes": 314709,
+    "sha256": "f43a3218ae32c8696403fa0f8455d7e1191ca6d6dddab887fabc550d1034d3f1"
+  },
+  {
+    "path": "photos/full/pintor-4d99540a2a.js",
+    "bytes": 282665,
+    "sha256": "7acea79182361e59ae1785ea07cfc8c41a15d49d721b7714d7cbe67038e220ad"
+  },
+  {
+    "path": "photos/full/pintor-5e4447f452.js",
+    "bytes": 377617,
+    "sha256": "1102e601362fdf0ec26f13bf64685345a5c0192e46a4809258c48ed101c2e15d"
+  },
+  {
+    "path": "photos/full/pintor-b6620f2976.js",
+    "bytes": 364249,
+    "sha256": "a1c082756628394beab5bbeb151ce7ab836f7c6b568a2426fb05fbbe26c70bf5"
+  },
+  {
+    "path": "photos/full/pintor-ce8b3103f1.js",
+    "bytes": 301517,
+    "sha256": "bc608ae9880f853424f49a98981a1f3867ed2f075f1bd7a36c297bab8b70beea"
+  },
+  {
+    "path": "photos/full/pintor-fbc2f8b2ab.js",
+    "bytes": 372997,
+    "sha256": "286dc14e4b37c57528b09b7fc306da5c064e2a4167c1464ea361842fa17429bd"
+  },
+  {
+    "path": "photos/full/pladur-524a85c59c.js",
+    "bytes": 359737,
+    "sha256": "9fe768c629f267081bb6a1dc8908f3dad31cbbe66637f3c790db1757cb1cebcb"
+  },
+  {
+    "path": "photos/full/pladur-bef8642aa5.js",
+    "bytes": 357909,
+    "sha256": "31241f7f4eec7b9c64cea158ce508e7b25e4a15b6f0f01dc28d014d7d73b8cbd"
+  },
+  {
+    "path": "photos/full/pladur-c2b0388c4d.js",
+    "bytes": 363677,
+    "sha256": "c438bf810ad364aa2914f5f687ebeea3e8969f001aca31624124ead283a34164"
+  },
+  {
+    "path": "photos/full/pladur-d4dbe4d9f0.js",
+    "bytes": 339257,
+    "sha256": "70a66f9dbf342910110e5a0c13bfaaeeb38d15ea2a31299a4970d606d3cbe1a7"
+  },
+  {
+    "path": "photos/full/pladur-dd8c541025.js",
+    "bytes": 428125,
+    "sha256": "75c5e7f0ddfbb802cbd91ea68c826ec20fb8b5c35e0378b4553b458dd800f344"
+  },
+  {
+    "path": "photos/full/serralheiro-03898b3b47.js",
+    "bytes": 382038,
+    "sha256": "f42fc921a40d5cf6dbe0cd6d60a104205fa44a62e15a608a6ea7e8fc293f97fd"
+  },
+  {
+    "path": "photos/full/serralheiro-1f1c31313d.js",
+    "bytes": 407782,
+    "sha256": "9e03ec400df4b104ce039dde3ed7f8ac97acc65bd71e2e0e91b525f9db9178a6"
+  },
+  {
+    "path": "photos/full/serralheiro-4e1b71aac0.js",
+    "bytes": 429026,
+    "sha256": "49abc2c8745bb2a5cecea7525aae6a0e6b90bad2259de696afafa745dae58764"
+  },
+  {
+    "path": "photos/full/serralheiro-c258529a7e.js",
+    "bytes": 386046,
+    "sha256": "10eb08c6e697e6c6412d81067d91302680f7bd6934d0ce1c890a903d37b9e975"
+  },
+  {
+    "path": "photos/full/serralheiro-eadce3451d.js",
+    "bytes": 391086,
+    "sha256": "50a586b51706e092c6658b8628078f4b7e67f28da78e0cd396301779229b299c"
+  },
+  {
+    "path": "photos/full/servente-27ceeb2d7d.js",
+    "bytes": 414707,
+    "sha256": "6534589634b690b9d808ea36de88750c8f404be382301c820751686e102b070e"
+  },
+  {
+    "path": "photos/full/servente-92df415243.js",
+    "bytes": 430611,
+    "sha256": "e4963ddc7ca6a8a18e5d5c0cfb6e691857bfa3b64a33205b390283eb957538af"
+  },
+  {
+    "path": "photos/full/servente-c3ff372b44.js",
+    "bytes": 433363,
+    "sha256": "50d798f67f9fd51ae6b591fca4382fef6daed1e8f876b7e39de61822c77c6a32"
+  },
+  {
+    "path": "photos/full/servente-c530440b8f.js",
+    "bytes": 429155,
+    "sha256": "e2410a44760c41cfa79791c061ea10859cd1dd396f9f8c1e491c67a14deeec2d"
+  },
+  {
+    "path": "photos/full/tecnico-78ba0f2ff6.js",
+    "bytes": 371118,
+    "sha256": "cbf84d1bd89b383a326b8afac0fdb6821a65f8bb94fe36802760f6905f427d84"
+  },
+  {
+    "path": "photos/full/telhados-3db94b1dab.js",
+    "bytes": 352227,
+    "sha256": "8c2f5d8fb10a6c8367df020aa3a772b5bc213337918766a17e255d466d345ad6"
+  },
+  {
+    "path": "photos/full/telhados-44f8ad3018.js",
+    "bytes": 349707,
+    "sha256": "ea9be58c0b54e17516f44f10086147c3510e3818147b02bc5dbef8624e6a65e3"
+  },
+  {
+    "path": "photos/full/telhados-4651789486.js",
+    "bytes": 447447,
+    "sha256": "498abe8b446b91c36d2384c8029bd5a91ab4537b0e46119ed67739e96d73d3bd"
+  },
+  {
+    "path": "photos/full/telhados-5afe3027ed.js",
+    "bytes": 409059,
+    "sha256": "38c6c06d723fbbad99cdeaa6f07d2a5f50b5f7a81379148d6f1f083573606f95"
+  },
+  {
+    "path": "photos/library.js",
+    "bytes": 1571597,
+    "sha256": "717b1e184de61c3d2c9194602109c05f3a8ef8ab3ad6898e8b54ec572a094ab0"
+  },
+  {
+    "path": "sw.js",
+    "bytes": 6332,
+    "sha256": "38fe15f83ac0d316cce39cd762697f7452c832732869e91293802e2daad4e3da"
+  },
+  {
+    "path": "vendor/htm-preact.umd.js",
+    "bytes": 13296,
+    "sha256": "62c4ffea400078c0eda7f435b22726b4961ebdf74c8506f188e92bec41d8ac51"
+  },
+  {
+    "path": "vendor/mp4-muxer.js",
+    "bytes": 73921,
+    "sha256": "cc4d30bd20b9ffe0b15f59cf0de3e1930626ccd46a5146e36e4d619d7fecf63d"
+  },
+  {
+    "path": "vendor/qrcode.js",
+    "bytes": 57488,
+    "sha256": "82935503e93e3bb2300648df93861ebb3298429557a4d3115ed7a32e0ffe6d56"
+  },
+  {
+    "path": "web.config",
+    "bytes": 474,
+    "sha256": "d4f11dc3df0d37ff7448d0da3c00188c85297b0bedd36e4b1ad7845a9452546c"
+  }
+]

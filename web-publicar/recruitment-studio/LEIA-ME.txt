@@ -1,0 +1,9 @@
+Recruitment Studio - versao web instalavel
+
+Publique esta pasta num endereco https (obrigatorio para instalar no telemovel).
+- Servidor IIS: copie a pasta para o site; o web.config ja trata dos tipos de ficheiro.
+- Netlify: arraste esta pasta para https://app.netlify.com/drop
+
+No telemovel: abra o endereco e toque em "Instalar app" (Android) ou
+Partilhar > Adicionar ao ecra principal (iPhone). Depois da primeira abertura
+funciona sem rede. Para atualizar, volte a publicar a pasta gerada.

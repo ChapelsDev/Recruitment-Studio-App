@@ -1,0 +1,35 @@
+Recruitment Studio — versão final de 26 de outubro de 2026
+Distribuição web: 711c3bf99f | origem validada: recruitment-studio-v25
+
+Esta entrega fecha as melhorias já implementadas. O código da aplicação não foi
+alterado nesta preparação. Mantêm-se excluídos os pontos 9 (associar marcas/modelos
+a clientes), 11 (operações em lote) e 15 (otimização de escala/desempenho).
+
+Inclui as melhorias autorizadas de gravação e recuperação, cópia global, edição
+móvel, ficha comum da oferta, carrosséis, capas e navegação no vídeo, enquadramentos,
+textos reutilizáveis, biblioteca de recursos, planeamento local, preparação offline
+e proteção de edição entre separadores. O manual completo acompanha esta entrega.
+
+Confirmado nesta preparação:
+- Distribuição gerada por tools/build-web.mjs, sem alterar essa ferramenta.
+- 139 ficheiros na pasta e no ZIP, com correspondência integral por SHA-256.
+- 135 recursos copiados sem alterações; 4 ficheiros gerados pela ferramenta.
+- Recursos locais, 63 fotografias e sintaxe dos 105 ficheiros JS conferidos.
+- Testes, evidências, node_modules, ferramentas e manifestos npm excluídos.
+- Abertura da versão 711c3bf99f na origem de teste autorizada, seguida de abertura
+  com o servidor desligado: aplicação e 63/63 fotografias disponíveis offline.
+  Nenhum aviso/erro capturado na consola. Servidor encerrado no fim.
+- Os 3 804 ficheiros do projeto permaneceram iguais à cópia preservada.
+
+Validação anterior, documentada em IMPLEMENTACAO.md: 237 testes passaram; foram
+revistos os dois temas, dimensões de computador/móvel, exportações reais, offline
+e conflitos entre separadores. Essa bateria completa não foi repetida agora.
+
+Limites anteriores mantidos: equipamentos móveis físicos e instalação PWA nesses
+aparelhos, audição humana dos vídeos, duas janelas do sistema operativo e importação
+real noutro perfil/origem não foram confirmados nesta preparação.
+
+Dados da instalação habitual: cópia .rsbackup pendente. Windows e PWA podem ter
+bibliotecas distintas; não foi identificado um endereço/perfil concreto com os
+anúncios de trabalho. A cópia do código não inclui esses dados. Nada foi publicado,
+a instalação habitual não foi substituída e não foram feitos commits.

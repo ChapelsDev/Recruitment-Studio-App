@@ -1,0 +1,102 @@
+Browser tab: 1, Title: "Recruitment Studio", URL: "http://127.0.0.1:18973/".
+1 AXWebArea Recruitment Studio, URL: 127.0.0.1:18973/
+	4 container app
+		5 container
+			6 text Recruitment Studio
+			7 button Description: Instalar, Help: Instalar o Recruitment Studio neste aparelho
+			8 button Description: Mostrar QR, Help: Um QR do seu WhatsApp para mostrar cara a cara
+			9 button Abrir ficheiro
+			10 pop up button Description: Definições, Help: Definições: movimento, tema e vibração
+		65 container Definições
+			66 container
+				67 heading Definições, Value: 2, ID: settings-title
+					68 text Definições
+				69 button Fechar
+			70 container
+				71 heading Movimento, Value: 3
+					72 text Movimento
+				73 Movimento
+					74 radio button Ilustrativo A obra a acontecer em cada toque e em cada ecrã: a app viva, mesmo parada., Value: 0
+						75 text Ilustrativo
+						76 text A obra a acontecer em cada toque e em cada ecrã: a app viva, mesmo parada.
+					77 radio button Sóbrio Rápido e discreto no dia a dia; a grua e os tijolos só nas esperas e nas vitórias., Value: 0
+						78 text Sóbrio
+						79 text Rápido e discreto no dia a dia; a grua e os tijolos só nas esperas e nas vitórias.
+					80 radio button Calmo Só esbatidos: nada voa, salta nem balança., Value: 1
+						81 text Calmo
+						82 text Só esbatidos: nada voa, salta nem balança.
+			83 container
+				84 heading Tema, Value: 3
+					85 text Tema
+				86 Tema
+					87 radio button Automático, Value: 0
+					88 radio button Claro, Value: 1
+					89 radio button Escuro, Value: 0
+				90 text Fica assim neste aparelho.
+			91 container
+				92 checkbox (settable, integer) Description: Vibração, Value: 1, ID: f-haptics
+				93 text Vibração Um toque leve no telemóvel quando carrega nos botões.
+			94 container
+				95 heading Disponível sem rede, Value: 3
+					96 text Disponível sem rede
+				97 text Aplicação disponível offline. Fotografias:  63  de  63  disponíveis.
+				98 progress indicator Description: Recursos disponíveis offline, Value: 126
+				99 button Verificar novamente
+				100 button Preparar todos os recursos
+				101 text Prepare os recursos com ligação à rede antes de sair. A preparação explícita descarrega as fotografias mesmo com a poupança de dados ativa. Os anúncios e recursos próprios ficam no armazenamento deste navegador. Use também uma cópia de segurança externa.
+		11 container
+			12 heading Os seus anúncios, Value: 1
+				13 text Os seus anúncios
+			14 text Escolha um modelo e a função, escreva a oferta e descarregue a imagem pronta para o Facebook e o Instagram. Tudo fica guardado neste aparelho.
+			15 button Marcas e modelos pessoais
+			16 button Reciclagem
+			17 button Cópias de segurança
+			18 container Pesquisar e filtrar anúncios
+				19 text Pesquisar anúncios
+				20 search text field (settable) Pesquisar anúncios, ID: project-search
+				21 text Campanha
+				22 pop up button (collapsed, settable) Campanha, Value: Todas as campanhas, ID: filter-campaign, Secondary Actions: Expand
+					23 menu
+						24 (selected) Todas as campanhas
+				25 text Estado
+				26 pop up button (collapsed, settable) Estado, Value: Todos os estados, ID: filter-status, Secondary Actions: Expand
+					27 menu
+						28 (selected) Todos os estados
+						29 Rascunho
+						30 Pronto
+						31 Publicado
+						32 Encerrado
+				33 text Etiqueta
+				34 pop up button (collapsed, settable) Etiqueta, Value: Todas as etiquetas, ID: filter-tag, Secondary Actions: Expand
+					35 menu
+						36 (selected) Todas as etiquetas
+				37 text Ordenar
+				38 pop up button (collapsed, settable) Ordenar, Value: Mais recentes, ID: filter-sort, Secondary Actions: Expand
+					39 menu
+						40 (selected) Mais recentes
+						41 Mais antigos
+						42 Nome A–Z
+				43 checkbox Favoritos, Value: 0
+			44 text 2  de  2  anúncios
+			45 button Criar anúncio Começar por escolher um modelo
+				46 text Criar anúncio
+				47 text Começar por escolher um modelo
+			48 button Abrir TESTE QA 26-10 — Pedreiros e masseiros para reabilitação de edifícios históricos em Lisboa e arredores — PT/FR
+				49 text TESTE QA 26-10 — Pedreiros e masseiros para reabilitação de edifícios históricos em Lisboa e arredores — PT/FR
+				50 text Diagonal
+				51 text  · 
+				52 text há 54 minutos
+				53 text Rascunho
+			54 checkbox Value: 0, Description: Favorito: TESTE QA 26-10 — Pedreiros e masseiros para reabilitação de edifícios históricos em Lisboa e arredores — PT/FR
+			55 button (collapsed) Secondary Actions: Expand, Description: Mais ações para TESTE QA 26-10 — Pedreiros e masseiros para reabilitação de edifícios históricos em Lisboa e arredores — PT/FR
+			56 button Abrir TESTE QA 26-10 — Pedreiros e masseiros para reabilitação de edifícios históricos em Lisboa e arredores — PT/FR (cópia)
+				57 text TESTE QA 26-10 — Pedreiros e masseiros para reabilitação de edifícios históricos em Lisboa e arredores — PT/FR (cópia)
+				58 text Diagonal
+				59 text  · 
+				60 text há 1 hora
+				61 text Rascunho
+			62 checkbox Value: 0, Description: Favorito: TESTE QA 26-10 — Pedreiros e masseiros para reabilitação de edifícios históricos em Lisboa e arredores — PT/FR (cópia)
+			63 button (collapsed) Secondary Actions: Expand, Description: Mais ações para TESTE QA 26-10 — Pedreiros e masseiros para reabilitação de edifícios históricos em Lisboa e arredores — PT/FR (cópia)
+			64 text Versão  711c3bf99f
+
+The focused UI element is 1 AXWebArea Recruitment Studio, URL: 127.0.0.1:18973/

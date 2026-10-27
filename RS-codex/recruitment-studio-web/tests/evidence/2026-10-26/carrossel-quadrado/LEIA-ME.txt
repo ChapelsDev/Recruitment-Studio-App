@@ -1,0 +1,15 @@
+Recruitment Studio — TESTE QA 26-10 — Pedreiros e masseiros para reabilitação de edifícios históricos em Lisboa e arredores — PT/FR
+
+Uma pasta por língua. Carrosséis: publicar pela ordem numérica.
+publicacao.txt contém exatamente o texto guardado nessa língua.
+A capa usa o fotograma e a chamada escolhidos para essa língua, ou a composição estática quando não foi escolhida uma capa. O manifesto regista a origem e o instante.
+O vídeo usa o estilo, duração e som do editor; a extensão indica o formato efetivamente criado.
+projeto.anuncio permite continuar a editar noutro aparelho.
+Confirme contactos, traduções e a pré-visualização antes de publicar.
+
+Avisos:
+- PT: ainda há contactos de exemplo. Substitua-os pelos seus.
+- PT: não há um contacto utilizável visível. Confirme telefone, email ou link.
+- FR: ainda há contactos de exemplo. Substitua-os pelos seus.
+- FR: não há um contacto utilizável visível. Confirme telefone, email ou link.
+- FR: 10 blocos por rever na tradução, com alterações no original.
