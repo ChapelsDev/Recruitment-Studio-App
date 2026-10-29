@@ -10,7 +10,7 @@ const railNames = ($$) => $$('.rail [role="tab"]').map((b) => b.textContent.trim
 const railTab = ($$, name) => $$('.rail [role="tab"]').find((b) => b.textContent.trim() === name);
 async function open(a) { await a.click(a.$('.proj-open')); await a.until(() => a.$('.editor'), 'editor'); }
 async function openMenu(a) {
-  await a.click(a.$('.topbar .editor-more'));
+  await a.click(a.$('.editor-more'));
   return a.until(() => a.$('.editor-menu[role="menu"]'), 'the ⋯ menu');
 }
 const items = (a) => a.$$('.editor-menu [role="menuitem"]').map((b) => b.textContent.replace(/\s+/g, ' ').trim());
@@ -35,17 +35,19 @@ test('rail: Imagem has Oferta, Contactos, Fotos, Estilo; Carrossel and Vídeo ad
   assert.equal($$('.rail button').some((b) => /Definições/.test(b.textContent)), false);
 });
 
-test('rail: on a phone the floating bar holds at most six buttons in every piece', async (t) => {
+test('rail: on a phone the floating bar holds at most six buttons in every piece; «Exportar» is in the top bar', async (t) => {
   const a = await app(t, 390), { $$, click } = a;
   await open(a);
   for (const name of ['Imagem', 'Carrossel', 'Vídeo']) {
     await click(piece($$, name));
     assert.ok($$('.rail button').length <= 6, `${name}: ${$$('.rail button').length} buttons`);
-    assert.ok($$('.rail button').some((b) => /Exportar/.test(b.textContent)), `${name}: no Exportar`);
+    // «Balão» (2026-10-28): «Exportar» left the floating bar for the top bar
+    assert.ok(!$$('.rail button').some((b) => /Exportar/.test(b.textContent)), `${name}: Exportar still in the floating bar`);
+    assert.ok($$('.topbar .btn.primary').some((b) => /Exportar/.test(b.textContent)), `${name}: no Exportar in the top bar`);
   }
 });
 
-test('⋯: no management buttons in the panels; the menu lists the eight items with their counts', async (t) => {
+test('⋯: no management buttons in the panels; the menu lists «Comparar formatos» and the eight items with their counts', async (t) => {
   const a = await app(t, 1280, (p) => { p.captions = { 'pt-PT': 'Texto meu' }; }), { $, $$, RS, p } = a;
   await open(a);
   assert.ok(!$('.project-tools'), '$(.project-tools) is still there');
@@ -54,7 +56,8 @@ test('⋯: no management buttons in the panels; the menu lists the eight items w
   assert.ok(pending > 0, 'the fixture has translations to review');
   assert.equal($('.topbar .editor-more .more-count').textContent.trim(), String(pending + 1));
   await openMenu(a);
-  assert.deepEqual(items(a), ['Guardar ficheiro', 'Histórico de versões', 'Mostrar QR', 'Organizar', `Rever traduções (${pending})`, 'Rever publicação · PT', 'Marcas e modelos', 'Definições']);
+  // «Balão» (2026-10-28): «Comparar formatos» left the stage for the top of the ⋯
+  assert.deepEqual(items(a), ['Comparar formatos', 'Guardar ficheiro', 'Histórico de versões', 'Mostrar QR', 'Organizar', `Rever traduções (${pending})`, 'Rever publicação · PT', 'Marcas e modelos', 'Definições']);
   // the language with something to review is marked on its chip
   assert.ok($$('.locales .chip').find((c) => /FR/.test(c.textContent)).querySelector('.chip-dot'));
   // Codex pin: the removed tools stay removed

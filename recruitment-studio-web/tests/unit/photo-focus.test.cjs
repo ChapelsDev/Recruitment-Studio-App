@@ -68,3 +68,13 @@ test('setVideoPhotoFocus: sets, replaces and clears one photo\'s point', () => {
   M.setVideoPhotoFocus(p, 'b', null);
   assert.deepEqual(p.video.photos, { mode: 'chosen', ids: ['a'] });
 });
+
+// «Balão» (2026-10-28): near the centre a dragged photo settles there (the spirit level)
+test('snap to the centre', () => {
+  const M = require('../load.cjs')('util.js', 'trades.js', 'model.js').model;
+  assert.deepEqual(M.snapPhotoFrame(0.507, 0.3, { dw: 1600, dh: 2000 }), { fx: 0.5, fy: 0.3, x: true, y: false });
+});
+test('no snap further away', () => {
+  const M = require('../load.cjs')('util.js', 'trades.js', 'model.js').model;
+  assert.deepEqual(M.snapPhotoFrame(0.52, 0.5, { dw: 1600, dh: 2000 }), { fx: 0.52, fy: 0.5, x: false, y: true });
+});

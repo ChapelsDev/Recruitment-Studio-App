@@ -56,7 +56,7 @@ test('home: 8 ads show the search and «Filtros» (folded); an active filter kee
   // fewer than 8 ads now (6 to the recycle bin): the active filter keeps the search and «Filtros»
   const recs = await a.RS.store.listProjects();
   for (const r of recs.filter((x) => !(x.data.organization || {}).favorite)) await a.RS.store.setDeleted(r.id, Date.now());
-  await a.click(a.$('.new-card'));
+  await a.click(a.$('.new-ad'));
   await a.until(() => a.$('.gallery'), 'the gallery');
   await a.click(a.$('.gallery .gal-head .btn.ghost'));
   await a.until(() => a.$('.home') && a.$$('.proj-card').length === 2, 'the home with 2 ads');
@@ -67,15 +67,18 @@ test('home: 8 ads show the search and «Filtros» (folded); an active filter kee
 test('home: each card opens the ad on a piece; «Abrir no carrossel» opens it on «Carrossel»', async (t) => {
   const a = await app(t);
   const card = a.$('.proj-card');
-  for (const label of ['Abrir na imagem', 'Abrir no carrossel', 'Abrir no vídeo']) assert.ok(card.querySelector(`button[aria-label^="${label}"]`), `no «${label}»`);
-  await a.click(card.querySelector('button[aria-label^="Abrir no carrossel"]'));
+  // «Balão» (2026-10-28): the pieces are opened from the card's one ⋯
+  await a.click(card.querySelector('.proj-more'));
+  const items = [...card.querySelectorAll('[role="menuitem"]')];
+  for (const label of ['Abrir na imagem', 'Abrir no carrossel', 'Abrir no vídeo']) assert.ok(items.find((b) => b.textContent.trim() === label), `no «${label}»`);
+  await a.click(items.find((b) => b.textContent.trim() === 'Abrir no carrossel'));
   await a.until(() => a.$('.editor') && a.$('.carousel-stage'), 'the editor on the carousel');
   assert.equal(piece(a, 'Carrossel').getAttribute('aria-checked'), 'true');
 });
 
 test('gallery: «Começar por» Carrossel › Contrato creates an ad on «Carrossel» with that style', async (t) => {
   const a = await app(t);
-  await a.click(a.$('.new-card'));
+  await a.click(a.$('.new-ad'));
   await a.until(() => a.$('.gallery'), 'the gallery');
   const start = a.$$('.gallery [aria-label="Começar por"] [role="radio"]');
   assert.deepEqual(start.map((b) => b.textContent.trim()), ['Imagem', 'Carrossel', 'Vídeo']);
@@ -90,9 +93,28 @@ test('gallery: «Começar por» Carrossel › Contrato creates an ad on «Carros
   assert.equal(piece(a, 'Carrossel').getAttribute('aria-checked'), 'true');
 });
 
+test('gallery: «Começar por» Vídeo › Tijolo (a carousel style) gives the carousel that style too', async (t) => {
+  const a = await app(t, 1280, (p, RS) => {
+    stubVideo(RS);
+    const pal = RS.motion.styleOf('neon').palette;
+    RS.motion.register({ id: 'tijolo', name: 'Tijolo', concept: '', palettes: { dark: { bg: pal.bg || '#111111', ink: '#ffffff', main: pal.primary || '#ff7b35', accent: pal.accent || '#ffd400' } } });
+  });
+  await a.click(a.$('.new-ad'));
+  await a.until(() => a.$('.gallery'), 'the gallery');
+  await a.click(a.$$('.gallery [aria-label="Começar por"] [role="radio"]').find((b) => b.textContent.trim() === 'Vídeo'));
+  const card = await a.until(() => a.$$('.gallery .motion-card').find((c) => /Tijolo/.test(c.textContent)), 'Tijolo');
+  await a.click(card);
+  await a.until(() => a.$('.editor') && a.$('.video-stage'), 'the editor on the video');
+  const recs = await a.RS.store.listProjects();
+  const made = recs.sort((x, y) => y.updatedAt - x.updatedAt)[0].data;
+  assert.equal(made.video.motion, 'tijolo');
+  // the new ad keeps no carousel of its own yet: as the app reads it, it follows the video
+  assert.equal(a.RS.model.normalize(made).carousel.style, 'tijolo');
+});
+
 test('gallery: «Começar por» Vídeo › Néon creates an ad on «Vídeo» with that model (the recipes are not loaded here)', async (t) => {
   const a = await app(t, 1280, (p, RS) => stubVideo(RS));
-  await a.click(a.$('.new-card'));
+  await a.click(a.$('.new-ad'));
   await a.until(() => a.$('.gallery'), 'the gallery');
   await a.click(a.$$('.gallery [aria-label="Começar por"] [role="radio"]').find((b) => b.textContent.trim() === 'Vídeo'));
   const card = await a.until(() => a.$$('.gallery .motion-card').find((c) => /Néon/.test(c.textContent)), 'Néon');

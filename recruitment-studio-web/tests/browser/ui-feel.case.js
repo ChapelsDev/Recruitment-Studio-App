@@ -9,13 +9,15 @@
   });
 
   test('appearance: choosing «Escuro» sets the theme, the bar colour and keeps it', async () => {
+    RS.appearance.setBar('surface');
     RS.appearance.set({ theme: 'dark' });
     assertEqual(document.documentElement.dataset.theme, 'dark');
-    assertEqual(document.querySelector('meta[name="theme-color"]').content, '#0f1114');
+    assertEqual(document.querySelector('meta[name="theme-color"]').content, '#292D32');
     assertEqual(JSON.parse(localStorage.getItem('rs-appearance')).theme, 'dark');
     RS.appearance.set({ theme: 'light' });
     assertEqual(document.documentElement.dataset.theme, 'light');
-    assertEqual(document.querySelector('meta[name="theme-color"]').content, '#ffffff');
+    assertEqual(document.querySelector('meta[name="theme-color"]').content, '#FFFFFF');
+    RS.appearance.setBar(document.querySelector('.home') ? 'band' : 'surface');
     RS.appearance.set({ theme: 'auto' });
   });
 
@@ -28,6 +30,26 @@
     assertEqual(heard, ['dark']);
     assertEqual(window.__motionAtHead, 'sober', 'the motion style is not on <html> before the first paint');
     assert(['illustrative', 'sober', 'calm'].includes(document.documentElement.dataset.motion), `data-motion: ${document.documentElement.dataset.motion}`);
+  });
+
+  // «Balão» (2026-10-28): the interface typeface ships inside the app (data URLs, no network)
+  test('type: the interface is in Rubik without a network', async () => {
+    await waitFor(() => $('.home') || $('.editor') || $('.gallery'), 'the app');
+    await H.goHome();
+    const faces = await document.fonts.load('800 16px Rubik');
+    assert(faces.length > 0 && faces.every((f) => f.status === 'loaded'), `Rubik 800: ${faces.length} faces`);
+    const family = getComputedStyle(document.querySelector('.home h1')).fontFamily;
+    assert(/^"?Rubik/.test(family), `the home heading is in ${family}`);
+  });
+
+  // «Balão»: the poster stands on the page colour (the dark light table is gone)
+  test('stage: the poster stands on the page colour in both themes', async () => {
+    for await (const s of H.visitScreens(['editor:Imagem/Oferta'])) void s;
+    for (const [theme, want] of [['light', 'rgb(238, 240, 242)'], ['dark', 'rgb(30, 33, 37)']]) {
+      RS.appearance.set({ theme }); await H.settleAnimations();
+      assertEqual(getComputedStyle($('.stage')).backgroundColor, want, theme);
+    }
+    RS.appearance.set({ theme: 'auto' });
   });
 
   test('theme: every text on home, gallery, editor and export reads at AA in both themes', async () => {
@@ -63,8 +85,8 @@
     const dark = look();
     RS.appearance.set({ theme: 'auto' });
     assert(light.poster === dark.poster, 'the poster is drawn differently in the dark theme');
-    assertEqual(dark.stage, light.stage, 'the preview table changed colour');
-    assertEqual(dark.bar, light.bar, 'the preview bar changed colour');
+    // «Balão» (2026-10-28): the stage around the poster follows the theme; the poster never does
+    assert(dark.stage !== light.stage, 'the stage does not follow the theme');
   });
 
   // «Definições»: a sheet from the home top bar, and the same sheet from the editor's ⋯.
@@ -210,7 +232,8 @@
     return other;
   }
   // «Estilo» says the length in its head («Tijolo · 14 s»), counting as the model changes
-  const autoSeconds = () => Number((/·\s*(\d+)\s*s/.exec($('.video-panel .panel-head p').textContent) || [])[1]);
+  // «Balão» (2026-10-28): the panel head keeps the model and its length, without the intro sentence
+  const autoSeconds = () => Number((/,\s*(\d+)\s*s/.exec($('.video-panel .panel-meta').textContent) || [])[1]);
   async function chooseAuto() {
     for await (const s of H.visitScreens(['editor:Vídeo/Sequência'])) void s;
     const b = await waitFor(() => byText('.video-panel .lengths button', /Automática/), '«Automática»');
@@ -277,9 +300,13 @@
     assert(anim.includes('feel-pop-in'), `the menu does not grow in: ${anim.join(', ') || 'no animation'}`);
     const [ox, oy] = getComputedStyle(menu).transformOrigin.split(' ').map(parseFloat);
     await H.settleAnimations();
+    // «Balão» (2026-10-28): it grows from its corner nearest the «+», which is the bubble's small corner
     const m = menu.getBoundingClientRect(), c = plus.getBoundingClientRect();
-    assert(Math.abs(ox - (c.left + c.width / 2 - m.left)) <= 2 && Math.abs(oy - (c.top + c.height / 2 - m.top)) <= 2,
-      `it grows from ${Math.round(ox)}, ${Math.round(oy)} instead of the «+» at ${Math.round(c.left + c.width / 2 - m.left)}, ${Math.round(c.top + c.height / 2 - m.top)}`);
+    const cx = c.left + c.width / 2, cy = c.top + c.height / 2;
+    const right = Math.abs(cx - m.right) < Math.abs(cx - m.left), bottom = Math.abs(cy - m.bottom) < Math.abs(cy - m.top);
+    const want = [right ? m.width : 0, bottom ? m.height : 0];
+    assert(Math.abs(ox - want[0]) <= 2 && Math.abs(oy - want[1]) <= 2, `it grows from ${Math.round(ox)}, ${Math.round(oy)} instead of its corner ${Math.round(want[0])}, ${Math.round(want[1])}`);
+    assertEqual(menu.dataset.corner, (bottom ? 'b' : 't') + (right ? 'r' : 'l'));
     plus.click();
     await waitFor(() => !$('.editor .locales .menu'), 'the menu to close');
   });
@@ -375,7 +402,7 @@
       RS.assets.load = async (...a) => { await sleep(ms); return realLoad.apply(RS.assets, a); };
       let saw = false;
       $('.proj-open').click();
-      while (!($('.editor') && idle())) { if ($('.cota-loader')) saw = true; await frame(); }
+      while (!($('.editor') && idle())) { if ($('.typing-loader')) saw = true; await frame(); }
       RS.assets.load = realLoad;
       return saw;
     };
@@ -393,17 +420,18 @@
     RS.assets.importFile = async (...a) => { await sleep(1200); return real.apply(RS.assets, a); };
     try {
       item.click();
-      check(await waitFor(() => $('.stage-busy .brick-loader'), 'the bricks on the stage', 3000));
+      check(await waitFor(() => $('.stage-busy .typing-loader'), 'the typing dots on the stage', 3000));
       await waitFor(() => !$('.stage-busy'), 'the photo to be ready', 15000);
     } finally { RS.assets.importFile = real; }
   }
 
-  test('loaders: preparing a photo lays bricks', async () => {
+  // «Balão» (2026-10-28): waits type the icon's three dots
+  test('loaders: preparing a photo types the three dots', async () => {
     await slowPhoto((loader) => {
       assert(/A preparar a fotografia/.test(loader.closest('.stage-busy').textContent), loader.closest('.stage-busy').textContent);
-      const bricks = loader.querySelectorAll('.brick');
-      assert(bricks.length >= 4, `only ${bricks.length} bricks`);
-      assert([...bricks].some((b) => b.getAnimations().length), 'the bricks do not move');
+      const dots = loader.querySelectorAll('.typing-dots i');
+      assertEqual(dots.length, 3);
+      assert([...dots].some((b) => b.getAnimations().length), 'the dots do not type');
     });
   });
 
@@ -412,8 +440,8 @@
     try {
       await slowPhoto((loader) => {
         assert(/A preparar a fotografia/.test(loader.closest('.stage-busy').textContent), 'the words are gone');
-        for (const b of loader.querySelectorAll('.brick')) {
-          for (const a of b.getAnimations()) assert(!a.effect.getKeyframes().some((k) => 'transform' in k), `a brick still bounces (${a.animationName})`);
+        for (const b of loader.querySelectorAll('.typing-dots i')) {
+          for (const a of b.getAnimations()) assert(!a.effect.getKeyframes().some((k) => 'transform' in k), `a dot still bounces (${a.animationName})`);
         }
       });
     } finally { RS.appearance.apply(); }
@@ -501,7 +529,7 @@
   async function freshAd() {
     if (fresh) return;
     await H.goHome();
-    $('.new-card').click();
+    $('.new-ad').click();
     await waitFor(() => $$('.tpl-card').length && idle(), 'the gallery');
     $$('.tpl-card')[0].click();
     await waitFor(() => $('.editor') && idle(), 'the new ad in the editor', 20000);
@@ -534,12 +562,14 @@
     });
   });
 
-  test('export: «PRONTO» before the dialog closes, then the toast', async () => {
+  test('export: «Pronto ✓✓» before the dialog closes, then the toast', async () => {
     await openExport('image');
     await exporting(async (files, count) => {
       byText('.modal.export .export-actions button', /Descarregar/).click();
       const cel = await waitFor(() => $('.modal.export .celebration'), '«PRONTO»', 15000);
-      assert(/PRONTO/.test(cel.textContent), cel.textContent);
+      const ready = cel.querySelector('.ready-bubble');
+      assert(ready && /Pronto/.test(ready.textContent) && ready.querySelector('.ticks'), cel.textContent);
+      assert(!cel.querySelector('.stamp'), 'the «PRONTO» stamp is still there');
       assert(cel.textContent.includes(files[0].name), `the file's name is not in «${cel.textContent}»`);
       assertEqual(count.success, 1, 'the «ready» vibration');
       assert(!byText('.toast', /Imagem guardada/), 'the message came before «PRONTO» ended');
@@ -585,13 +615,14 @@
   });
 
   // ---------------------------------------------------------------- the new icon
-  test('icon: the wordmark carries the new icon', async () => {
+  // «Balão» (2026-10-28): on the orange band the mark is the icon's white bubble with its three dots
+  test('icon: the home band carries the icon\'s bubble', async () => {
     await H.goHome();
-    const img = $('.home-top .wordmark img.wm-mark');
-    assert(img, 'no icon in the wordmark');
-    assert(/assets\/brand\/icon-small\.svg$/.test(img.getAttribute('src')), img.getAttribute('src'));
-    await waitFor(() => img.complete && img.naturalWidth > 0, 'the icon to load');
-    assertEqual(img.getAttribute('alt'), '');
+    const glyph = $('.home-band .band-mark svg.band-glyph');
+    assert(glyph, 'no bubble in the band');
+    assertEqual(glyph.getAttribute('aria-hidden'), 'true');
+    assertEqual(glyph.querySelectorAll('.wm-dot').length, 3);
+    assert(/Recruitment Studio/.test($('.home-band .band-mark').textContent), 'no name beside the bubble');
   });
 
   // ---------------------------------------------------------------- install anywhere
@@ -678,11 +709,12 @@
   });
 
   // ---------------------------------------------------------------- the opening
-  test('opening: the boot screen shows the new icon in the page theme', () => {
+  // «Balão» (2026-10-28): the start screen is the icon's orange in both themes; the white bubble enters on it
+  test('opening: the boot screen shows the new icon on the orange', () => {
     assert(!window.__bootError, window.__bootError);
     assertEqual(window.__bootHasIcon, true, 'the start screen has no bubble with three dots');
     assert(window.__bootBg && window.__bootBg !== 'rgba(0, 0, 0, 0)', `the start screen has no background: ${window.__bootBg}`);
-    assertEqual(window.__bootBg, window.__bootChrome, 'the start screen is not in the page theme');
+    assertEqual(window.__bootBg, 'rgb(242, 92, 5)', 'the start screen is not the icon\'s orange');
   });
 
   // Renders the opening alone; resolves with what happened.
@@ -932,7 +964,7 @@
   test('smooth: a new tap wins over a screen change that is still animating', async () => {
     await H.goHome();
     await H.settleAnimations();
-    $('.home .new-card').click();
+    $('.home .new-ad').click();
     // «Anúncios» of the gallery, tapped while the gallery is still arriving
     const back = await waitFor(() => document.documentElement.classList.contains('is-busy') && $('.gallery .gal-head .btn.ghost'), 'the gallery arriving', 5000);
     assert(document.documentElement.classList.contains('is-busy'), 'the screen change was over before the tap: nothing tested');
@@ -996,16 +1028,16 @@
     el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: r.left + r.width / 2, clientY: r.top + r.height / 2, pointerType: 'mouse', isPrimary: true }));
   };
 
-  test('illustrative: a tap on a main button lays a brick, only in Ilustrativo', async () => {
+  test('illustrative: a tap on a main button sends a small bubble, only in Ilustrativo', async () => {
     for await (const s of H.visitScreens(['editor:Imagem/Oferta'])) void s;
     const btn = $('.editor .topbar button[title^="Exportar"]');
-    await inStyle('sober', async () => { press(btn); await sleep(60); assertEqual($$('.fx-brick').length, 0, 'a brick in Sóbrio'); });
+    await inStyle('sober', async () => { press(btn); await sleep(60); assertEqual($$('.fx-bubble').length, 0, 'a bubble in Sóbrio'); });
     await inStyle('illustrative', async () => {
       press(btn);
-      const brick = await waitFor(() => $('.fx-brick'), 'a brick', 500);
-      assertEqual(brick.closest('[aria-hidden="true"]') !== null, true, 'the brick is read aloud');
-      assertEqual(getComputedStyle(brick.parentElement).pointerEvents, 'none', 'the brick catches taps');
-      await waitFor(() => !$('.fx-brick'), 'the brick to go', 2000);
+      const bubble = await waitFor(() => $('.fx-bubble'), 'a bubble', 500);
+      assertEqual(bubble.closest('[aria-hidden="true"]') !== null, true, 'the bubble is read aloud');
+      assertEqual(getComputedStyle(bubble.parentElement).pointerEvents, 'none', 'the bubble catches taps');
+      await waitFor(() => !$('.fx-bubble'), 'the bubble to go', 1000);
     });
   });
 
@@ -1119,12 +1151,12 @@
     });
   });
 
-  test('illustrative: «Guardado» draws a check with the trowel', async () => {
+  test('illustrative: «Guardado» ticks twice', async () => {
     for await (const s of H.visitScreens(['editor:Imagem/Oferta'])) void s;
     await inStyle('illustrative', async () => {
       H.type($('#f-kicker'), `Estamos a recrutar ${Date.now() % 1000}`);
-      await waitFor(() => $('.editor .save-state.saved .save-check'), 'the check after saving', 5000);
-      assert(named('feel-check-draw', $('.editor .save-state').getAnimations({ subtree: true })).length, 'the check is not drawn');
+      await waitFor(() => $('.editor .save-state.saved .save-ticks .k1') && $('.editor .save-state.saved .save-ticks .k2'), 'the two ticks after saving', 5000);
+      assert(named('feel-tick-draw', $('.editor .save-state').getAnimations({ subtree: true })).length, 'the ticks are not drawn');
     });
   });
 
@@ -1355,12 +1387,94 @@
     await inStyle('calm', async () => {
       press($('.editor .topbar button[title^="Exportar"]'));
       await sleep(60);
-      assertEqual($$('.fx-brick').length, 0, 'a brick in Calmo');
+      assertEqual($$('.fx-bubble').length, 0, 'a bubble in Calmo');
       byText('.editor .rail button', /^\s*Estilo\s*$/).click();
       await waitFor(() => $('.editor .panel[aria-label="Estilo"]'), 'the Estilo panel');
       const moving = document.getAnimations().filter((a) => a.playState === 'running' && a.animationName && a.animationName !== 'spin' && a.effect.getKeyframes().some((k) => 'transform' in k || 'translate' in k || 'rotate' in k));
       assertEqual(moving.map((a) => a.animationName), [], 'things fly in Calmo');
     });
     for await (const s of H.visitScreens(['editor:Imagem/Oferta'])) void s;
+  });
+
+  // ---------------------------------------------------------------- «Balão» dialogs (2026-10-28)
+  // every dialog and sheet: at most one orange action (its verb); «Mostrar QR» stays white
+  const visiblePrimaries = (root) => [...root.querySelectorAll('.btn.primary')].filter((b) => b.getClientRects().length && getComputedStyle(b).visibility !== 'hidden');
+  async function closeTop() {
+    const x = $('.modal .modal-head .icon-btn') || $('.modal-head .icon-btn');
+    if (x) x.click();
+    await waitFor(() => !$('.modal-back') && !$('.modal'), 'the dialog to close', 6000).catch(() => {});
+    await sleep(200);
+  }
+  async function homeItem(re) {
+    await H.goHome();
+    $('.home-top .home-more').click();
+    (await waitFor(() => byText('.home-menu [role="menuitem"]', re), 'the home ⋯ item')).click();
+  }
+  async function editorItem(re) {
+    for await (const s of H.visitScreens(['editor:Imagem/Oferta'])) void s;
+    $('.editor .editor-more').click();
+    (await waitFor(() => byText('.editor-menu [role="menuitem"]', re), 'the editor ⋯ item')).click();
+  }
+  // an ad to open (a case run alone starts with none)
+  async function ensureAd() {
+    await H.goHome();
+    if ($('.proj-open')) return;
+    await RS.store.putProject(RS.model.newProject(RS.templates.list[0]));
+    $('.new-ad').click();
+    await waitFor(() => $$('.tpl-card').length && idle(), 'the gallery');
+    $('.gallery .gal-head .btn.ghost').click();
+    await waitFor(() => $('.proj-open') && idle(), 'an ad on the home');
+  }
+  const DIALOGS = [
+    ['export', async () => { for await (const s of H.visitScreens(['editor:Imagem/Oferta', 'export'])) void s; }],
+    ['comparison', () => editorItem(/Comparar formatos/)],
+    ['organisation', () => editorItem(/Organizar/)],
+    ['reuse', () => homeItem(/Marcas e modelos/)],
+    ['backup', () => homeItem(/Cópias de segurança/)],
+    ['recovery', () => homeItem(/Reciclagem/)],
+    ['settings', () => homeItem(/Definições/)],
+  ];
+  test('dialogs: each has at most one orange action', async () => {
+    await ensureAd();
+    const seen = [];
+    for (const [name, open] of DIALOGS) {
+      await open();
+      const modal = await waitFor(() => $('.modal'), `the ${name} dialog`);
+      await sleep(400);
+      const n = visiblePrimaries(modal).length;
+      assert(n <= 1, `${name}: ${n} orange actions (${visiblePrimaries(modal).map((b) => b.textContent.trim()).join(' | ')})`);
+      seen.push(name);
+      await closeTop();
+    }
+    assertEqual(seen.length, DIALOGS.length);
+  });
+
+  test('dialogs: every text reads at AA in both themes', async () => {
+    await ensureAd();
+    for (const theme of ['light', 'dark']) {
+      RS.appearance.set({ theme }); await H.settleAnimations();
+      for (const [name, open] of DIALOGS) {
+        await open();
+        const modal = await waitFor(() => $('.modal'), `the ${name} dialog`);
+        await sleep(450);
+        const bad = H.contrastIssues(modal);
+        assert(!bad.length, `${theme} ${name}: ${bad.slice(0, 4).map((b) => `«${b.text}» ${b.selector} ${b.ratio.toFixed(2)} < ${b.need}`).join('; ')}`);
+        await closeTop();
+      }
+    }
+    RS.appearance.set({ theme: 'auto' });
+  });
+
+  test('«Mostrar QR» stays white in dark mode', async () => {
+    RS.appearance.set({ theme: 'dark' });
+    await H.goHome();
+    $('.home-top .home-qr').click();
+    const meet = await waitFor(() => $('.meet'), '«Mostrar QR»');
+    await sleep(300);
+    assertEqual(getComputedStyle(meet).backgroundColor, 'rgb(255, 255, 255)');
+    const close = $('.meet .icon-btn, .meet button[aria-label^="Fechar"]');
+    if (close) close.click(); else document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    await waitFor(() => !$('.meet'), '«Mostrar QR» to close', 4000).catch(() => {});
+    RS.appearance.set({ theme: 'auto' });
   });
 })();

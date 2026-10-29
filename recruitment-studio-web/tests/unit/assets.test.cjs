@@ -138,10 +138,10 @@ test('install: the manifest describes the app for the install sheet', () => {
     const p = readPng(path.join(app, s.src));
     assert.deepEqual(`${p.w}x${p.h}`, size, s.src);
   }
-  // the bar colour follows the theme where the page cannot run first
+  // before the page runs, the bar is the icon's orange (the home band; «Balão», 2026-10-28)
   const index = fs.readFileSync(path.join(app, 'index.html'), 'utf8');
-  assert.match(index, /<meta name="theme-color" content="#ffffff" media="\(prefers-color-scheme: light\)">/);
-  assert.match(index, /<meta name="theme-color" content="#0f1114" media="\(prefers-color-scheme: dark\)">/);
+  assert.match(index, /<meta name="theme-color" content="#F25C05" media="\(prefers-color-scheme: light\)">/);
+  assert.match(index, /<meta name="theme-color" content="#F25C05" media="\(prefers-color-scheme: dark\)">/);
 });
 
 test('assets: the page links an SVG favicon, a 180 px Apple icon and the manifest', () => {
@@ -164,12 +164,12 @@ test('assets: the motion tokens', () => {
   assert.match(css, /@supports not \(transition-timing-function: linear\(0, 1\)\)\s*\{\s*:root\s*\{\s*--ease-spring:\s*cubic-bezier\(/);
 });
 
-test('install: in the light theme an installed app fades in from the dark splash', () => {
+test('install: an installed app fades in from the orange splash', () => {
   const man = JSON.parse(fs.readFileSync(path.join(app, 'manifest.webmanifest'), 'utf8'));
-  // the manifest has one colour: the dark one, so a dark-mode user never sees a white flash
-  assert.equal(man.background_color, '#0f1114');
-  const rule = /html\.from-splash\[data-theme='light'\] #boot::before\s*\{([^}]*)\}/.exec(css);
-  assert.ok(rule, 'no splash layer on the light start screen');
+  // the manifest has one colour: the icon's orange (the splash), in both themes
+  assert.equal(man.background_color, '#F25C05');
+  const rule = /html\.from-splash #boot::before\s*\{([^}]*)\}/.exec(css);
+  assert.ok(rule, 'no splash layer on the start screen');
   assert.match(rule[1], new RegExp(`background:\\s*${man.background_color}`), 'the layer is not the splash colour');
   const anim = /animation:\s*([\w-]+)/.exec(rule[1]);
   assert.ok(anim, 'the splash layer does not fade');
@@ -184,4 +184,16 @@ test('motion: taps go through a screen change that is animating (a new tap wins)
 test('motion: iPhone Safari applies :active (the press) only when the page listens to touches', () => {
   const js = fs.readFileSync(path.join(app, 'js', 'app.js'), 'utf8');
   assert.match(js, /document\.addEventListener\('touchstart', [^,]+, \{ passive: true \}\)/);
+});
+
+// deferred minor (2026-10-29): the pieces the «Balão» round replaced leave no CSS behind
+test('assets: no rules left for the replaced loaders, stamp, bricks and trowel', () => {
+  for (const c of ['cota-loader', 'cota-line', 'cota-tick', 'cota-arrow', 'cota-label', 'cota', 'brick-loader', 'bricks', 'brick', 'brick-label', 'stamp', 'celebration-bricks', 'fx-brick', 'save-check', 'save-trowel', 'ws-tip']) {
+    assert.ok(!new RegExp(`\\.${c}(?![\\w-])`).test(css), `.${c} is still in app.css`);
+  }
+});
+test('assets: every feel- keyframes is used by an animation', () => {
+  for (const k of keyframes(css).filter((x) => x.name.startsWith('feel-'))) {
+    assert.ok(new RegExp(`animation(-name)?\\s*:[^;}]*\\b${k.name}(?![\\w-])`).test(css), `@keyframes ${k.name} is never used`);
+  }
 });

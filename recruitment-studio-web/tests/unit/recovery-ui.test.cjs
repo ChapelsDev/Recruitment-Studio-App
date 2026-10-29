@@ -38,7 +38,7 @@ async function app(t, width = 1280, configure = () => {}) {
   RS.library.index = async () => ({ items: [] });
   RS.video = { support: async () => ({ method: null }) };
   const p = RS.model.addLocale(RS.model.newProject(RS.templates.list[0]), 'fr', 'pt-PT');
-  p.locale = 'pt-PT'; p.name = 'Versão inicial';
+  p.locale = 'pt-PT'; p.name = 'Versão inicial'; p.nameAuto = false; // typed by hand
   await configure(p, RS);
   await RS.store.putProject(p);
   p.name = 'Anúncio atual';
@@ -50,7 +50,7 @@ async function app(t, width = 1280, configure = () => {}) {
   const type = async (el, value) => { el.value = value; el.dispatchEvent(new w.Event('input', { bubbles: true })); await pause(30); };
   await until(() => $('.proj-open'), 'home');
   // ⋯ in the editor's top bar (2026-10-27): opens it and gives the item
-  const menu = async (re) => { await click($('.topbar .editor-more')); await until(() => $('.editor-menu'), 'the ⋯ menu'); return button('.editor-menu [role="menuitem"]', re); };
+  const menu = async (re) => { await click($('.editor-more')); await until(() => $('.editor-menu'), 'the ⋯ menu'); return button('.editor-menu [role="menuitem"]', re); };
   // the home's ⋯ (2026-10-27): Abrir ficheiro, Marcas e modelos, Cópias de segurança, Reciclagem, Definições
   const homeMenu = async (re) => { await click($('.home-top .home-more')); await until(() => $('.home-menu'), 'the home ⋯'); return button('.home-menu [role="menuitem"]', re); };
   return { w, RS, p, $, button, click, type, errors, menu, homeMenu };
@@ -92,7 +92,7 @@ test('UI: common offer is saved once and changed salary prompts review of custom
   await type($('.caption-text'), 'Texto que quero manter');
   await click($('.modal.export .modal-head .icon-btn')); await until(() => !$('.modal.export'), 'export closed');
   await type($('#f-offer-salary'), '2700');
-  await until(() => $('.topbar .editor-more .more-count'), 'reminder counted on ⋯');
+  await until(() => $('.editor-more .more-count'), 'reminder counted on ⋯');
   await click(await menu(/Rever publicação · PT/)); await until(() => $('.caption-warning'), 'caption review warning');
   assert.equal($('.caption-text').value, 'Texto que quero manter');
   await click(button('.caption-warning button', /Confirmo/));
@@ -101,24 +101,21 @@ test('UI: common offer is saved once and changed salary prompts review of custom
   await until(async () => RS.model.captionStatus((await RS.store.getProject(p.id)).data, 'pt-PT') === 'current', 'approval persisted');
 });
 
-test('UI: mobile preview can be collapsed while editing and restored without changing the ad', async (t) => {
-  const { $, click, type, w, RS, p } = await app(t, 390);
-  await click($('.proj-open')); await until(() => $('.preview-toggle'), 'mobile editor');
+// «Balão» (2026-10-28): «Recolher pré-visualização» became the sheet's handle (two stops)
+test('UI: on a phone the sheet goes up while writing and comes back without changing the ad', async (t) => {
+  const { $, click, type, RS, p } = await app(t, 390);
+  await click($('.proj-open')); await until(() => $('.sheet-handle'), 'mobile editor');
   const headline = $('#f-headline').value;
-  assert.equal($('.preview-toggle').getAttribute('aria-expanded'), 'true');
-  await click($('.preview-toggle'));
-  assert.equal($('#editor-preview').hidden, true); assert.equal($('.workspace'), null);
-  assert.equal($('.preview-toggle').getAttribute('aria-expanded'), 'false');
+  assert.equal($('.sheet-handle').getAttribute('aria-expanded'), 'true');
+  await click($('.sheet-handle'));
+  assert.ok($('.editor.sheet-strip'), 'the sheet did not go up'); assert.ok($('.workspace'), 'the poster left the screen');
+  assert.equal($('.sheet-handle').getAttribute('aria-expanded'), 'false');
   await type($('.name-input'), 'Editado com mais espaço');
-  await until(async () => (await RS.store.getProject(p.id)).name === 'Editado com mais espaço', 'save while collapsed');
-  await click($('.preview-toggle'));
-  assert.equal($('#editor-preview').hidden, false); assert.ok($('.workspace'));
+  await until(async () => (await RS.store.getProject(p.id)).name === 'Editado com mais espaço', 'save with the sheet up');
+  await click($('.sheet-handle'));
+  assert.equal($('.editor.sheet-strip'), null);
   assert.equal($('#f-headline').value, headline); assert.equal($('.name-input').value, 'Editado com mais espaço');
-  await click($('.preview-toggle'));
-  await click($('.topbar button[aria-label="Voltar aos anúncios"]')); await until(() => $('.proj-open'), 'home');
-  await until(() => $('.top-progress + .sr-only').textContent === '', 'home navigation finished');
-  await click($('.proj-open')); await until(() => $('.preview-toggle'), 'reopened');
-  assert.equal($('#editor-preview').hidden, true); assert.equal(w.localStorage.getItem('rs-preview-collapsed'), 'true');
+  assert.equal($('.preview-toggle'), null);
 });
 
 test('UI: desktop panel divider accepts keyboard and pointer input, clamps width and keeps its preference', async (t) => {
@@ -399,7 +396,7 @@ test('UI: phone export opens history and saves a manual version of the edited ca
   const a = await app(t, 390), { $, button, click, type, RS, p } = a;
   await click($('.proj-open'));
   await until(() => $('.editor'), 'editor');
-  await click($('.rail-export'));
+  await click($('.topbar .btn.primary'));
   await until(() => $('.caption-text'), 'phone export');
   await type($('.caption-text'), 'Texto a preservar');
   await click(button('.caption-footer button', /Histórico/));
@@ -432,7 +429,7 @@ test('UI: portable export shows progress, prevents repeat clicks and allows retr
   const { $, button, click, RS } = await app(t, 390);
   await click($('.proj-open'));
   await until(() => $('.editor'), 'editor');
-  await click($('.rail-export'));
+  await click($('.topbar .btn.primary'));
   let calls = 0, fail;
   RS.assets.exportProjectFile = () => { calls++; return new Promise((_, reject) => { fail = reject; }); };
   await click(button('.export-actions button', /^Guardar projeto$/));
@@ -462,8 +459,8 @@ test('UI: organise, combine filters, favourite and duplicate as a draft', async 
   await type($('#org-campaign'), 'Campanha Norte'); await type($('#org-client'), 'Construção');
   await type($('#org-location'), 'Suíça'); await type($('#org-tags'), 'urgente, obra');
   await select('#org-status', 'published'); await click(button('.organization button', /^Guardar organização$/));
-  await until(() => !$('.organization') && /Publicado/.test($('.proj-organization').textContent), 'saved organization');
-  await click($('.proj-favorite')); await until(() => $('.proj-favorite').getAttribute('aria-pressed') === 'true', 'favourite');
+  await until(() => !$('.organization') && $('.proj-status') && /Publicado/.test($('.proj-status').textContent), 'saved organization');
+  await click($('.proj-more')); await click(button('.menu button', /^Marcar como favorito$/)); await until(() => $('.proj-fav-mark'), 'favourite');
   await type($('#project-search'), 'construcao suica'); await select('#filter-status', 'published');
   await click($('.favorite-filter')); assert.equal(w.document.querySelectorAll('.proj-open').length, 1);
   await select('#filter-status', 'ready'); assert.equal(w.document.querySelectorAll('.proj-open').length, 0);
@@ -585,7 +582,7 @@ test('UI: removed planning and phrase tools stay absent while existing saved dat
   await click($('.proj-more')); await click($('.proj-open')); await until(() => $('#f-headline'), 'editor');
   assert.ok(await menu(/Organizar/)); assert.ok(button('.editor-menu [role="menuitem"]', /Marcas e modelos/));
   assert.equal(button('.editor-menu button', /Textos guardados|Planear publicação/), undefined);
-  await click($('.topbar .editor-more'));
+  await click($('.editor-more'));
   await type($('#f-headline'), 'Nova oferta');
   await until(async () => (await RS.store.getProject(p.id)).data.texts['pt-PT'].headline === 'Nova oferta', 'saved');
   assert.equal(JSON.stringify((await RS.store.getProject(p.id)).data.publication), JSON.stringify(before));
@@ -646,7 +643,8 @@ test('UI: compare formats edits one crop, can copy to all, and selects the forma
     RS.assets.load = async () => ({ width: 1000, height: 1000 });
   });
   await click($('.proj-open')); await until(() => $('.editor'), 'editor');
-  await click($('[aria-label="Comparar formatos"]')); await until(() => $('#frame-story-zoom'), 'comparison');
+  // «Balão» (2026-10-28): «Comparar formatos» is in the ⋯
+  await click($('.editor-more')); await click(button('.editor-menu button', /^Comparar formatos$/)); await until(() => $('#frame-story-zoom'), 'comparison');
   assert.equal(w.document.querySelectorAll('.format-card').length, 3);
   await type($('#frame-story-zoom'), '2'); await type($('#frame-story-fx'), '.8');
   assert.equal($('#frame-portrait-zoom').value, '1'); assert.equal($('#frame-square-fx').value, '0.5');

@@ -39,8 +39,8 @@ async function app(t, width = 1280, configure = () => {}) {
   RS.library.index = async () => ({ items: [] });
   RS.video = { support: async () => ({ method: null }) };
   const p = RS.model.addLocale(RS.model.newProject(RS.templates.list[0]), 'fr', 'pt-PT');
-  p.locale = 'pt-PT'; p.name = 'Anúncio de teste';
-  await configure(p, RS);
+  p.locale = 'pt-PT'; p.name = 'Anúncio de teste'; p.nameAuto = false; // a name typed by hand
+  await configure(p, RS, w);
   await RS.store.putProject(p);
   load('js/app.js');
   const $ = (sel) => w.document.querySelector(sel);

@@ -7,20 +7,51 @@ TikTok e o WhatsApp, pensada para funções de obra. Cada anúncio dá três pe�
 
 ## Num relance
 
-- **Ecrã inicial:** os seus anúncios; **Criar anúncio** é o primeiro cartão. Em
-  cima: **Mostrar QR** (ícone) e **⋯** (Abrir ficheiro · Marcas e modelos ·
-  Cópias de segurança · Reciclagem · Instalar no telemóvel, quando faz sentido ·
-  Definições). Cada cartão tem três atalhos que abrem o anúncio na **imagem**,
-  no **carrossel** ou no **vídeo**. A pesquisa e os **Filtros** aparecem a partir
-  de oito anúncios (ou enquanto um filtro estiver ligado).
-- **Editor, em cima:** ‹ Anúncios · nome · **Imagem | Carrossel | Vídeo** (a peça
-  no ecrã) · língua · ↶ ↷ · **⋯** · **Exportar**. No telemóvel há duas linhas:
-  ‹ · nome · ⋯ e, por baixo, a peça, a língua e ↶ ↷.
-- **⋯ do editor:** Guardar ficheiro · Histórico de versões · Mostrar QR ·
-  Organizar · Rever traduções (n) · Rever publicação · XX (quando o texto da
-  publicação dessa língua precisa de revisão) · Marcas e modelos · Definições.
-  O ⋯ mostra quantas coisas esperam revisão; uma língua com traduções por rever
-  tem um ponto no seu botão.
+- **O aspeto «Balão»:** a cor de laranja da app (a mesma nos temas claro e
+  escuro), a letra Rubik (vem com a app, funciona sem rede) e a forma de balão de
+  mensagem: cantos redondos com um canto mais pequeno em baixo à esquerda. Os
+  balões cinzentos são a app a falar consigo (avisos, dicas); o botão cor de
+  laranja é a ação principal do ecrã (no editor só **Exportar**). Os anúncios,
+  os carrosséis e os vídeos não mudam: o que vai para o Instagram é igual.
+- **Ecrã inicial:** em cima, uma faixa cor de laranja com a marca, **Mostrar
+  QR** (ícone) e **⋯** (Abrir ficheiro · Marcas e modelos · Cópias de segurança ·
+  Reciclagem · Instalar no telemóvel, quando faz sentido · Definições); por baixo,
+  «Os seus anúncios», quantas ofertas estão guardadas neste aparelho e **Novo
+  anúncio**. Cada cartão mostra o cartaz, o nome, as línguas e a última alteração
+  em palavras («Português e francês, hoje»); o estado (Pronto, Publicado,
+  Encerrado) numa etiqueta branca sobre o cartaz e uma pequena estrela nos
+  favoritos. O **⋯** do cartão tem tudo: Abrir na imagem · no carrossel · no
+  vídeo · Marcar como favorito · Organizar anúncio · Duplicar · Guardar ficheiro
+  do projeto · Histórico de versões · Mover para a reciclagem. A pesquisa e os
+  **Filtros** aparecem a partir de oito anúncios (ou enquanto um filtro estiver
+  ligado).
+- **Nome do anúncio:** enquanto não lhe der outro, o nome são as profissões e,
+  se tiver localização em **Organizar**, o sítio: «Pedreiros e masseiros»,
+  «Pedreiros e serventes, Lausanne», «Pedreiros, serventes e mais 1». Segue as
+  mudanças de profissões e de localização (um anúncio sem profissões usa o
+  título, e segue-o enquanto o escreve). Quando dois cartões ficam com o mesmo
+  nome, a linha de baixo começa pelo modelo («Noite, português, há 3 dias»). Para
+  mudar o nome, escreva-o no editor, em cima; a partir daí fica o seu.
+- **Editor, no computador:** em cima, à esquerda ‹ e o nome (com «Guardado» por
+  baixo); ao meio **Imagem | Carrossel | Vídeo** (a peça no ecrã); à direita
+  ↶ ↷ · **⋯** · **Exportar**. Por cima do cartaz: os formatos à esquerda e as
+  línguas (com **+**) à direita. Por baixo, um balão cinzento com a dica
+  («Clique num texto do cartaz para o mudar.»).
+- **Editor, no telemóvel:** em cima ‹, o nome (até duas linhas) e **Exportar**;
+  por baixo a peça; depois o cartaz a cerca de meio ecrã e, ao longo da sua
+  aresta de baixo, os formatos, a língua, ↶ ↷ e **⋯** (com **Comparar formatos**,
+  **Ampliar** / **Reduzir** e, no Story, **Mostrar zonas do Instagram**). Os painéis abrem por baixo do cartaz (ver «Espaço
+  para editar»).
+- **⋯ do editor:** Comparar formatos (na imagem) · Guardar ficheiro · Histórico
+  de versões · Mostrar QR · Organizar · Rever traduções (n) · Rever publicação ·
+  XX (quando o texto da publicação dessa língua precisa de revisão) · Marcas e
+  modelos · Definições. O ⋯ mostra quantas coisas esperam revisão; uma língua
+  com traduções por rever tem um ponto no seu botão.
+- **Avisos do tamanho da letra:** quando um texto comprido faz a letra
+  encolher, o aviso aparece num balão cinzento por baixo do campo em que estava
+  a escrever quando a letra encolheu («Título longo, a letra ficou mais
+  pequena.») e fica lá enquanto a letra estiver mais pequena; se a causa for o
+  **Estilo** ou o formato, aparece por baixo do cartaz.
 - **Barra das secções** (à esquerda; no telemóvel, a barra que flutua em baixo):
   - o que o anúncio diz, igual nas três peças: **Oferta** (profissões, textos,
     ficha da oferta), **Contactos**, **Fotos** (as fotografias da peça no ecrã);
@@ -144,7 +175,7 @@ oferta concreta; não recebem uma marca de aprovação automática.
 
 ## Comparar formatos e enquadramentos
 
-**Comparar formatos**, junto ao seletor de formato da imagem, mostra quadrado,
+**Comparar formatos**, no ⋯ do editor (na imagem), mostra quadrado,
 retrato e Story na língua atual. Pode ajustar aproximação e posição com controlos
 acessíveis pelo teclado, aplicar um enquadramento aos três formatos ou recuperar
 o enquadramento original num deles. Arrastar a fotografia no editor e usar a roda
@@ -186,18 +217,21 @@ O carrossel é a terceira peça do anúncio: uma sequência de diapositivos para
 Instagram (até 20), o Facebook, o TikTok (fotografias) e as Stories. Começa com os
 textos do anúncio e segue-os até os mudar só no carrossel.
 
-- **Abrir:** **Carrossel** no topo do editor, o atalho do cartão no ecrã inicial,
-  ou **Criar anúncio › Começar por: Carrossel** (escolhe logo o estilo).
+- **Abrir:** **Carrossel** no topo do editor, **Abrir no carrossel** no ⋯ do
+  cartão no ecrã inicial, ou **Novo anúncio › Começar por: Carrossel** (escolhe
+  logo o estilo).
 - **No ecrã:** o diapositivo atual com o anterior e o seguinte de lado, setas,
   pontos e deslizar; por cima, o formato: **4:5** (por omissão), **1:1**, **3:4**
   (o novo formato do Instagram, 1080 × 1440) e **9:16**. Tocar num texto do
-  diapositivo abre-o em **Sequência**, no campo certo.
+  diapositivo abre-o em **Sequência**, no campo certo — também numa vantagem,
+  num destaque ou numa vaga, na sua própria linha.
 - **Estilo:** **Do anúncio** (a capa é o cartaz do anúncio) e seis estilos que
   vêm das receitas do vídeo: **Tijolo**, **Números**, **Contrato**,
   **Notificações**, **Planta** e **Apresentação**. Cada um compõe à sua maneira
   (não é só a cor). **Recomendado** marca os que melhor servem a oferta (por
   exemplo, Números quando há salário). Depois: **Capa** (do estilo ou o cartaz do
-  anúncio; em 3:4 só a do estilo), **Cores** (do estilo, da marca ou uma paleta),
+  anúncio; em 3:4 só a do estilo), **Cores** (do estilo, da marca ou uma das
+  paletas prontas, as mesmas do vídeo),
   **Cor de destaque**, **Letra** e **Fundo** claro ou escuro. A identidade é a
   mesma em todos os diapositivos.
 - **Sequência:** os blocos pela ordem — Capa, Introdução, Oferta, Vantagens,
@@ -233,15 +267,18 @@ próximo; as páginas que tinham sido personalizadas ficam guardadas no anúncio
 **Escolher formatos** abre os formatos um a um. Escolha as línguas e, na imagem e
 no carrossel, PNG ou JPG. O carrossel sai num ZIP: uma pasta por língua com
 `carrossel/01.png`, `02.png`… pela ordem de publicação, e o `publicacao.txt` dessa
-língua. Por baixo ficam o texto da publicação (Copiar, Link do WhatsApp,
+língua. Enquanto o ZIP (ou a partilha) se prepara, **Cancelar** pára-o sem
+guardar nada. Por baixo ficam o texto da publicação (Copiar, Link do WhatsApp,
 Regenerar), os **pontos a confirmar** (fechados, com o número) e **Pacote
 completo**, que junta todas as peças e línguas num único ZIP.
 
 ## Espaço para editar
 
-No telemóvel, **Recolher pré-visualização** dá mais espaço aos campos. **Mostrar
-pré-visualização** volta a apresentar a imagem ou o vídeo. A preferência fica
-guardada neste navegador e não altera o anúncio.
+No telemóvel, os painéis abrem como uma folha por baixo do cartaz, com uma pega
+em cima. A folha tem duas paragens: o cartaz a cerca de meio ecrã, ou só uma tira
+dele. Toque na pega (ou arraste-a para cima ou para baixo) para trocar; ao
+escrever num campo a folha sobe sozinha para a tira, e a barra das secções
+afasta-se. Para ver o cartaz maior, **⋯ › Ampliar**.
 
 No computador, arraste a divisória entre os campos e a pré-visualização. Também
 pode focá-la com Tab e usar as setas esquerda/direita (Shift para passos menores),
@@ -275,23 +312,47 @@ e vale logo.
 
 - **Movimento: Ilustrativo · Sóbrio · Calmo** (cada um com um pequeno desenho
   a mexer, para ver a diferença).
-  - **Ilustrativo** (o de início): a obra a acontecer em cada toque e em cada
-    ecrã. Um botão principal tocado faz saltar um tijolo; a grua vem buscar o
-    modelo (ou o anúncio) e pousa-o no editor, que se monta à volta; a escolha
-    da barra viaja como o carrinho da grua e balança ao parar; os painéis
-    chegam bloco a bloco; uma linha nova assenta como um tijolo, com
-    argamassa, e uma linha apagada tomba e cai; o ecrã inicial vive mesmo
-    parado (a grua ao fundo balança a carga, os pontos do ícone escrevem, os
-    cartões inclinam-se com o rato ou com o telemóvel Android); mudar de tema
-    é o anoitecer (ou o amanhecer) na obra; as mensagens descem penduradas no
-    gancho; um anúncio apagado desmorona-se em tijolos; «Guardado» é uma colher
-    de pedreiro que desenha um visto; um erro chega com a fita da obra.
+  - **Ilustrativo** (o de início): a obra e as mensagens a acontecer em cada
+    toque. Um botão principal tocado solta um pequeno balão branco com três
+    pontos, como uma mensagem a sair; nas esperas, os três pontos escrevem num
+    balão cinzento (com as palavras nas esperas longas, «A preparar as
+    fotos…»); «Guardado» ganha ✓ e depois ✓✓; a grua vem buscar o modelo (ou o
+    anúncio) e pousa-o no editor, que se monta à volta; a escolha da barra viaja
+    como o carrinho da grua e balança ao parar; uma linha nova assenta como um
+    tijolo e uma linha apagada tomba e cai; o ecrã inicial vive mesmo parado (a
+    grua ao fundo balança a carga, os pontos do ícone escrevem, os cartões
+    inclinam-se com o rato ou com o telemóvel Android); mudar de tema é o
+    anoitecer (ou o amanhecer) na obra; as mensagens são balões cinzentos
+    pendurados no gancho; um erro chega com a fita da obra e um balão branco;
+    um anúncio apagado desmorona-se em tijolos; a exportação pronta acaba num
+    balão preto «Pronto ✓✓» com balõezinhos a subir. No cartaz:
+    - uma língua nova cumprimenta («Olá», «Bonjour», «Hallo», «Ciao», «Hello»,
+      «Hola») e o texto do cartaz apaga-se e volta a escrever-se na língua nova;
+    - uma cor nova desce pelo cartaz com um rolo de pintor;
+    - outro formato puxa o cartaz com uma fita métrica, com as medidas a contar
+      (1080 × 1350 → 1080 × 1920);
+    - ↶ e ↷ desfazem pelo caminho por onde a mudança veio, com um balão
+      «Desfeito» ou «Refeito»;
+    - um número de WhatsApp acabado de completar faz tocar o botão verde do
+      cartaz e um balão de conversa escreve o início da mensagem;
+    - ao arrastar a fotografia aparece um nível de pedreiro: a bolha segue a
+      fotografia e assenta entre as marcas quando ela fica ao centro;
+    - passar da imagem ao carrossel abre o cartaz em leque e espalha os
+      diapositivos; voltar à imagem junta-os.
   - **Sóbrio**: rápido e discreto no dia a dia (botões que afundam e voltam com
     mola, a escolha que desliza, menus que crescem a partir do botão, números
-    que contam); a grua, os tijolos e o «PRONTO» só nas esperas e nas vitórias.
+    que contam, os diapositivos que entram de lado); no cartaz, as mudanças
+    esbatem, outro formato mostra as medidas a contar (1080 × 1350 → 1080 × 1920)
+    e uma língua nova faz saltar o seu botão; a grua e o «Pronto ✓✓» só nas
+    esperas e nas vitórias.
   - **Calmo**: as mesmas mudanças, só a esbater, sem voos nem saltos nem
-    números a contar. Quem pede ao aparelho menos movimento começa no Calmo
+    números a contar (as medidas de outro formato aparecem logo). Quem pede ao aparelho menos movimento começa no Calmo
     até escolher outro.
+  Em todos os estilos: menus e janelas crescem a partir do canto mais perto do
+  botão que os abriu; um número de WhatsApp completo ganha um ✓ verde; ao
+  arrastar a fotografia perto do centro ela assenta ao meio (na horizontal e na
+  vertical), com uma linha branca a mostrar o centro, e o telemóvel
+  Android vibra de leve.
 - **Tema: Automático · Claro · Escuro.** «Automático» segue o telemóvel ou o
   computador e muda sozinho quando o aparelho passa a escuro à noite. Os
   anúncios e os vídeos nunca mudam de cor: o que vai para o Instagram é igual
@@ -311,7 +372,7 @@ neste aparelho.
 
 ## Criar um anúncio
 
-1. **Criar anúncio** e **Começar por**: **Imagem** (os 12 modelos do cartaz),
+1. **Novo anúncio** e **Começar por**: **Imagem** (os 12 modelos do cartaz),
    **Carrossel** (Do anúncio e os seis estilos, com a capa real) ou **Vídeo** (os
    modelos de vídeo, a mexer). Escolha também uma ou mais **funções**
    (eletricistas, pedreiros e masseiros, cofragistas, canalizadores...). A
@@ -575,15 +636,15 @@ exportação, trocar de língua e voltar a abrir a app mantém o que escreveu.
 ### Campanhas e organização
 
 Em **Organizar**, no ⋯ do editor, ou **Mais ações > Organizar anúncio**, no ecrã
-inicial, defina campanha, cliente, localização, etiquetas (separadas por
+inicial (no ⋯ do cartão), defina campanha, cliente, localização, etiquetas (separadas por
 vírgulas), favorito e estado: **Rascunho**, **Pronto**, **Publicado** ou
 **Encerrado**. São dados internos; não aparecem na imagem nem no vídeo.
 
 A pesquisa e os **Filtros** aparecem a partir de oito anúncios (ou enquanto um
 filtro estiver ligado). A pesquisa encontra nomes, textos, clientes, localizações
 e etiquetas, mesmo sem acentos. Em **Filtros**, combine campanha, estado, etiqueta e
-favoritos; ordene por nome ou data de alteração. A estrela de cada cartão
-alterna o favorito. Uma cópia mantém a campanha e as etiquetas, mas começa
+favoritos; ordene por nome ou data de alteração. **Marcar como favorito**, no
+⋯ de cada cartão, alterna o favorito; os favoritos têm uma pequena estrela. Uma cópia mantém a campanha e as etiquetas, mas começa
 como rascunho e sem favorito. Os filtros mantêm-se ao voltar do editor,
 durante a mesma abertura da app.
 
@@ -704,12 +765,20 @@ Os resultados das validações de 26 e 27 de outubro estão em `IMPLEMENTACAO.md
   `install.js` (navegador, passos de instalação, endereço da app),
   `haptics.js` (vibração no Android, interruptores invisíveis no iPhone),
   `ui-motion.js` (movimento da interface: pílula deslizante, números que
-  contam, carregadores, grua, celebração, abertura) e `app.js` (interface).
+  contam, carregadores, grua, celebração, abertura, as trocas do cartaz
+  `stageSwap`, os balões, o nível de pedreiro e `on`/`emit` entre um campo e o
+  palco) e `app.js` (interface).
+- O aspeto «Balão» vive nos tokens do início de `assets/app.css` (`:root` e
+  `:root[data-theme='dark']`: cor de laranja `#F25C05`, as formas de balão
+  `--r-bubble` / `--r-bubble-sm`, a letra `--ui`). A letra da interface, Rubik,
+  está embutida em `assets/fonts.css` como as letras dos cartazes.
 - Sem servidor e sem CDN. Scripts clássicos de propósito: módulos ES não
   carregam a partir de `file://`. As fotografias embutidas são ficheiros JS
   com data URLs, porque imagens lidas de `file://` bloqueariam a exportação.
 - Ferramentas (só para desenvolvimento):
-  - `tools/build-assets.mjs <pacotes npm>`: regenera letras, ícones e vendor.
+  - `tools/build-assets.mjs <pacotes npm>`: regenera letras, ícones e vendor;
+    `--only=<família>` (o `file` dela em `FONTS`, por exemplo `--only=rubik`)
+    regenera só essa família em `fonts.css` e não toca no resto.
   - `tools/build-photos.mjs <pasta>`: regenera `photos/`.
   - `tools/build-icons.mjs`: desenha o ícone «Balão a entrar» em todos os
     tamanhos (`assets/icons/*.png`) a partir de `assets/brand/icon.svg`

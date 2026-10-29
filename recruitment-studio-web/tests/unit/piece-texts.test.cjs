@@ -72,3 +72,12 @@ test('editing the image prunes carousel edits of items that are gone', () => {
   assert.equal(((q.carousel.texts[L] || {}).benefits || { edits: {} }).edits[first.id], undefined);
   assert.equal(JSON.stringify(q.carousel.texts).includes('Outra coisa'), false);
 });
+
+test('the carousel names each position by its row id (a tap on a slide finds its row)', () => {
+  const p = project();
+  p.texts[L].positions = [{ id: 'pA', text: 'Pedreiro' }, { id: 'pB', text: 'Servente' }];
+  p.show = { ...p.show, positions: true };
+  const C = T.content(p, L, 'carousel');
+  assert.deepEqual(C.positions, ['Pedreiro', 'Servente']);
+  assert.deepEqual(C.positionIds, ['pA', 'pB']);
+});

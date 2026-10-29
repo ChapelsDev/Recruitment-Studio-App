@@ -1,4 +1,4 @@
-// Ready-made texts per construction trade, in pt / de / fr / en.
+// Ready-made texts per construction trade, in pt / de / fr / en / it / es.
 // Benefits come from a shared phrase book so a poster made from a preset can be
 // translated automatically when a language is added (only untouched texts change).
 window.RS = window.RS || {};
@@ -7,7 +7,7 @@ RS.trades = (() => {
   const { uid } = RS.util;
 
   // Locale code -> phrase language. Languages without an entry copy the source text.
-  const LANG = { 'pt-PT': 'pt', 'de-CH': 'de', 'de-DE': 'de', fr: 'fr', en: 'en' };
+  const LANG = { 'pt-PT': 'pt', 'de-CH': 'de', 'de-DE': 'de', fr: 'fr', en: 'en', it: 'it', es: 'es' };
   const langOf = (locale) => LANG[locale] || null;
 
   const P = {
@@ -50,67 +50,113 @@ RS.trades = (() => {
 
   const t = (pt, de, fr, en) => ({ pt, de, fr, en });
   const LIST = [
-    { id: 'obras', label: 'Obras gerais', icon: 'hard-hat', photo: 'obras', tag: t('#construcao', '#bauarbeiter', '#batiment', '#construction'),
+    { id: 'obras', label: 'Obras gerais', short: 'Obras gerais', icon: 'hard-hat', photo: 'obras', tag: t('#construcao', '#bauarbeiter', '#batiment', '#construction'),
       headline: t('Oficiais e encarregados de construção civil', 'Bauarbeiter und Vorarbeiter', 'Ouvriers et chefs d’équipe du bâtiment', 'Construction workers and foremen'),
       intro: INTRO.site, benefits: ['pay', 'start', 'license', 'longterm', 'region'], badge: BADGE.now,
       positions: [t('Encarregado de obra', 'Vorarbeiter Bau', 'Chef d’équipe', 'Site foreman'), t('Oficial de construção civil', 'Facharbeiter A', 'Ouvrier qualifié', 'Skilled construction worker'), t('Servente de obra', 'Hilfsarbeiter Bau', 'Manœuvre', 'Construction labourer')] },
-    { id: 'pedreiro', label: 'Pedreiros e masseiros', icon: 'construction', photo: 'pedreiro', tag: t('#pedreiro', '#maurer', '#macon', '#bricklayer'),
+    { id: 'pedreiro', label: 'Pedreiros e masseiros', short: 'Pedreiros', icon: 'construction', photo: 'pedreiro', tag: t('#pedreiro', '#maurer', '#macon', '#bricklayer'),
       headline: t('Pedreiros, masseiros e serventes', 'Maurer und Bauarbeiter', 'Maçons et manœuvres', 'Bricklayers and labourers'),
       intro: INTRO.site, benefits: ['pay', 'start', 'tools', 'longterm', 'region'], badge: BADGE.now,
       positions: [t('Pedreiro com experiência', 'Maurer EFZ / Facharbeiter A', 'Maçon CFC', 'Experienced bricklayer'), t('Masseiro', 'Bauarbeiter Mörtel & Material', 'Manœuvre mortier', 'Mortar mixer'), t('Servente de obra', 'Hilfsarbeiter Bau', 'Aide-maçon', 'Labourer')] },
-    { id: 'cofragem', label: 'Cofragistas', icon: 'hammer', photo: 'cofragem', tag: t('#cofragista', '#schaler', '#coffreur', '#formwork'),
+    { id: 'cofragem', label: 'Cofragistas', short: 'Cofragistas', icon: 'hammer', photo: 'cofragem', tag: t('#cofragista', '#schaler', '#coffreur', '#formwork'),
       headline: t('Cofragistas e carpinteiros de cofragem', 'Schaler und Schalungsbauer', 'Coffreurs et charpentiers coffreurs', 'Formworkers and formwork carpenters'),
       intro: INTRO.site, benefits: ['pay', 'start', 'overtime', 'longterm', 'region'], badge: BADGE.now,
       positions: [t('Cofragista', 'Schaler', 'Coffreur', 'Formworker'), t('Carpinteiro de cofragem', 'Schalungszimmermann', 'Charpentier coffreur', 'Formwork carpenter'), helper] },
-    { id: 'ferro', label: 'Armadores de ferro', icon: 'construction', photo: 'ferro', tag: t('#armadordeferro', '#eisenleger', '#ferrailleur', '#steelfixer'),
+    { id: 'ferro', label: 'Armadores de ferro', short: 'Armadores de ferro', icon: 'construction', photo: 'ferro', tag: t('#armadordeferro', '#eisenleger', '#ferrailleur', '#steelfixer'),
       headline: t('Armadores de ferro', 'Eisenleger', 'Ferrailleurs', 'Steel fixers'),
       intro: INTRO.craft, benefits: ['pay', 'overtime', 'tools', 'longterm', 'region'], badge: BADGE.pay,
       positions: [t('Armador de ferro', 'Eisenleger', 'Ferrailleur', 'Steel fixer'), t('Ajudante de armador', 'Hilfseisenleger', 'Aide-ferrailleur', 'Steel fixer’s mate')] },
-    { id: 'eletricista', label: 'Eletricistas', icon: 'zap', photo: 'eletricista', tag: t('#eletricista', '#elektriker', '#electricien', '#electrician'),
+    { id: 'eletricista', label: 'Eletricistas', short: 'Eletricistas', icon: 'zap', photo: 'eletricista', tag: t('#eletricista', '#elektriker', '#electricien', '#electrician'),
       headline: t('Eletricistas de obra e manutenção', 'Elektroinstallateure', 'Électriciens', 'Electricians'),
       intro: INTRO.craft, benefits: ['pay', 'start', 'training', 'license', 'region'], badge: BADGE.open,
       positions: [t('Eletricista de 1.ª', 'Elektroinstallateur EFZ', 'Électricien CFC', 'Qualified electrician'), t('Montador de quadros elétricos', 'Schaltanlagenmonteur', 'Monteur de tableaux', 'Panel fitter'), t('Ajudante de eletricista', 'Elektro-Hilfsmonteur', 'Aide-électricien', 'Electrician’s mate')] },
-    { id: 'canalizador', label: 'Canalizadores e AVAC', icon: 'droplets', photo: 'canalizador', tag: t('#canalizador', '#sanitaer', '#plombier', '#plumber'),
+    { id: 'canalizador', label: 'Canalizadores e AVAC', short: 'Canalizadores', icon: 'droplets', photo: 'canalizador', tag: t('#canalizador', '#sanitaer', '#plombier', '#plumber'),
       headline: t('Canalizadores e técnicos AVAC', 'Sanitär- und Heizungsinstallateure', 'Plombiers et chauffagistes', 'Plumbers and HVAC technicians'),
       intro: INTRO.craft, benefits: ['pay', 'license', 'tools', 'longterm', 'region'], badge: BADGE.open,
       positions: [t('Canalizador', 'Sanitärinstallateur EFZ', 'Installateur sanitaire', 'Plumber'), t('Técnico AVAC', 'Heizungsinstallateur', 'Technicien CVC', 'HVAC technician'), helper] },
-    { id: 'pintor', label: 'Pintores e estucadores', icon: 'paint-roller', photo: 'pintor', tag: t('#pintor', '#maler', '#peintre', '#painter'),
+    { id: 'pintor', label: 'Pintores e estucadores', short: 'Pintores', icon: 'paint-roller', photo: 'pintor', tag: t('#pintor', '#maler', '#peintre', '#painter'),
       headline: t('Pintores e estucadores', 'Maler und Gipser', 'Peintres et plâtriers', 'Painters and plasterers'),
       intro: INTRO.craft, benefits: ['pay', 'start', 'transport', 'longterm', 'region'], badge: BADGE.now,
       positions: [t('Pintor de construção civil', 'Maler EFZ', 'Peintre en bâtiment', 'Building painter'), t('Estucador', 'Gipser', 'Plâtrier', 'Plasterer'), helper] },
-    { id: 'carpinteiro', label: 'Carpinteiros', icon: 'ruler', photo: 'carpinteiro', tag: t('#carpinteiro', '#schreiner', '#menuisier', '#carpenter'),
+    { id: 'carpinteiro', label: 'Carpinteiros', short: 'Carpinteiros', icon: 'ruler', photo: 'carpinteiro', tag: t('#carpinteiro', '#schreiner', '#menuisier', '#carpenter'),
       headline: t('Carpinteiros e marceneiros', 'Zimmerleute und Schreiner', 'Charpentiers et menuisiers', 'Carpenters and joiners'),
       intro: INTRO.craft, benefits: ['pay', 'tools', 'training', 'longterm', 'region'], badge: BADGE.open,
       positions: [t('Carpinteiro de limpos', 'Schreiner EFZ', 'Menuisier', 'Joiner'), t('Carpinteiro de toscos', 'Zimmermann', 'Charpentier', 'Rough carpenter'), t('Montador de cozinhas', 'Küchenmonteur', 'Monteur de cuisines', 'Kitchen fitter')] },
-    { id: 'serralheiro', label: 'Serralheiros e soldadores', icon: 'flame', photo: 'serralheiro', tag: t('#soldador', '#schweisser', '#soudeur', '#welder'),
+    { id: 'serralheiro', label: 'Serralheiros e soldadores', short: 'Serralheiros', icon: 'flame', photo: 'serralheiro', tag: t('#soldador', '#schweisser', '#soudeur', '#welder'),
       headline: t('Serralheiros e soldadores', 'Metallbauer und Schweisser', 'Serruriers et soudeurs', 'Metalworkers and welders'),
       intro: INTRO.stable, benefits: ['pay', 'overtime', 'travel', 'housing', 'longterm'], badge: BADGE.pay,
       positions: [t('Serralheiro civil', 'Metallbauer EFZ', 'Serrurier', 'Metal fabricator'), t('Soldador MIG/MAG', 'Schweisser MIG/MAG', 'Soudeur MIG/MAG', 'MIG/MAG welder'), t('Soldador TIG', 'Schweisser WIG', 'Soudeur TIG', 'TIG welder')] },
-    { id: 'ladrilhador', label: 'Ladrilhadores', icon: 'pencil-ruler', photo: 'ladrilhador', tag: t('#ladrilhador', '#plattenleger', '#carreleur', '#tiler'),
+    { id: 'ladrilhador', label: 'Ladrilhadores', short: 'Ladrilhadores', icon: 'pencil-ruler', photo: 'ladrilhador', tag: t('#ladrilhador', '#plattenleger', '#carreleur', '#tiler'),
       headline: t('Ladrilhadores e assentadores', 'Plattenleger', 'Carreleurs', 'Tilers'),
       intro: INTRO.craft, benefits: ['pay', 'start', 'tools', 'longterm', 'region'], badge: BADGE.now,
       positions: [t('Ladrilhador', 'Plattenleger EFZ', 'Carreleur', 'Tiler'), t('Assentador de pedra', 'Steinleger', 'Poseur de pierre', 'Stone layer'), helper] },
-    { id: 'telhados', label: 'Telhadores', icon: 'house', photo: 'telhados', tag: t('#telhados', '#dachdecker', '#couvreur', '#roofer'),
+    { id: 'telhados', label: 'Telhadores', short: 'Telhadores', icon: 'house', photo: 'telhados', tag: t('#telhados', '#dachdecker', '#couvreur', '#roofer'),
       headline: t('Telhadores e montadores de coberturas', 'Dachdecker', 'Couvreurs', 'Roofers'),
       intro: INTRO.craft, benefits: ['pay', 'insurance', 'tools', 'longterm', 'region'], badge: BADGE.open,
       positions: [t('Telhador', 'Dachdecker EFZ', 'Couvreur', 'Roofer'), t('Montador de painel sandwich', 'Fassaden- und Paneelmonteur', 'Monteur de panneaux', 'Cladding installer'), helper] },
-    { id: 'maquinas', label: 'Máquinas e gruas', icon: 'truck', photo: 'maquinas', tag: t('#manobrador', '#baumaschinenfuehrer', '#machiniste', '#plantoperator'),
+    { id: 'maquinas', label: 'Máquinas e gruas', short: 'Manobradores', icon: 'truck', photo: 'maquinas', tag: t('#manobrador', '#baumaschinenfuehrer', '#machiniste', '#plantoperator'),
       headline: t('Manobradores de máquinas e gruistas', 'Baumaschinenführer und Kranführer', 'Machinistes et grutiers', 'Plant operators and crane drivers'),
       intro: INTRO.stable, benefits: ['pay', 'overtime', 'license', 'longterm', 'region'], badge: BADGE.pay,
       positions: [t('Manobrador de giratória', 'Baggerführer', 'Conducteur de pelle', 'Excavator operator'), t('Gruista', 'Kranführer', 'Grutier', 'Crane operator'), t('Motorista de pesados', 'LKW-Fahrer Kat. C', 'Chauffeur poids lourd', 'HGV driver')] },
-    { id: 'pladur', label: 'Pladur e tetos', icon: 'layers', photo: 'pladur', tag: t('#pladur', '#trockenbau', '#plaquiste', '#drywall'),
+    { id: 'pladur', label: 'Pladur e tetos', short: 'Pladuristas', icon: 'layers', photo: 'pladur', tag: t('#pladur', '#trockenbau', '#plaquiste', '#drywall'),
       headline: t('Montadores de pladur e tetos falsos', 'Trockenbauer', 'Plaquistes', 'Drywall installers'),
       intro: INTRO.craft, benefits: ['pay', 'start', 'tools', 'longterm', 'region'], badge: BADGE.now,
       positions: [t('Montador de pladur', 'Trockenbaumonteur', 'Plaquiste', 'Drywall fitter'), t('Montador de tetos falsos', 'Deckenmonteur', 'Monteur de faux plafonds', 'Ceiling fitter'), helper] },
-    { id: 'servente', label: 'Serventes', icon: 'users', photo: 'servente', tag: t('#servente', '#hilfsarbeiter', '#manoeuvre', '#labourer'),
+    { id: 'servente', label: 'Serventes', short: 'Serventes', icon: 'users', photo: 'servente', tag: t('#servente', '#hilfsarbeiter', '#manoeuvre', '#labourer'),
       headline: t('Serventes e ajudantes de obra', 'Hilfsarbeiter Bau', 'Manœuvres de chantier', 'Construction labourers'),
       intro: INTRO.site, benefits: ['pay', 'start', 'transport', 'housing', 'longterm'], badge: BADGE.now,
       positions: [t('Servente de obra', 'Hilfsarbeiter', 'Manœuvre', 'Labourer'), t('Ajudante de pedreiro', 'Maurerhilfe', 'Aide-maçon', 'Bricklayer’s mate'), t('Ajudante de armazém de obra', 'Magazinhilfe Baustelle', 'Aide-magasinier chantier', 'Site store helper')] },
-    { id: 'tecnico', label: 'Técnicos de obra', icon: 'pencil-ruler', photo: 'tecnico', tag: t('#engenharia', '#bauleiter', '#conducteurdetravaux', '#sitemanager'),
+    { id: 'tecnico', label: 'Técnicos de obra', short: 'Técnicos de obra', icon: 'pencil-ruler', photo: 'tecnico', tag: t('#engenharia', '#bauleiter', '#conducteurdetravaux', '#sitemanager'),
       headline: t('Técnicos e engenheiros de obra', 'Bauleiter und Bautechniker', 'Conducteurs de travaux', 'Site managers and engineers'),
       intro: INTRO.stable, benefits: ['pay', 'training', 'license', 'longterm', 'region'], badge: BADGE.open,
       positions: [t('Diretor de obra', 'Bauleiter', 'Conducteur de travaux', 'Site manager'), t('Medidor-orçamentista', 'Kalkulator Bau', 'Métreur', 'Quantity surveyor'), t('Técnico de segurança', 'Sicherheitsbeauftragter', 'Technicien sécurité', 'Safety officer')] },
   ];
+  const pair = (row, it, es) => Object.assign(row, { it, es });
+  pair(P.pay, 'Retribuzione superiore alla media', 'Remuneración por encima de la media');
+  pair(P.start, 'Inizio immediato', 'Incorporación inmediata');
+  pair(P.license, 'Patente B preferibile', 'Se valora el permiso de conducir B');
+  pair(P.longterm, 'Contratti di lunga durata', 'Contratos de larga duración');
+  pair(P.housing, 'Alloggio garantito', 'Alojamiento garantizado');
+  pair(P.overtime, 'Straordinari retribuiti', 'Horas extra remuneradas');
+  pair(P.tools, 'Attrezzi e DPI forniti', 'Herramientas y EPI proporcionados');
+  pair(P.meals, 'Indennità di vitto', 'Ayuda para comidas');
+  pair(P.transport, 'Trasporto al cantiere', 'Transporte a la obra');
+  pair(P.training, 'Formazione e crescita professionale', 'Formación y desarrollo profesional');
+  pair(P.insurance, 'Assicurazione contro gli infortuni sul lavoro', 'Seguro de accidentes de trabajo');
+  pair(P.travel, 'Viaggio pagato', 'Viaje pagado');
+  pair(P.region, 'Cantieri nella tua zona', 'Obras en tu zona');
+  pair(P.ontime, 'Stipendio sempre puntuale', 'Salario siempre puntual');
+  pair(KICKER, 'Cerchiamo', 'Buscamos'); pair(POS_TITLE, 'Posizioni aperte:', 'Vacantes:');
+  pair(INTRO.site, 'Hai esperienza in cantiere e cerchi una nuova sfida?', '¿Tienes experiencia en obra y buscas un nuevo reto?');
+  pair(INTRO.craft, 'Sei un professionista del mestiere e vuoi guadagnare di più?', '¿Eres profesional del oficio y quieres ganar más?');
+  pair(INTRO.stable, 'Cerchi un progetto stabile con buone condizioni?', '¿Buscas un proyecto estable con buenas condiciones?');
+  pair(BADGE.now, 'Inizio immediato', 'Incorporación inmediata'); pair(BADGE.pay, 'Ottima retribuzione', 'Buen salario'); pair(BADGE.open, 'Candidati ora', 'Vacantes abiertas');
+  pair(helper, 'Aiutante', 'Ayudante');
+  CONTACTS.it = [['phone', '+39 000 000 0000'], ['mail', 'lavoro@aempresa.it']];
+  CONTACTS.es = [['phone', '+34 000 000 000'], ['mail', 'empleo@aempresa.es']];
+  HASH.it = '#lavoro #edilizia #cantiere #assunzioni'; HASH.es = '#empleo #construccion #obra #seleccion';
+  // Complete stock text coverage. These are editable starting points; review in context.
+  const EXTRA = {
+    obras: ['Operai e capisquadra edili', 'Oficiales y encargados de construcción', ['Caposquadra edile', 'Operaio edile specializzato', 'Manovale edile'], ['Encargado de obra', 'Oficial de construcción', 'Peón de obra'], '#edilizia', '#construccion'],
+    pedreiro: ['Muratori, addetti alla malta e manovali', 'Albañiles, amasadores y peones', ['Muratore esperto', 'Addetto alla preparazione della malta', 'Manovale edile'], ['Albañil con experiencia', 'Amasador de mortero', 'Peón de obra'], '#muratore', '#albañil'],
+    cofragem: ['Carpentieri edili e addetti alle casseforme', 'Encofradores y carpinteros de encofrado', ['Addetto alle casseforme', 'Carpentiere edile', 'Aiutante'], ['Encofrador', 'Carpintero de encofrado', 'Ayudante'], '#casseforme', '#encofrador'],
+    ferro: ['Ferraioli', 'Ferrallistas', ['Ferraiolo', 'Aiutante ferraiolo'], ['Ferrallista', 'Ayudante de ferrallista'], '#ferraiolo', '#ferrallista'],
+    eletricista: ['Elettricisti per cantieri e manutenzione', 'Electricistas de obra y mantenimiento', ['Elettricista qualificato', 'Montatore di quadri elettrici', 'Aiutante elettricista'], ['Electricista de primera', 'Montador de cuadros eléctricos', 'Ayudante de electricista'], '#elettricista', '#electricista'],
+    canalizador: ['Idraulici e tecnici di climatizzazione', 'Fontaneros y técnicos de climatización', ['Idraulico', 'Tecnico di climatizzazione', 'Aiutante'], ['Fontanero', 'Técnico de climatización', 'Ayudante'], '#idraulico', '#fontanero'],
+    pintor: ['Imbianchini e intonacatori', 'Pintores y yeseros', ['Imbianchino edile', 'Intonacatore', 'Aiutante'], ['Pintor de construcción', 'Yesero', 'Ayudante'], '#imbianchino', '#pintor'],
+    carpinteiro: ['Carpentieri e falegnami', 'Carpinteros y ebanistas', ['Falegname', 'Carpentiere in legno', 'Montatore di cucine'], ['Carpintero de acabados', 'Carpintero de estructuras', 'Montador de cocinas'], '#falegname', '#carpintero'],
+    serralheiro: ['Fabbri e saldatori', 'Cerrajeros y soldadores', ['Fabbro per carpenteria metallica', 'Saldatore MIG/MAG', 'Saldatore TIG'], ['Cerrajero de construcción', 'Soldador MIG/MAG', 'Soldador TIG'], '#saldatore', '#soldador'],
+    ladrilhador: ['Piastrellisti e posatori', 'Alicatadores y soladores', ['Piastrellista', 'Posatore di pietra', 'Aiutante'], ['Alicatador', 'Colocador de piedra', 'Ayudante'], '#piastrellista', '#alicatador'],
+    telhados: ['Copritetti e montatori di coperture', 'Techadores y montadores de cubiertas', ['Copritetto', 'Montatore di pannelli sandwich', 'Aiutante'], ['Techador', 'Montador de paneles sándwich', 'Ayudante'], '#coperture', '#cubiertas'],
+    maquinas: ['Operatori di macchine e gruisti', 'Operadores de maquinaria y gruistas', ['Escavatorista', 'Gruista', 'Autista di mezzi pesanti'], ['Operador de excavadora', 'Gruista', 'Conductor de vehículos pesados'], '#macchineedili', '#maquinaria'],
+    pladur: ['Installatori di cartongesso e controsoffitti', 'Instaladores de pladur y falsos techos', ['Cartongessista', 'Montatore di controsoffitti', 'Aiutante'], ['Instalador de pladur', 'Montador de falsos techos', 'Ayudante'], '#cartongesso', '#pladur'],
+    servente: ['Manovali e aiutanti edili', 'Peones y ayudantes de obra', ['Manovale edile', 'Aiutante muratore', 'Aiutante di magazzino di cantiere'], ['Peón de obra', 'Ayudante de albañil', 'Ayudante de almacén de obra'], '#manovale', '#peon'],
+    tecnico: ['Tecnici e ingegneri di cantiere', 'Técnicos e ingenieros de obra', ['Direttore di cantiere', 'Tecnico computista', 'Tecnico della sicurezza'], ['Jefe de obra', 'Técnico de mediciones y presupuestos', 'Técnico de seguridad'], '#tecnicoedile', '#ingenieria'],
+  };
+  for (const trade of LIST) {
+    const [it, es, ip, ep, itTag, esTag] = EXTRA[trade.id]; pair(trade.headline, it, es); pair(trade.tag, itTag, esTag);
+    trade.positions.forEach((p, i) => pair(p, ip[i], ep[i]));
+  }
   const byId = Object.fromEntries(LIST.map((x) => [x.id, x]));
 
   // One person of each trade, singular, as used inside a sentence ("Vi o anúncio

@@ -29,7 +29,8 @@ RS.ui = (() => {
     const pill = document.createElement('span');
     pill.className = 'glide-pill';
     pill.setAttribute('aria-hidden', 'true');
-    if (getComputedStyle(container).position === 'static') container.style.position = 'relative';
+    // Positioning belongs in CSS: an inline relative position would override
+    // the phone's fixed navigation after resizing a desktop editor.
     container.classList.add('has-glide');
     let placed = false;
     function update() {
@@ -160,24 +161,12 @@ RS.ui = (() => {
     return flag && on;
   }
 
-  // Short waits: a dimension line (linha de cota) that draws, measures and retracts.
-  // `bar`: the thin line across the top of the screen, without words.
-  function CotaLoader({ label, bar }) {
-    return html`<span class=${'cota-loader' + (bar ? ' bar' : '')} role=${bar ? null : 'status'}>
-      <svg class="cota" viewBox="0 0 120 14" preserveAspectRatio="none" aria-hidden="true" focusable="false">
-        <path class="cota-tick" d="M1 2v10M119 2v10" />
-        <path class="cota-line" d="M3 7H117" pathLength="100" />
-        <path class="cota-arrow a" d="M8 3.5 3 7l5 3.5" />
-        <path class="cota-arrow b" d="M112 3.5 117 7l-5 3.5" />
-      </svg>
-      ${label && html`<span class="cota-label">${label}</span>`}
-    </span>`;
-  }
-  // Long waits (over a second): bricks laid one by one with a small bounce.
-  function BrickLoader({ label }) {
-    return html`<span class="brick-loader" role="status">
-      <span class="bricks" aria-hidden="true">${[0, 1, 2, 3, 4].map((i) => html`<i key=${i} class="brick" style=${`--i:${i}`}></i>`)}</span>
-      ${label && html`<span class="brick-label">${label}</span>`}
+  // Waits («Balão», 2026-10-28): the icon's three dots typing in a grey bubble, with the
+  // words on long waits. `bar`: the small one at the top of the screen, without words.
+  function TypingLoader({ label, bar }) {
+    return html`<span class=${'typing-loader' + (bar ? ' bar' : '')} role=${bar ? null : 'status'}>
+      <span class="say typing-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+      ${label && html`<span class="typing-label">${label}</span>`}
     </span>`;
   }
 
@@ -217,9 +206,9 @@ RS.ui = (() => {
       <p class="crane-count">${p != null && html`<span class="crane-pct"><${CountUp} value=${Math.round(p * 100)} duration=${300} />%</span>`}<span>${label}</span></p>
     </div>`;
   }
-  // The moment it is ready: the load sways and settles, the stamp lands, a few
-  // bricks bounce; onDone after `duration`.
-  function Celebration({ title = 'PRONTO', detail, onDone, duration = 1400 }) {
+  // The moment it is ready: the load sways and settles, a black bubble says «Pronto»
+  // with the two ticks, small bubbles rise; onDone after `duration`.
+  function Celebration({ title = 'Pronto', detail, onDone, duration = 1400 }) {
     const done = useRef(onDone);
     done.current = onDone;
     useEffect(() => {
@@ -229,9 +218,9 @@ RS.ui = (() => {
     return html`<div class="celebration" role="status">
       <div class="celebration-art">
         ${craneArt(html`<path class="crane-steel thin" d="M120 34V40" />`, html`<g style="transform:translateY(40px)"><g class="celebration-load">${fileLoad}</g></g>`)}
-        <span class="stamp">${title}</span>
+        <span class="ready-bubble">${title}<svg class="ticks" viewBox="0 0 26 16" aria-hidden="true" focusable="false"><path d="M2 9l4 4 8-10" /><path d="M11 12l1 1 8-10" /></svg></span>
       </div>
-      <span class="celebration-bricks" aria-hidden="true">${[0, 1, 2, 3, 4].map((i) => html`<i key=${i} style=${`--i:${i}`}></i>`)}</span>
+      <span class="celebration-bubbles" aria-hidden="true">${[0, 1, 2].map((i) => html`<i key=${i} style=${`--i:${i}`}></i>`)}</span>
       ${detail && html`<p class="celebration-detail">${detail}</p>`}
     </div>`;
   }
@@ -380,11 +369,14 @@ RS.ui = (() => {
   }
   // Pop-ups grow from the button that opened them: every new .pop gets its
   // transform-origin at the centre of the [aria-expanded="true"] button beside it.
+  // «Balão»: a pop-up grows from its corner nearest the button that opened it, and
+  // that corner takes the bubble's small radius (data-corner: tl, tr, bl, br)
   function originFor(pop, trigger) {
-    const t = trigger.getBoundingClientRect();
-    let x = pop.offsetLeft, y = pop.offsetTop; // viewport for fixed pop-ups
-    if (pop.offsetParent) { const p = pop.offsetParent.getBoundingClientRect(); x += p.left + pop.offsetParent.clientLeft; y += p.top + pop.offsetParent.clientTop; }
-    pop.style.transformOrigin = `${Math.round(t.left + t.width / 2 - x)}px ${Math.round(t.top + t.height / 2 - y)}px`;
+    const t = trigger.getBoundingClientRect(), p = pop.getBoundingClientRect();
+    const cx = t.left + t.width / 2, cy = t.top + t.height / 2;
+    const right = Math.abs(cx - p.right) < Math.abs(cx - p.left), bottom = Math.abs(cy - p.bottom) < Math.abs(cy - p.top);
+    pop.style.transformOrigin = `${right ? '100%' : '0'} ${bottom ? '100%' : '0'}`;
+    pop.dataset.corner = (bottom ? 'b' : 't') + (right ? 'r' : 'l');
   }
   function autoOrigin(root = document) {
     const place = (node) => {
@@ -412,31 +404,134 @@ RS.ui = (() => {
     }
     return l;
   }
-  // A press on a main control: a brick jumps out from under the finger and lands
-  // on the control's top edge, squashes and goes (the press itself is CSS).
-  const BRICK_ON = '.btn.primary, .new-card, .rail-export, .tpl-card';
-  function tapBricks(root = document) {
+  // «Balão» stage swaps: the poster changes under a copy of its old self, which leaves the
+  // way the change goes — type (a new language: wiped out, then typed in), roll (a new
+  // colour: a painter's roller), tape (another format: a tape measure and the size counting),
+  // rewind (undo). Sóbrio and Calmo cross-fade. A newer swap on the same poster wins.
+  const swaps = new WeakMap();
+  function stageSwap(wrap, canvas, kind, opts = {}) {
+    const none = { commit() {}, cancel() {} };
+    if (!wrap || !canvas || !canvas.width) return none;
+    const prev = swaps.get(wrap);
+    if (prev) prev.cancel();
+    const mode = illustrative() ? kind : 'fade';
+    const old = document.createElement('canvas');
+    old.width = canvas.width; old.height = canvas.height;
+    try { old.getContext('2d').drawImage(canvas, 0, 0); } catch { return none; }
+    old.className = `swap-old ${mode}`;
+    old.setAttribute('aria-hidden', 'true');
+    wrap.appendChild(old);
+    const extras = [];
+    let timer = 0, raf = 0;
+    const api = {
+      commit() {
+        if (mode === 'roll') extras.push(Object.assign(document.createElement('i'), { className: 'roller' }));
+        // another format: its size counts up (Ilustrativo on the tape measure, Sóbrio in a grey
+        // bubble under the poster); Calmo swaps the numbers at once
+        const countSize = (el, instant) => {
+          const [w, h0] = opts.from || [0, 0], h1 = (opts.to || [0, 0])[1], start = performance.now();
+          const tick = (now) => { const k = instant ? 1 : Math.min(1, (now - start) / 400); el.textContent = `${(opts.to || [w])[0]} × ${Math.round(h0 + (h1 - h0) * easeOut(k))}`; if (k < 1) raf = requestAnimationFrame(tick); };
+          tick(start);
+        };
+        if (mode === 'tape') {
+          const t = Object.assign(document.createElement('i'), { className: 'tape-measure' });
+          const dims = Object.assign(document.createElement('span'), { className: 'dims' });
+          t.appendChild(dims); extras.push(t);
+          countSize(dims, false);
+        } else if (kind === 'tape') {
+          const readout = Object.assign(document.createElement('span'), { className: 'say size-readout' });
+          extras.push(readout);
+          countSize(readout, calm());
+        }
+        extras.forEach((x) => { x.setAttribute('aria-hidden', 'true'); wrap.appendChild(x); });
+        if (mode === 'type') canvas.classList.add('swap-new');
+        old.classList.add('go');
+        timer = setTimeout(api.cancel, mode === 'type' ? 900 : mode === 'roll' ? 700 : mode === 'tape' || kind === 'tape' ? 900 : 400);
+      },
+      cancel() {
+        clearTimeout(timer); cancelAnimationFrame(raf);
+        old.remove(); extras.forEach((x) => x.remove()); canvas.classList.remove('swap-new');
+        if (swaps.get(wrap) === api) swaps.delete(wrap);
+      },
+    };
+    swaps.set(wrap, api);
+    return api;
+  }
+  // Ilustrativo: a greeting in the new language rises from where it was added.
+  const GREETINGS = { 'pt-PT': 'Olá', fr: 'Bonjour', 'de-CH': 'Hallo', 'de-DE': 'Hallo', it: 'Ciao', en: 'Hello', es: 'Hola' };
+  // Sóbrio: the new language's chip pops instead (it renders after the change: looked for a few frames)
+  function popChip(locale, tries = 10) {
+    const chip = document.querySelector(`.editor .locales .chip[data-code="${locale}"]`);
+    if (!chip) { if (tries > 0) requestAnimationFrame(() => popChip(locale, tries - 1)); return; }
+    chip.classList.remove('pop-once'); void chip.offsetWidth; chip.classList.add('pop-once');
+    setTimeout(() => chip.classList.remove('pop-once'), 450);
+  }
+  function greet(el, locale) {
+    if (style() === 'sober') { popChip(locale); return; }
+    if (!illustrative() || !el) return;
+    const r = el.getBoundingClientRect();
+    const b = Object.assign(document.createElement('span'), { className: 'say greet-bubble', textContent: GREETINGS[locale] || 'Olá' });
+    b.style.left = `${Math.round(r.left)}px`; b.style.top = `${Math.round(r.top - 38)}px`;
+    fxLayer().appendChild(b);
+    const a = b.animate([{ transform: 'translateY(8px) scale(0.4)', opacity: 0 }, { transform: 'translateY(-4px) scale(1.06)', opacity: 1, offset: 0.25 },
+      { transform: 'translateY(-10px)', opacity: 1, offset: 0.7 }, { transform: 'translateY(-26px)', opacity: 0 }], { duration: 950, easing: 'cubic-bezier(0.3, 0.7, 0.3, 1)' });
+    a.onfinish = a.oncancel = () => b.remove();
+  }
+  // The app says a word beside a control (a grey bubble): «Desfeito», «Refeito».
+  function sayNear(el, text, ms = 1200) {
+    if (!el) return;
+    document.querySelectorAll('.near-bubble').forEach((x) => x.remove());
+    const r = el.getBoundingClientRect();
+    const b = Object.assign(document.createElement('span'), { className: 'say near-bubble', textContent: text });
+    b.setAttribute('role', 'status');
+    b.style.left = `${Math.round(Math.max(8, Math.min(r.left, window.innerWidth - 120)))}px`; b.style.top = `${Math.round(r.bottom + 6)}px`;
+    document.body.appendChild(b);
+    setTimeout(() => b.remove(), ms);
+    if (illustrative()) { el.classList.remove('spin-once'); void el.offsetWidth; el.classList.add('spin-once'); setTimeout(() => el.classList.remove('spin-once'), 600); }
+  }
+  // A field tells the stage that something worth showing happened (a WhatsApp number
+  // just became complete): on(name, fn) returns the function that stops listening.
+  const listeners = new Map();
+  function on(name, fn) {
+    if (!listeners.has(name)) listeners.set(name, new Set());
+    listeners.get(name).add(fn);
+    return () => listeners.get(name).delete(fn);
+  }
+  function emit(name, detail) {
+    // a listener's failure never breaks the field that spoke
+    (listeners.get(name) || []).forEach((fn) => { try { fn(detail); } catch (err) { console.error(err); } });
+  }
+  // Ilustrativo: a builder's spirit level under the poster while its photo is dragged;
+  // the bubble follows the photo's distance from the centre (offset −1…1), the marks
+  // turn green when it settles there.
+  function SpiritLevel({ offset = 0, snapped = false, leaving = false }) {
+    const o = Math.max(-1, Math.min(1, offset || 0));
+    return html`<div class=${'spirit-level' + (snapped ? ' snapped' : '') + (leaving ? ' leaving' : '')} aria-hidden="true">
+      <i class="level-mark"></i><i class="level-mark"></i>
+      <span class="level-bubble" style=${`transform: translateX(${(o * 30).toFixed(1)}px)`}></span>
+    </div>`;
+  }
+  // A press on a main control («Balão»): a small white bubble with three dots leaves
+  // the control's top-left corner and rises, like a message sent (the press itself is CSS).
+  const BUBBLE_ON = '.btn.primary, .new-ad, .tpl-card';
+  function tapBubbles(root = document) {
     const onDown = (e) => {
       if (!illustrative() || (e.button && e.button !== 0)) return;
-      const el = e.target.closest && e.target.closest(BRICK_ON);
+      const el = e.target.closest && e.target.closest(BUBBLE_ON);
       if (!el || el.disabled) return;
       const r = el.getBoundingClientRect();
-      const fx = e.clientX || r.left + r.width / 2, fy = e.clientY || r.top + r.height / 2;
-      const x = Math.min(Math.max(fx, r.left + 14), r.right - 14);
       const b = document.createElement('i');
-      b.className = 'fx-brick';
-      b.style.left = `${Math.round(x - 9)}px`;
-      b.style.top = `${Math.round(r.top - 9)}px`;
+      b.className = 'fx-bubble';
+      b.innerHTML = '<span></span><span></span><span></span>';
+      b.style.left = `${Math.round(r.left + 6)}px`;
+      b.style.top = `${Math.round(r.top - 28)}px`;
       fxLayer().appendChild(b);
-      const rise = Math.max(20, fy - r.top + 9);
-      const dx = Math.round(fx - x);
       const a = b.animate([
-        { transform: `translate(${dx}px, ${rise}px) scale(0.4)`, opacity: 0 },
-        { transform: `translate(${Math.round(dx * 0.3)}px, -24px) scale(1) rotate(-14deg)`, opacity: 1, offset: 0.45 },
-        { transform: 'translate(0, 0) scale(1.15, 0.75)', opacity: 1, offset: 0.68 },
-        { transform: 'none', opacity: 1, offset: 0.8 },
-        { transform: 'translateY(3px)', opacity: 0 },
-      ], { duration: 780, easing: 'cubic-bezier(0.3, 0.7, 0.3, 1)' });
+        { transform: 'translate(0, 24px) scale(0.3)', opacity: 0 },
+        { transform: 'translate(-2px, 0) scale(1.06)', opacity: 1, offset: 0.3 },
+        { transform: 'translate(-4px, -10px) scale(1)', opacity: 1, offset: 0.45 },
+        { transform: 'translate(-8px, -50px) scale(0.92)', opacity: 0 },
+      ], { duration: 580, easing: 'cubic-bezier(0.3, 0.7, 0.3, 1)' });
       a.onfinish = a.oncancel = () => b.remove();
     };
     root.addEventListener('pointerdown', onDown, true);
@@ -557,5 +652,5 @@ RS.ui = (() => {
     return st;
   }
 
-  return { glide, autoGlide, CountUp, useDelayed, CotaLoader, BrickLoader, CraneProgress, Celebration, Opening, useLeaving, useExits, flushExits, useArrivals, useFlip, autoOrigin, calm, illustrative, style, exitMs, tapBricks, crumble, craneHook, nightfall, leanCards, useMotionStyle };
+  return { glide, autoGlide, CountUp, useDelayed, TypingLoader, CraneProgress, Celebration, Opening, useLeaving, useExits, flushExits, useArrivals, useFlip, autoOrigin, calm, illustrative, style, exitMs, tapBubbles, stageSwap, greet, sayNear, on, emit, SpiritLevel, crumble, craneHook, nightfall, leanCards, useMotionStyle };
 })();

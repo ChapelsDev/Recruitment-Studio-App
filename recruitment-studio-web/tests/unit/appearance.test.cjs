@@ -34,7 +34,38 @@ test('appearance: saving never throws', () => {
 test('appearance: the bar colours of both themes', () => {
   assert.equal(A.KEY, 'rs-appearance');
   assert.deepEqual(A.DEFAULTS, { theme: 'auto', haptics: true, motion: null });
-  assert.deepEqual(A.THEME_COLOR, { light: '#ffffff', dark: '#0f1114' });
+  assert.deepEqual(A.THEME_COLOR, { band: '#F25C05', surface: { light: '#FFFFFF', dark: '#292D32' } });
+});
+
+// «Balão» (2026-10-28): the home's orange band runs under the status bar; the editor's is the surface colour.
+const barPage = () => {
+  const metas = [{ content: '' }, { content: '' }];
+  return { metas, doc: { documentElement: { dataset: {} }, querySelectorAll: () => metas, head: null } };
+};
+const plainWin = { matchMedia: () => ({ matches: false }) };
+const colours = (metas) => metas.map((m) => m.content.toLowerCase());
+
+test("appearance: setBar('band') paints every theme-color orange", () => {
+  const { metas, doc } = barPage();
+  const before = A.get();
+  try {
+    A.set({ theme: 'dark' });
+    A.setBar('band', doc, plainWin);
+    assert.deepEqual(colours(metas), ['#f25c05', '#f25c05']);
+  } finally { A.set(before); A.setBar('surface', doc, plainWin); }
+});
+
+test("appearance: setBar('surface') follows the theme", () => {
+  const { metas, doc } = barPage();
+  const before = A.get();
+  try {
+    A.set({ theme: 'light' });
+    A.setBar('surface', doc, plainWin);
+    assert.deepEqual(colours(metas), ['#ffffff', '#ffffff']);
+    A.set({ theme: 'dark' });
+    A.apply(doc, plainWin);
+    assert.deepEqual(colours(metas), ['#292d32', '#292d32']);
+  } finally { A.set(before); }
 });
 
 test('appearance: only an installed app opens on the system\'s splash', () => {
@@ -69,4 +100,17 @@ test('appearance: <html data-motion> follows the choice, or the device while not
     A.set({ motion: 'neon' });
     assert.equal(A.get().motion, 'sober', 'junk keeps the current choice');
   } finally { A.set(before); }
+});
+
+// deferred minor (2026-10-29): the start screen is orange, so its status bar is too until a screen chooses
+test('appearance: on start the status bar is orange until a screen chooses', () => {
+  // a fresh copy of the script, as a page load gets (the other cases keep theirs)
+  const file = require.resolve('../../js/appearance.js');
+  delete require.cache[file];
+  require(file);
+  const fresh = RS.appearance;
+  RS.appearance = A;
+  const { metas, doc } = barPage();
+  fresh.apply(doc, plainWin);
+  assert.deepEqual(colours(metas), ['#f25c05', '#f25c05']);
 });

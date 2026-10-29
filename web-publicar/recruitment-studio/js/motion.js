@@ -195,7 +195,7 @@ RS.motion = (() => {
     return tag ? M.videoPhotoFocus(project, tag.id, tag.item) : null;
   }
   const ownPhoto = (project, images) => (images && images.photo ? tagPhoto(images.photo, project.photo && project.photo.asset) : null);
-  async function photoSet(project, images, libraryItems) {
+  function cardItems(project, libraryItems) {
     const cats = (project.trades || []).map((id) => RS.trades.get(id) && RS.trades.get(id).photo).filter(Boolean);
     const items = libraryItems || [];
     const picked = [];
@@ -203,6 +203,16 @@ RS.motion = (() => {
     for (const cat of cats) add((it) => !it.asset && it.cat === cat);
     for (const cat of cats) add((it) => it.asset && it.cat === cat);
     for (const cat of RELATED) add((it) => it.cat === cat);
+    return picked;
+  }
+  async function photoSet(project, images, libraryItems) {
+    const frozen = M.photoSnapshot(project);
+    if (frozen) {
+      const load = async (id) => tagPhoto(await RS.assets.load(id), id);
+      const cards = (await Promise.all(frozen.cards.map(load))).filter(Boolean);
+      return { cards, hero: frozen.hero ? await load(frozen.hero) : cards[0] || null };
+    }
+    const picked = cardItems(project, libraryItems);
     const own = ownPhoto(project, images);
     const cards = own ? [own] : [];
     const loaded = await Promise.all(picked.slice(0, 16 - cards.length).map(async (it) => tagPhoto(await loadImage(it.thumb), it.asset || it.id, it)));
@@ -353,7 +363,7 @@ RS.motion = (() => {
   let zoomCanvas = null;
   function posterZoom(project, fmt, locale, images) {
     if (!zoomCanvas) { zoomCanvas = document.createElement('canvas'); zoomCanvas.width = 54; zoomCanvas.height = 96; }
-    const { regions } = E.render(zoomCanvas.getContext('2d'), project, { format: fmt.id, locale, images, scale: 0.05, mode: 'export' });
+    const { regions, report } = E.render(zoomCanvas.getContext('2d'), project, { format: fmt.id, locale, images, scale: 0.05, mode: 'export', output: 'video' });
     const story = fmt.id === 'story';
     const top = story ? E.SAFE.top : 0, bottom = story ? fmt.h - E.SAFE.bottom : fmt.h;
     const slack = 0.5;
@@ -364,14 +374,14 @@ RS.motion = (() => {
       if (g.y < top - slack || g.y + g.h > bottom + slack || g.x < -slack || g.x + g.w > fmt.w + slack) continue;
       x0 = Math.min(x0, g.x); x1 = Math.max(x1, g.x + g.w); y0 = Math.min(y0, g.y); y1 = Math.max(y1, g.y + g.h);
     }
-    if (x1 <= x0 || y1 <= y0) return { z: 1.06, ax: fmt.w / 2, ay: fmt.h / 2 };
+    if (x1 <= x0 || y1 <= y0) return { z: 1.06, ax: fmt.w / 2, ay: fmt.h / 2, minTextSize: report?.minTextSize || 0 };
     // content [a, b] inside [lo, hi]: the zoom that fills the room, and the point it grows from
     const fit = (lo, hi, a, b) => {
       const sa = Math.max(0, a - lo), sb = Math.max(0, hi - b);
       return { z: 1 + (sa + sb) / (b - a), at: sa + sb > 0 ? a + ((b - a) * sa) / (sa + sb) : (a + b) / 2 };
     };
     const X = fit(0, fmt.w, x0, x1), Y = fit(top, bottom, y0, y1);
-    return { z: Math.max(1, Math.min(1.06, X.z, Y.z)), ax: X.at, ay: Y.at };
+    return { z: Math.max(1, Math.min(1.06, X.z, Y.z)), ax: X.at, ay: Y.at, minTextSize: report?.minTextSize || 0 };
   }
 
   function prepare(project, o) {
@@ -392,7 +402,7 @@ RS.motion = (() => {
       const built = TL.build(c, { duration, scenes: style.scenes });
       const timeline = { ...built, cuts: [], events: built.events.filter((e) => e.type === 'kick'), plain: true };
       const zoom = posterZoom(project, fmt, locale, o.images || {});
-      return { project, fmt, style, timeline, content: c, locale, Z: zones(fmt), minTextSize: 0, images: o.images || {}, anim: E.animState({ duration, style: v.style }), posterCamera: (t) => posterCamera(duration, t, zoom) };
+      return { project, fmt, style, timeline, content: c, locale, Z: zones(fmt), minTextSize: zoom.minTextSize, images: o.images || {}, anim: E.animState({ duration, style: v.style }), posterCamera: (t) => posterCamera(duration, t, zoom) };
     }
     const P = styleFrame(project, o, style, c, fmt, photos);
     // Scenes with more to read get more beats (the texts are measured first).
@@ -1125,7 +1135,7 @@ RS.motion = (() => {
     }
     if (P.recipe) {
       const has = (k) => P.acts.some((a) => a.kind === k);
-      const offer = !!(P.content.offer || P.content.vacancies) && !has('D');
+      const offer = !!P.content.highlights.length && !has('D');
       return {
         ...none,
         // a recipe without pages shows the benefits in its one act; only a missing act leaves them out
@@ -1244,8 +1254,8 @@ RS.motion = (() => {
   // The recipe's colours (bg, ink, main, accent): its own, the ad's brand
   // colours (main = primary, accent = accent) or a ready palette, then the
   // highlight; WhatsApp green for the button; ink readable on the background.
-  function recipeColors(style, project) {
-    const v = project.video || {};
+  function recipeColors(style, project, piece = 'video') {
+    const v = project[piece] || {};
     const mode = style.bgModes.includes(v.bg) ? v.bg : style.bgModes[0];
     const c = { ...style.palettes[mode], mode };
     const pal = v.colors === 'brand' ? (project.style || {}) : M.PALETTES.find((x) => x.id === v.colors);
@@ -1263,36 +1273,44 @@ RS.motion = (() => {
   }
 
   const FOCUS = Object.freeze({ x: 0.5, y: 0.4 }); // a photo without an id: a little above the middle
+  // o.piece: 'video' (default) or 'carousel' (its own texts, eyes and look);
+  // o.acts: a ready list of acts (the carousel's slides) instead of a schedule.
   function prepareRecipe(project, o, style) {
     const def = style.recipe;
-    const v = project.video || M.DEFAULT_VIDEO;
+    const piece = o.piece || 'video';
+    const v = piece === 'video' ? project.video || M.DEFAULT_VIDEO : { ...M.DEFAULT_VIDEO, ...(project[piece] || {}) };
     const fmt = M.FORMATS[o.format] || M.FORMATS.story;
     const locale = o.locale || project.locale;
-    const c = TL.content(project, locale);
+    const c = TL.content(project, locale, piece);
     // a model without pages (until it gets its 10–30 s) shows up to three benefits in 6–15 s
     if (!def.pages) { c.benefits = c.benefits.slice(0, 3); c.benefitIds = c.benefitIds.slice(0, 3); c.icons = c.icons.slice(0, 3); }
     const font = M.FONTS[v.font];
     const ph = o.photos || {};
     const P = {
-      project, locale, fmt, Z: KIT().zones(fmt), content: c, C: recipeColors(style, project),
+      project, locale, fmt, piece, Z: KIT().zones(fmt), content: c, C: recipeColors(style, project, piece),
       F: font ? { head: font.head, bold: font.strong } : { ...def.font }, style, recipe: def, lite: !!o.lite, images: o.images || {},
       photos: ((ph.full && ph.full.length ? ph.full : ph.cards) || []).filter(Boolean), minTextSize: Infinity, upper: !project.style || project.style.upper !== false,
     };
     // the point of each photo the video keeps in the centre («Enquadrar», else its default)
     const focus = new Map();
+    // the carousel keeps its own points (carousel.photos.focus); the video, the video's
+    const focusFrom = piece === 'carousel' ? M.carouselFocusView(project) : project;
     P.focusOf = (img) => {
       if (!img) return FOCUS;
-      if (!focus.has(img)) focus.set(img, photoFocus(project, img) || FOCUS);
+      if (!focus.has(img)) focus.set(img, photoFocus(focusFrom, img) || FOCUS);
       return focus.get(img);
     };
     let list, duration;
-    if (def.pages) {
+    if (o.acts) {
+      list = o.acts;
+      duration = list.length ? list[list.length - 1].end : 2;
+    } else if (def.pages) {
       P.schedule = TL.schedule(c, scheduleOptions(def, c, v, style));
       list = P.schedule.acts;
       duration = P.schedule.duration;
     } else {
       duration = [6, 10, 15].includes(v.duration) ? v.duration : 15;
-      const has = { M: c.benefits.length > 0, V: true, D: !!(c.offer || c.vacancies), L: c.positions.length >= 2, C: !!(c.contact && c.chat) };
+      const has = { M: c.benefits.length > 0, V: true, D: !!c.highlights.length, L: c.positions.length >= 2, C: !!(c.contact && c.chat) };
       for (const [k, needs] of Object.entries(def.needs || {})) if (!needs.every((n) => has[n])) has[k] = false;
       list = TL.acts(Object.keys(has).filter((k) => has[k]), { duration, hold: v.hold });
     }
@@ -1330,6 +1348,8 @@ RS.motion = (() => {
     while (i > 0 && t < P.acts[i].start) i--;
     const A = { ...P.acts[i], lt: t - P.acts[i].start };
     const def = P.recipe;
+    // a drawing of its own for this instant (a carousel slide drawn still)
+    if (o.draw) { o.draw(R, A); ctx.restore(); return; }
     // a new page of the same act arrives with the travel move, unless the model draws it
     const pg = def.pages && !def.pageMove && !def.continuous && A.pages && A.pages.length > 1 ? KIT().page(A) : null;
     if (!A.bespoke && A.prev && A.lt < TRAVEL) travel(R, P, P.acts[i - 1], A);
@@ -1412,8 +1432,9 @@ RS.motion = (() => {
     const v = project.video || {};
     const lib = library || [], own = mine || [];
     if (v.photos && v.photos.mode === 'chosen') {
-      const ok = v.photos.ids.filter((id) => lib.some((it) => it.id === id) || own.some((it) => it.asset === id));
-      if (ok.length) return ok;
+      // Imported photos and photos removed from the library still belong to
+      // this ad. Loading them does not depend on library membership.
+      return v.photos.ids;
     }
     const cats = (project.trades || []).map((id) => RS.trades.get(id) && RS.trades.get(id).photo).filter(Boolean);
     const out = [];
@@ -1427,18 +1448,42 @@ RS.motion = (() => {
   async function recipePhotos(project, images, n = M.MAX_VIDEO_PHOTOS) {
     const [lib, mine] = await Promise.all([RS.library.index().catch(() => ({ items: [] })), RS.library.userItems().catch(() => [])]);
     const chosen = project.video && project.video.photos && project.video.photos.mode === 'chosen';
+    const frozen = M.photoSnapshot(project);
+    if (frozen) return (await Promise.all(frozen.full.slice(0, n).map(async (id) => tagPhoto(await RS.assets.load(id), id)))).filter(Boolean);
     const own = ownPhoto(project, images);
-    const out = own && !chosen ? [own] : [];
-    for (const id of photoIds(project, lib.items, mine)) {
-      if (out.length >= n) break;
-      try {
-        const item = lib.items.find((it) => it.id === id);
-        const im = item ? await loadImage(await RS.library.full(id)) : await RS.assets.load(id);
-        if (im) out.push(tagPhoto(im, id, item || mine.find((it) => it.asset === id)));
-      } catch { /* a photo that cannot be read is left out */ }
+    const load = async (ids, out) => {
+      for (const id of ids) {
+        if (out.length >= n) break;
+        try {
+          const item = lib.items.find((it) => it.id === id);
+          const im = item ? await loadImage(await RS.library.full(id)) : await RS.assets.load(id);
+          if (im) out.push(tagPhoto(im, id, item || mine.find((it) => it.asset === id)));
+        } catch { /* a photo that cannot be read is left out */ }
+      }
+      return out;
+    };
+    const out = await load(photoIds(project, lib.items, mine), own && !chosen ? [own] : []);
+    // every chosen photo is gone (storage cleared, another device): the trades' photos
+    if (chosen && !out.length) {
+      const trades = { ...project, video: { ...project.video, photos: { ...project.video.photos, mode: 'trades', ids: [] } } };
+      return load(photoIds(trades, lib.items, mine), own ? [own] : []);
     }
     return out;
   }
 
-  return { STYLES, styleOf, colorsFor, photoSet, prepare, render, leftOut, lengths, register, photoIds, recipePhotos, tagPhoto, photoIdOf, photoFocus, TRAVEL };
+  // IDs of every image the current automatic/chosen video can use. Shared
+  // with portable export so the result cannot depend on another library.
+  function photoPlan(project, library, mine) {
+    const frozen = M.photoSnapshot(project);
+    if (frozen) return frozen;
+    const ph = project.video && project.video.photos;
+    if (ph && ph.mode === 'chosen') return { cards: ph.ids, full: ph.ids, hero: ph.ids[0] || null };
+    const own = project.photo && project.photo.asset;
+    const first = own ? [own] : [];
+    const cards = [...first, ...cardItems(project, [...library, ...mine]).slice(0, 16 - first.length).map((it) => it.asset || it.id)];
+    return { cards, full: [...first, ...photoIds(project, library, mine).slice(0, M.MAX_VIDEO_PHOTOS - first.length)], hero: own || cards[0] || null };
+  }
+
+  return { STYLES, styleOf, colorsFor, photoSet, prepare, render, leftOut, lengths, register, photoIds, photoPlan, recipePhotos, tagPhoto, photoIdOf, photoFocus, TRAVEL,
+    prepareRecipe, recipeColors, lineAct, actOf };
 })();

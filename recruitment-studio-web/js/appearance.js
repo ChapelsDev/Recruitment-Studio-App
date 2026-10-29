@@ -9,8 +9,9 @@ RS.appearance = (() => {
   // motion null = not chosen: Calmo when the device asks for less motion, else Ilustrativo
   const DEFAULTS = Object.freeze({ theme: 'auto', haptics: true, motion: null });
   const MOTIONS = Object.freeze(['illustrative', 'sober', 'calm']);
-  // the browser bar (and the phone's status bar) in each theme
-  const THEME_COLOR = Object.freeze({ light: '#ffffff', dark: '#0f1114' });
+  // the browser bar (and the phone's status bar): the home's orange band runs under
+  // it; elsewhere it is the surface colour of the theme (setBar)
+  const THEME_COLOR = Object.freeze({ band: '#F25C05', surface: Object.freeze({ light: '#FFFFFF', dark: '#292D32' }) });
   const THEMES = ['auto', 'light', 'dark'];
   // localStorage itself can throw (blocked storage, some private modes)
   const local = () => { try { return window.localStorage || null; } catch { return null; } };
@@ -42,6 +43,9 @@ RS.appearance = (() => {
   const resolve = (theme, prefersDark) => (theme === 'light' || theme === 'dark' ? theme : prefersDark ? 'dark' : 'light');
 
   let current = load();
+  // 'band' while an orange screen is up: the start screen (from the first paint) and the home
+  // with its band; the editor and the others choose 'surface'
+  let bar = 'band';
   const subs = new Set();
   const media = (win, q) => (win && win.matchMedia ? win.matchMedia(q) : null);
 
@@ -60,8 +64,13 @@ RS.appearance = (() => {
       doc.head.appendChild(m);
       metas = [m];
     }
-    for (const m of metas) m.content = THEME_COLOR[theme];
+    for (const m of metas) m.content = bar === 'band' ? THEME_COLOR.band : THEME_COLOR.surface[theme];
     return theme;
+  }
+  // The screen says what runs under the status bar: 'band' (the home) or 'surface'.
+  function setBar(kind, doc = document, win = window) {
+    bar = kind === 'band' ? 'band' : 'surface';
+    if (doc) apply(doc, win);
   }
   const notify = () => subs.forEach((fn) => { try { fn({ ...current }); } catch (err) { console.error(err); } });
   const get = () => ({ ...current });
@@ -98,5 +107,5 @@ RS.appearance = (() => {
     });
   }
 
-  return { KEY, DEFAULTS, MOTIONS, THEME_COLOR, load, save, resolve, resolveMotion, fromSplash, apply, get, set, subscribe };
+  return { KEY, DEFAULTS, MOTIONS, THEME_COLOR, load, save, resolve, resolveMotion, fromSplash, apply, setBar, get, set, subscribe };
 })();

@@ -454,7 +454,8 @@
       const t0 = itemAt(pg, i, first);
       if (lt < t0) return;
       const k = spring(win(lt, t0, 0.4));
-      const later = pg.items.some((_, j) => j > i && lt >= itemAt(pg, j, first));
+      // the video's reading focus (earlier lines soften); a carousel slide is read whole
+      const later = P.piece !== 'carousel' && pg.items.some((_, j) => j > i && lt >= itemAt(pg, j, first));
       settled(R, k, () => K.text(R, L, Z.left + 100 + (1 - k) * 700, y + pg.itemY[i], later ? C.soft : C.ink, 'left', 0, 'vaga'));
       // the bullet: the vacancy dot once it has arrived, else its own
       const r = i < dots ? (lt >= 0.5 ? 16 : 0) : 16 * k;

@@ -9,7 +9,7 @@
   const GENERATED = 'Olá! Vi o anúncio para pedreiro e servente e tenho interesse.';
 
   test('gallery: choosing two trades creates an ad with both', async () => {
-    (await waitFor(() => $('.new-card') && idle() && $('.new-card'), 'home')).click();
+    (await waitFor(() => $('.new-ad') && idle() && $('.new-ad'), 'home')).click();
     await waitFor(() => $$('.tpl-card').length && idle(), 'gallery');
     byText('.gal-top .tchip', /Pedreiros e masseiros/).click();
     await settle();
@@ -160,7 +160,7 @@
 
   test('old ad with a QR link opens in «Link» mode', async () => {
     const raw = RS.model.newProject(RS.templates.get('faixa'), { trade: 'pintor' });
-    delete raw.trades; delete raw.qrMode; delete raw.whatsapp; delete raw.waTemplates;
+    delete raw.trades; delete raw.qrMode; delete raw.whatsapp; delete raw.waTemplates; delete raw.nameAuto; // old ads had none of these
     raw.texts['pt-PT'].qr = 'https://exemplo.pt/vagas';
     delete raw.texts['pt-PT'].waMessage;
     raw.name = 'Anúncio antigo';

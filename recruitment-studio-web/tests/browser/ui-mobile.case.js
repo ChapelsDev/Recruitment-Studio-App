@@ -67,8 +67,8 @@
     assert(innerWidth <= 380 && $('.home-top').scrollWidth <= innerWidth, `the home is not phone-sized: ${innerWidth} px, its top bar ${$('.home-top').scrollWidth} px`);
     const site = await waitFor(() => $('.home .empty-site'), 'the building site');
     assert(site.querySelector('svg'), 'no drawing');
-    const cta = site.querySelector('.new-card');
-    assert(cta && /Criar anúncio/.test(cta.textContent), 'the crane holds no «Criar anúncio» card');
+    const cta = site.querySelector('.new-ad');
+    assert(cta && /Novo anúncio/.test(cta.textContent), 'the crane holds no «Novo anúncio» bubble');
     const plus = rect(cta.querySelector('.new-plus .ico')), circle = rect(cta.querySelector('.new-plus'));
     assert(plus.left >= circle.left && plus.right <= circle.right && plus.top >= circle.top && plus.bottom <= circle.bottom, 'the «+» is outside its circle');
     const r = rect(site);
@@ -105,14 +105,15 @@
 
   test('mobile: the section bar floats above the bottom edge, whole and on top', async () => {
     assert(innerWidth <= 380, `the page is not phone-sized: ${innerWidth} × ${innerHeight}`);
-    await waitFor(() => $('.home') && idle() && $('.new-card'), 'home');
-    $('.new-card').click();
+    await waitFor(() => $('.home') && idle() && $('.new-ad'), 'home');
+    $('.new-ad').click();
     await waitFor(() => $$('.tpl-card').length && idle(), 'gallery');
     $$('.tpl-card')[0].click();
     await waitFor(() => $('.editor') && idle(), 'editor');
     await sleep(400);
     checkBar();
-    assertEqual($$('.editor .rail button').map(name), ['Oferta', 'Contactos', 'Fotos', 'Estilo', 'Exportar']);
+    // «Balão» (2026-10-28): «Exportar» is in the top bar, not on the floating bar
+    assertEqual($$('.editor .rail button').map(name), ['Oferta', 'Contactos', 'Fotos', 'Estilo']);
   });
 
   test('mobile: the editor is never wider than the phone', async () => {
@@ -140,25 +141,109 @@
     await section('Oferta');
   });
 
-  test('mobile: the top bar\'s two rows fit the phone; the floating bar holds at most six in every piece', async () => {
+  // «Balão» (2026-10-28): row 1 is back, the name (two lines) and «Exportar»; row 2 the pieces;
+  // the formats, the language, undo, redo and the ⋯ run along the poster's bottom edge
+  test('mobile: the top bar fits the phone in two rows; the floating bar holds at most six in every piece', async () => {
     for (const p of ['Imagem', 'Carrossel', 'Vídeo']) {
       await piece(p);
-      const back = rect($('.editor .topbar > .btn.ghost')), nameBox = rect($('.editor .topbar .name-wrap')), more = rect($('.editor .topbar .editor-more'));
-      const row2 = rect($('.editor .topbar .tb-row'));
-      // row 1: ‹ · name · ⋯ side by side; row 2 under it: piece · language · ↶ ↷
-      for (const [what, r] of [['‹', back], ['the name', nameBox], ['⋯', more], ['the second row', row2]]) {
+      const back = rect($('.editor .topbar .tb-back')), nameBox = rect($('.editor .topbar .name-wrap')), exp = rect($('.editor .topbar .tb-right .btn.primary'));
+      const row2 = rect($('.editor .topbar .tb-center'));
+      for (const [what, r] of [['back', back], ['the name', nameBox], ['Exportar', exp], ['the second row', row2]]) {
         assert(r.left >= -0.5 && r.right <= innerWidth + 0.5, `${p}: ${what} leaves the screen (${Math.round(r.left)}–${Math.round(r.right)} of ${innerWidth})`);
       }
-      assert(Math.abs(back.top - more.top) < 12 && nameBox.left >= back.right - 1 && more.left >= nameBox.right - 1, `${p}: ‹, the name and ⋯ are not one row`);
-      assert(row2.top >= Math.max(back.bottom, more.bottom) - 1, `${p}: the piece switch is not under the first row`);
-      for (const el of $$('.editor .topbar .tb-row button')) {
-        const r = rect(el);
-        if (!el.closest('.locales-chips')) assert(r.left >= -0.5 && r.right <= innerWidth + 0.5, `${p}: «${name(el) || el.getAttribute('aria-label')}» leaves the screen`);
-      }
+      assert(Math.abs(back.top - exp.top) < 16 && nameBox.left >= back.right - 1 && exp.left >= nameBox.right - 1, `${p}: back, the name and Exportar are not one row`);
+      assert(row2.top >= Math.max(back.bottom, exp.bottom) - 1, `${p}: the piece switch is not under the first row`);
       checkBar();
       assert($$('.editor .rail button').length <= 6, `${p}: ${$$('.editor .rail button').length} buttons on the floating bar`);
     }
     await piece('Imagem');
+  });
+
+  test('mobile: the poster takes about half the screen', async () => {
+    await piece('Imagem');
+    if ($('.editor.sheet-strip')) { $('.sheet-handle').click(); await sleep(400); }
+    await waitFor(() => $('.workspace canvas.poster') && rect($('.workspace canvas.poster')).height > 0, 'the poster');
+    await sleep(300);
+    const h = rect($('.workspace canvas.poster')).height;
+    const parts = ['.topbar', '.preview-content', '.stage', '.stage-tools', '.stage-foot'].map((q) => `${q} ${$(q) ? Math.round(rect($(q)).height) : '-'}`).join(', ');
+    assert(h >= 0.4 * innerHeight, `the poster is ${Math.round(h)} px tall on a ${innerHeight} px screen (${parts})`);
+  });
+
+  test('mobile: a long name keeps the top bar whole', async () => {
+    const field = $('.editor .topbar .name-input');
+    H.type(field, 'Pedreiros, serventes e mais 1, La Chaux-de-Fonds');
+    field.blur();
+    await sleep(300);
+    const bar = $('.editor .topbar');
+    assert(bar.scrollWidth <= bar.clientWidth + 0.5, `the top bar scrolls sideways (${bar.scrollWidth} > ${bar.clientWidth})`);
+    const exp = rect($('.editor .topbar .tb-right .btn.primary'));
+    assert(exp.left >= 0 && exp.right <= innerWidth + 0.5, `Exportar is cut (${Math.round(exp.left)}–${Math.round(exp.right)} of ${innerWidth})`);
+    assert(document.documentElement.scrollWidth <= screen.width, `the page is ${document.documentElement.scrollWidth} px wide`);
+  });
+
+  // (the review found the row 377 px wide with two languages on a 360 px phone, 469 px in Story)
+  test('mobile: with two languages, in Retrato and in Story, the stage tools stay on the phone', async () => {
+    await piece('Imagem');
+    if ($('.editor.sheet-strip')) { $('.sheet-handle').click(); await sleep(400); }
+    if ($$('.stage-tools .locales-chips > *').length < 2) {
+      $('.stage-tools .locales .chip.add').click();
+      (await waitFor(() => $$('.editor .locales .menu [role="menuitem"]').find((b) => /Fran/.test(b.textContent)), 'French in the menu')).click();
+      await waitFor(() => $$('.stage-tools .locales-chips > *').length >= 2, 'the second language');
+      await sleep(400);
+    }
+    try {
+      for (const fmt of ['Retrato', 'Story']) {
+        $(`.stage-tools [role="radio"][aria-label^="${fmt}"]`).click();
+        await sleep(600);
+        assert(document.documentElement.scrollWidth <= screen.width, `${fmt}: the page is ${document.documentElement.scrollWidth} px wide on a ${screen.width} px phone`);
+        for (const b of $$('.stage-tools button, .stage-tools label')) {
+          if (!b.getClientRects().length) continue;
+          const q = rect(b);
+          assert(q.left >= -0.5 && q.right <= screen.width + 0.5, `${fmt}: «${b.getAttribute('aria-label') || name(b)}» is off the screen (${Math.round(q.left)}–${Math.round(q.right)} of ${screen.width})`);
+        }
+      }
+    } finally {
+      $('.stage-tools [role="radio"][aria-label^="Retrato"]').click();
+      await sleep(400);
+    }
+  });
+
+  // deferred minor (2026-10-29): on a phone the tape measure and its size stay on the poster
+  test('mobile: Ilustrativo, the tape measure and its size stay on the poster in Story', async () => {
+    await piece('Imagem');
+    if ($('.editor.sheet-strip')) { $('.sheet-handle').click(); await sleep(400); }
+    const before = RS.appearance.get().motion;
+    RS.appearance.set({ motion: 'illustrative' });
+    try {
+      $('.stage-tools [role="radio"][aria-label^="Story"]').click();
+      const tape = await waitFor(() => $('.tape-measure'), 'the tape measure', 1500);
+      await sleep(300);
+      const wrap = rect($('.workspace .poster-wrap')), t = rect(tape), d = rect(tape.querySelector('.dims'));
+      assert(t.right <= screen.width + 0.5 && d.right <= screen.width + 0.5 && d.left >= -0.5, `the tape or its size is off the screen (${Math.round(t.right)}, ${Math.round(d.left)}–${Math.round(d.right)} of ${screen.width})`);
+      assert(d.bottom <= wrap.bottom + 0.5, `the size sits under the poster, over the tools (${Math.round(d.bottom)} > ${Math.round(wrap.bottom)})`);
+    } finally {
+      RS.appearance.set({ motion: before });
+      $('.stage-tools [role="radio"][aria-label^="Retrato"]').click();
+      await sleep(1000);
+    }
+  });
+
+  test('mobile: the name field is at least 16 px, so an iPhone does not zoom in', async () => {
+    const f = $('.editor .topbar .name-input');
+    assert(parseFloat(getComputedStyle(f).fontSize) >= 16, `the name is ${getComputedStyle(f).fontSize}`);
+  });
+
+  test('mobile: the strip stop while writing', async () => {
+    await section('Oferta');
+    const field = await waitFor(() => $('#f-headline'), 'the headline');
+    field.focus();
+    await sleep(450);
+    const h = rect($('.workspace canvas.poster')).height;
+    assert(h <= 0.2 * innerHeight, `the poster stays ${Math.round(h)} px tall while writing on a ${innerHeight} px screen`);
+    field.blur();
+    $('.sheet-handle').click();
+    await sleep(400);
+    assert(!$('.editor.sheet-strip'), 'the handle did not bring the poster back');
   });
 
   test('mobile: the bar steps aside while a text is typed and comes back', async () => {
@@ -182,7 +267,7 @@
 
   test('mobile: «Definições» is in the editor\'s ⋯ and a sheet of the home, and both fit the phone', async () => {
     // the editor: ⋯ opens a menu inside the screen; «Definições» there opens the settings sheet
-    $('.editor .topbar .editor-more').click();
+    $('.editor .editor-more').click();
     const menu = await waitFor(() => $('.editor .editor-menu'), 'the ⋯ menu');
     await sleep(250);
     const mr = rect(menu);
@@ -219,7 +304,7 @@
   });
 
   test('mobile: a sheet rises from the bottom with a spring', async () => {
-    byText('.editor .rail button', /Exportar/).click();
+    $('.editor .topbar .tb-right .btn.primary').click(); // «Balão»: «Exportar» is in the top bar
     const sheet = await waitFor(() => $('.modal.export'), 'the export sheet');
     const cs = getComputedStyle(sheet);
     assertEqual(cs.animationName, 'feel-sheet-in');
@@ -256,7 +341,7 @@
     const q = RS.model.newProject(RS.templates.list[1]); q.name = 'Segundo anúncio';
     await RS.store.putProject(q);
     // the home lists it once it opens again
-    $('.new-card').click();
+    $('.new-ad').click();
     await waitFor(() => $$('.tpl-card').length && idle(), 'gallery');
     $('.gallery .gal-head .btn.ghost').click();
     await waitFor(() => $('.home') && idle() && $$('.proj-card').length >= 2, 'the home with 2 ads');
@@ -265,6 +350,35 @@
     const first = rect($('.proj-card'));
     assert(first.top < innerHeight - 60, `the first ad starts at ${Math.round(first.top)} px on a ${innerHeight} px screen`);
     assert(!$('#project-search'), 'the search shows with 2 ads');
-    for (const b of $$('.proj-card .proj-pieces button')) assert(rect(b).height >= 44 && rect(b).width >= 44, `«${b.getAttribute('aria-label')}» is too small to touch`);
+    for (const b of $$('.proj-card .proj-more')) assert(rect(b).height >= 44 && rect(b).width >= 44, `«${b.getAttribute('aria-label')}» is too small to touch`);
+  });
+
+  // «Balão» (2026-10-28): on a phone a dialog is a sheet from the bottom with 24 px top corners
+  test('mobile: dialogs are bottom sheets', async () => {
+    if (!$('.editor')) {
+      await H.goHome();
+      $('.proj-open').click();
+      await waitFor(() => $('.editor') && idle(), 'the editor');
+    }
+    $('.editor .topbar .tb-right .btn.primary').click();
+    const sheet = await waitFor(() => $('.modal.export'), 'the export sheet');
+    await sleep(600);
+    const r = rect(sheet), cs = getComputedStyle(sheet);
+    assert(Math.abs(r.bottom - innerHeight) <= 1, `the sheet ends at ${Math.round(r.bottom)} on a ${innerHeight} px screen`);
+    assertEqual(cs.borderTopLeftRadius, '24px');
+    assertEqual(cs.borderTopRightRadius, '24px');
+    $('.modal.export .modal-head .icon-btn').click();
+    await waitFor(() => !$('.modal-back'), 'the sheet to close');
+  });
+
+  // (last: it removes the ad's photo)
+  test('mobile: without a photo the poster says how to add one', async () => {
+    await piece('Imagem');
+    await section('Fotos');
+    const remove = byText('#editor-panel .btn', /Remover/);
+    if (remove) { remove.click(); await sleep(400); }
+    const hint = await waitFor(() => $('.stage-foot .stage-hint'), 'the hint');
+    assert(/Sem fotografia/.test(hint.textContent), hint.textContent);
+    assert(hint.getClientRects().length && rect(hint).height > 0, 'the «Sem fotografia» hint is hidden on the phone');
   });
 })();

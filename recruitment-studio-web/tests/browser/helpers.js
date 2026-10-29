@@ -175,6 +175,8 @@ window.H = (() => {
     if (x) { x.click(); await waitFor(() => !$('.modal-back'), 'the export dialog to close', 4000); }
   }
   async function goHome() {
+    // a case run alone (TEST_GREP) starts before the app has drawn its first screen
+    await waitFor(() => $('.home') || $('.editor') || $('.gallery'), 'the app', 15000);
     await closeExport();
     if ($('.home')) return;
     const back = $('.editor .topbar .btn.ghost') || $('.gallery .gal-head .btn.ghost');
@@ -187,7 +189,7 @@ window.H = (() => {
       if (name === 'home') await goHome();
       else if (name === 'gallery') {
         await goHome();
-        $('.new-card').click();
+        $('.new-ad').click();
         await waitFor(() => $$('.tpl-card').length && idle() && $$('.tpl-card .poster-thumb.drawn').length, 'the gallery', 20000);
       } else if (name === 'editor') {
         await closeExport();

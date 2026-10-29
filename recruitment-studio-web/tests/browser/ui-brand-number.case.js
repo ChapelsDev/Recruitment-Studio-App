@@ -5,7 +5,7 @@
   const { $, $$, byText, idle, waitFor, settle, type, saved } = window.H;
 
   test('home «Mostrar QR» keeps the number; new ads get it and keep the company name', async () => {
-    await waitFor(() => $('.home') && idle() && $('.new-card'), 'home');
+    await waitFor(() => $('.home') && idle() && $('.new-ad'), 'home');
     byText('.home-top button', /Mostrar QR/).click();
     type(await waitFor(() => $('.meet #meet-number'), 'the number field'), '914000222');
     await settle();
@@ -15,7 +15,7 @@
     await waitFor(() => !$('.meet'), 'the overlay to close', 3000);
     const brand = await waitFor(async () => RS.store.getMeta('brand'), 'the brand');
     assertEqual(brand.whatsapp, { country: '351', number: '914000222' });
-    $('.new-card').click();
+    $('.new-ad').click();
     await waitFor(() => $$('.tpl-card').length && idle(), 'gallery');
     $$('.tpl-card')[0].click();
     await waitFor(() => $('.editor') && idle(), 'editor');

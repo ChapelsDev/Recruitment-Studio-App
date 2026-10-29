@@ -1,7 +1,7 @@
 // Offline cache, used only when the app is served over http(s) (e.g. installed
 // on a phone). tools/build-web.mjs rewrites CACHE and CORE for each publish, so
 // phones pick up new versions by themselves.
-const CACHE = 'recruitment-studio-5cd6c3441b';
+const CACHE = 'recruitment-studio-7631227526';
 const CORE = [
   "./",
   "./assets/app.css",
@@ -26,6 +26,9 @@ const CORE = [
   "./index.html",
   "./js/app.js",
   "./js/appearance.js",
+  "./js/backup.js",
+  "./js/carousel-art.js",
+  "./js/carousel-ui.js",
   "./js/contact.js",
   "./js/engine.js",
   "./js/haptics.js",
@@ -35,6 +38,8 @@ const CORE = [
   "./js/motion-kit.js",
   "./js/motion-timeline.js",
   "./js/motion.js",
+  "./js/production-ui.js",
+  "./js/production.js",
   "./js/recipes/apresentacao.js",
   "./js/recipes/colagem.js",
   "./js/recipes/contrato.js",
@@ -48,6 +53,8 @@ const CORE = [
   "./js/recipes/pixel.js",
   "./js/recipes/planta.js",
   "./js/recipes/tijolo.js",
+  "./js/reuse.js",
+  "./js/slides.js",
   "./js/sound.js",
   "./js/store.js",
   "./js/templates.js",
@@ -55,6 +62,8 @@ const CORE = [
   "./js/ui-motion.js",
   "./js/util.js",
   "./js/video.js",
+  "./js/workflow-ui.js",
+  "./js/workflow.js",
   "./manifest.webmanifest",
   "./photos/library.js",
   "./vendor/htm-preact.umd.js",
@@ -62,25 +71,65 @@ const CORE = [
   "./vendor/qrcode.js"
 ];
 
-// After install, the page asks for the full photo library so everything works
-// without a connection. Photos already cached are skipped.
-async function cachePhotos() {
-  const cache = await caches.open(CACHE);
-  const index = (await cache.match('./photos/library.js')) || (await fetch('./photos/library.js'));
-  if (!index || !index.ok) return;
-  const ids = [...(await index.clone().text()).matchAll(/"id":"([^"]+)"/g)].map((m) => m[1]);
-  for (const id of ids) {
-    const url = `./photos/full/${id}.js`;
-    if (await cache.match(url)) continue;
-    try {
-      const res = await fetch(url);
-      if (res.ok) await cache.put(url, res);
-    } catch {
-      return; // offline again: carry on next time
-    }
-  }
+let preparing = null, preparationErrors = [];
+const progressPorts = new Set();
+async function photoURLs(cache) {
+  const index = await cache.match('./photos/library.js');
+  if (!index?.ok) return null;
+  return [...new Set([...(await index.clone().text()).matchAll(/"id"\s*:\s*"([a-zA-Z0-9_-]+)"/g)].map((m) => `./photos/full/${m[1]}.js`))];
 }
-self.addEventListener('message', (e) => { if (e.data === 'cache-photos') e.waitUntil(cachePhotos()); });
+async function offlineStatus() {
+  const cache = await caches.open(CACHE), urls = await photoURLs(cache);
+  const count = async (list) => (await Promise.all(list.map(async (url) => !!(await cache.match(url))?.ok))).filter(Boolean).length;
+  const coreReady = await count(CORE), photosReady = await count(urls || []);
+  const errors = [];
+  for (const error of preparationErrors) if (!error.url || !(await cache.match(error.url))?.ok) errors.push(error);
+  return { version: CACHE, coreReady, coreTotal: CORE.length, appReady: coreReady === CORE.length,
+    photosReady, photosTotal: urls?.length ?? null, running: !!preparing, errors };
+}
+async function broadcastStatus() {
+  const state = await offlineStatus(), message = { type: 'rs-offline-status', state };
+  for (const port of progressPorts) { try { port.postMessage(message); } catch {} }
+  for (const client of await self.clients.matchAll({ type: 'window', includeUncontrolled: true })) client.postMessage(message);
+  return state;
+}
+function prepareOffline() {
+  if (preparing) return preparing;
+  preparationErrors = [];
+  preparing = (async () => {
+    const cache = await caches.open(CACHE);
+    async function ensure(url) {
+      if ((await cache.match(url))?.ok) return;
+      const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 20000);
+      try {
+        const res = await fetch(new Request(url, { cache: 'reload', signal: controller.signal }));
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        await cache.put(url, res);
+      } catch (e) { preparationErrors.push({ url, reason: e.name === 'AbortError' ? 'A ligação demorou demasiado.' : e.name === 'QuotaExceededError' ? 'Não há espaço disponível no navegador.' : e.name === 'TypeError' ? 'Falha de ligação. Tente novamente com rede.' : e.message || 'Não foi possível obter este recurso.' }); }
+      finally { clearTimeout(timer); }
+      await broadcastStatus();
+    }
+    await broadcastStatus();
+    for (const url of CORE) await ensure(url);
+    const photos = await photoURLs(cache);
+    if (photos) for (const url of photos) await ensure(url);
+  })().catch((e) => { preparationErrors.push({ url: '', reason: e.message || 'Não foi possível preparar os recursos.' }); }).finally(async () => {
+    preparing = null; await broadcastStatus();
+  });
+  return preparing;
+}
+self.addEventListener('message', (e) => {
+  const command = typeof e.data === 'string' ? e.data : e.data?.type, port = e.ports?.[0];
+  if (!['cache-photos', 'rs-offline-prepare', 'rs-offline-query'].includes(command)) return;
+  if (port) progressPorts.add(port);
+  e.waitUntil((async () => {
+    try {
+      if (command !== 'rs-offline-query') await prepareOffline();
+      const state = await offlineStatus(); port?.postMessage({ type: 'rs-offline-status', state, done: true });
+    } catch (error) { port?.postMessage({ error: error.message, done: true }); }
+    finally { if (port) { progressPorts.delete(port); port.close(); } }
+  })());
+});
 
 // `cache: 'reload'`: the new copy comes from the server, never from the
 // browser's HTTP cache (some servers let it keep old files for a while).
@@ -91,14 +140,15 @@ self.addEventListener('install', (e) => {
 });
 self.addEventListener('activate', (e) => {
   e.waitUntil(caches.keys()
-    .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+    .then((keys) => Promise.all(keys.filter((k) => k.startsWith('recruitment-studio-') && k !== CACHE).map((k) => caches.delete(k))))
     .then(() => self.clients.claim()));
 });
 // Cache first; anything else (photos of the library) is cached the first time it is used.
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET' || new URL(e.request.url).origin !== self.location.origin) return;
-  e.respondWith(caches.match(e.request).then((hit) => hit || fetch(e.request).then((res) => {
-    if (res.ok) { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(e.request, copy)); }
+  e.respondWith(caches.open(CACHE).then(async (cache) => (await cache.match(e.request)) || fetch(e.request).then((res) => {
+    if (res.ok) e.waitUntil(cache.put(e.request, res.clone()).catch(() => {}));
     return res;
   })));
 });
+

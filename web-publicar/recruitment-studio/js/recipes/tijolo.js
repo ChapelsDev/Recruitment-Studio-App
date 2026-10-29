@@ -706,7 +706,7 @@
       dark: { bg: '#1A1714', ink: '#F2EDE4', main: '#C4502E', accent: '#E8A27A' },
     },
     // 10–30 s: benefits, highlights and positions in pages, each page drawn by the model
-    bgModes: ['light', 'dark'], photos: 0, travel: 'crane', pages: true, pageMove: true,
+    bgModes: ['light', 'dark'], photos: 0, travel: 'crane', pages: true, pageMove: true, slides: { V: true },
     // colours that depend on the chosen ones: text on the bricks, the 3D faces, the board
     colors(c) {
       // the brick is the highlight: «Cor de destaque» colours the bricks

@@ -151,6 +151,7 @@ RS.store = (() => {
     if (rec.deletedAt) throw new Error('Restaure primeiro o anúncio da reciclagem.');
     const p = clone(rec.data);
     p.organization = RS.model.cleanOrganization({ ...p.organization, ...patch });
+    RS.model.applyAutoName(p); // the location joins an automatic name
     p.updatedAt = Date.now();
     return projectRecord(p, rec.thumb, rec, { checkpoint: true, reason: 'Antes de organizar' });
   });

@@ -1,9 +1,9 @@
 // Interface: opening animation, home, template gallery, editor with live
 // preview, photo library, export. Works with mouse, keyboard and touch.
 (() => {
-  const { html, render, useState, useEffect, useLayoutEffect, useRef, useMemo, useCallback } = window.htmPreact;
+  const { html, render, useState, useEffect, useLayoutEffect, useRef, useMemo, useCallback, createContext, useContext } = window.htmPreact;
   const U = RS.util, M = RS.model, E = RS.engine, T = RS.templates, S = RS.store, A = RS.assets, L = RS.library, TR = RS.trades, C = RS.contact;
-  const { CountUp, CotaLoader, BrickLoader, CraneProgress, Celebration, useDelayed } = RS.ui;
+  const { CountUp, TypingLoader, CraneProgress, Celebration, useDelayed } = RS.ui;
   const W = RS.workflow;
   const { Modal, OrganizationDialog, HomeFilters, TranslationDialog } = RS.workflowUI({ Icon, ListEditor });
   const { ReuseDialog, ProductionDialog, BackupDialog, VideoCoverDialog, FormatComparison, VideoTimeline } = RS.productionUI({ Icon, Modal, PhotoLibrary, confirmDialog, toast, makeThumb, videoPhotos, afterPaint: () => afterPaint() });
@@ -108,6 +108,15 @@
   function Wordmark({ small }) {
     const live = RS.ui.useMotionStyle() === 'illustrative';
     return html`<span class=${'wordmark' + (small ? ' small' : '')}>${live ? WM_LIVE : html`<img class="wm-mark" src="assets/brand/icon-small.svg" alt="" width="26" height="26" />`}Recruitment Studio</span>`;
+  }
+  // The home band's mark (on the orange): the icon's white bubble and its three dots,
+  // which type now and then in Ilustrativo.
+  function BandMark() {
+    const live = RS.ui.useMotionStyle() === 'illustrative';
+    return html`<span class="wordmark band-mark"><svg class=${'band-glyph' + (live ? ' wm-live' : '')} viewBox="0 0 32 32" width="30" height="30" aria-hidden="true" focusable="false">
+      <path d="M5 4h22a3 3 0 0 1 3 3v13a3 3 0 0 1-3 3H13l-6 5v-5H5a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3z" fill="#fff" />
+      <circle class="wm-dot" cx="10" cy="13.5" r="2" fill="#000" /><circle class="wm-dot" cx="16" cy="13.5" r="2" fill="#000" /><circle class="wm-dot" cx="22" cy="13.5" r="2" fill="#000" />
+    </svg>Recruitment Studio</span>`;
   }
   function useSize(ref) {
     const [size, setSize] = useState({ w: 0, h: 0 });
@@ -864,29 +873,54 @@
       } });
     }
 
-    const newCard = html`<button class=${'new-card' + (busy === 'gallery' ? ' busy' : '')} onClick=${() => { if (!busy || navAnim.on) onNew(); }} style="--i:0" aria-busy=${busy === 'gallery'}>
-      <span class="new-plus">${busy === 'gallery' ? html`<${Spinner} large />` : html`<${Icon} name="plus" size=${30} stroke=${2.4} />`}</span>
-      <strong>${busy === 'gallery' ? 'A abrir os modelos…' : 'Criar anúncio'}</strong>
-      <span>Começar por escolher um modelo</span>
+    // «Balão»: the call to action is a white speech bubble on the orange band (on the
+    // crane's hook while there are no ads)
+    const newAd = html`<button class=${'new-ad' + (busy === 'gallery' ? ' busy' : '')} onClick=${() => { if (!busy || navAnim.on) onNew(); }} aria-busy=${busy === 'gallery'}>
+      <span class="new-plus" aria-hidden="true">${busy === 'gallery' ? html`<${Spinner} />` : html`<${Icon} name="plus" size=${20} stroke=${2.6} />`}</span>
+      <span>${busy === 'gallery' ? 'A abrir os modelos…' : 'Novo anúncio'}</span>
     </button>`;
+    const total = recs ? recs.length : 0;
+    const device = window.matchMedia && window.matchMedia('(pointer: coarse)').matches ? 'telemóvel' : 'computador';
+    const count = total === 1 ? `1 oferta guardada neste ${device}` : `${total} ofertas guardadas neste ${device}`;
+    // the same name twice: the template tells the two cards apart
+    const names = useMemo(() => {
+      const n = new Map();
+      for (const r of shown) n.set(r.name, (n.get(r.name) || 0) + 1);
+      return n;
+    }, [shown]);
+    const metaOf = (r) => {
+      const langs = M.languagesLine(r.data.locales || []);
+      const when = U.relativeDay(r.updatedAt);
+      return names.get(r.name) > 1 ? `${T.get(r.template).name}, ${langs.charAt(0).toLowerCase()}${langs.slice(1)}, ${when}` : `${langs}, ${when}`;
+    };
+    useEffect(() => { RS.appearance.setBar('band'); return () => RS.appearance.setBar('surface'); }, []);
     return html`<div class="home screen">
       ${live && html`<div class="home-ambient" aria-hidden="true">
         <svg class="amb-crane" viewBox="0 0 220 220"><path d="M40 220V22M56 220V22M40 38L56 54L40 70L56 86L40 102L56 118L40 134L56 150L40 166L56 182L40 198L56 214M40 22L48 2L56 22M48 2V22M4 22H216M56 32H206L216 22M48 2L216 22M48 2L4 22" /></svg>
         <span class="amb-load"><i></i><b></b></span>
       </div>`}
-      <header class="home-top">
-        <${Wordmark} />
-        <div class="spacer"></div>
-        ${reading && html`<span class="project-file-status" role="status"><${Spinner} /> A abrir…</span>`}
-        <button class="icon-btn home-qr" onClick=${() => setMeet(true)} aria-label="Mostrar QR" title="Mostrar QR: o seu WhatsApp para mostrar cara a cara"><${Icon} name="qr-code" /><span class="sr-only">Mostrar QR</span></button>
-        <${MoreMenu} where="home" items=${[
-          { label: reading ? 'A abrir…' : 'Abrir ficheiro', icon: 'folder-open', disabled: reading, title: 'Abrir um anúncio guardado num ficheiro (.anuncio)', onClick: openFile },
-          { label: 'Marcas e modelos', icon: 'copy', onClick: () => setReuseOpen(true) },
-          { label: 'Cópias de segurança', icon: 'save', onClick: () => setBackupOpen(true) },
-          { label: 'Reciclagem', icon: 'trash-2', onClick: () => setRecovery({ id: null }) },
-          inst.offered && { label: inst.label, icon: inst.toPhone ? 'smartphone' : 'download', cls: 'install-item', title: inst.title, onClick: inst.install },
-          { label: 'Definições', icon: 'settings', title: 'Movimento, tema e vibração', onClick: () => setSettings(true) },
-        ].filter(Boolean)} />
+      <header class="home-band">
+        <div class="home-top">
+          <${BandMark} />
+          <div class="spacer"></div>
+          ${reading && html`<span class="project-file-status" role="status"><${Spinner} /> A abrir…</span>`}
+          <button class="icon-btn home-qr" onClick=${() => setMeet(true)} aria-label="Mostrar QR" title="Mostrar QR: o seu WhatsApp para mostrar cara a cara"><${Icon} name="qr-code" /><span class="sr-only">Mostrar QR</span></button>
+          <${MoreMenu} where="home" items=${[
+            { label: reading ? 'A abrir…' : 'Abrir ficheiro', icon: 'folder-open', disabled: reading, title: 'Abrir um anúncio guardado num ficheiro (.anuncio)', onClick: openFile },
+            { label: 'Marcas e modelos', icon: 'copy', onClick: () => setReuseOpen(true) },
+            { label: 'Cópias de segurança', icon: 'save', onClick: () => setBackupOpen(true) },
+            { label: 'Reciclagem', icon: 'trash-2', onClick: () => setRecovery({ id: null }) },
+            inst.offered && { label: inst.label, icon: inst.toPhone ? 'smartphone' : 'download', cls: 'install-item', title: inst.title, onClick: inst.install },
+            { label: 'Definições', icon: 'settings', title: 'Movimento, tema e vibração', onClick: () => setSettings(true) },
+          ].filter(Boolean)} />
+        </div>
+        <div class="band-row">
+          <div class="band-words">
+            <h1>Os seus anúncios</h1>
+            <p class="home-count">${recs ? count : ' '}${fileSaving ? html` <span class="project-file-status" role="status"><${Spinner} /> A preparar projeto…</span>` : ''}</p>
+          </div>
+          ${recs && recs.length > 0 && newAd}
+        </div>
       </header>
       ${inst.sheet}
       ${settings && html`<${SettingsSheet} onClose=${() => setSettings(false)} />`}
@@ -896,37 +930,38 @@
       ${recovery && html`<${RecoveryDialog} projectId=${recovery.id} onClose=${() => setRecovery(null)} onRestore=${() => refresh()} />`}
       ${organizing && html`<${OrganizationDialog} project=${organizing.data} onClose=${() => setOrganizing(null)} onSave=${async (o) => { await S.updateOrganization(organizing.id, o); await refresh(); }} />`}
       <main class="home-main">
-        <div class="home-intro">
-          <h1>Os seus anúncios</h1>
-          <p>Imagem, carrossel e vídeo de cada oferta, guardados neste aparelho.${fileSaving ? html` <span class="project-file-status" role="status"><${Spinner} /> A preparar projeto…</span>` : ''}</p>
-        </div>
         ${findable && recs.length > 0 && html`<${HomeFilters} records=${recs} filters=${filters} onChange=${changeFilters} /><p class="filter-count" role="status">${shown.length} de ${recs.length} anúncios</p>`}
-        ${!recs ? null : !recs.length ? html`<${EmptySite}>${newCard}<//>` : html`<div ref=${gridRef} class=${'card-grid stagger' + (busy === 'gallery' || (busy && busy.startsWith('open:')) ? ' is-busy' : '')}>
-          ${newCard}
-          ${shown.map((r, i) => html`<div key=${r.id} data-id=${r.id} data-flip=${r.id} class=${'proj-card' + (busy === `open:${r.id}` ? ' busy' : '')} style=${`--i:${Math.min(i + 1, 10)}`}>
+        ${!recs ? null : !recs.length ? html`<${EmptySite}>${newAd}<//>` : html`<div ref=${gridRef} class=${'card-grid stagger' + (busy === 'gallery' || (busy && busy.startsWith('open:')) ? ' is-busy' : '')}>
+          ${shown.map((r, i) => {
+            const org = M.cleanOrganization(r.data.organization);
+            const open = (piece) => { if (busy && !navAnim.on) return; onOpen(r.data, `open:${r.id}`, piece); };
+            return html`<div key=${r.id} data-id=${r.id} data-flip=${r.id} class=${'proj-card' + (busy === `open:${r.id}` ? ' busy' : '')} style=${`--i:${Math.min(i + 1, 10)}`}>
             <button class="proj-open" onClick=${(e) => { if (busy && !navAnim.on) return; markPoster(e.currentTarget.querySelector('.proj-thumb')); onOpen(r.data, `open:${r.id}`); }}
-              aria-label=${`Abrir ${r.name}`} aria-busy=${busy === `open:${r.id}`}>
+              aria-label=${`Abrir ${r.name}`} aria-busy=${busy === `open:${r.id}`}
+              aria-describedby=${[org.status !== 'draft' && `proj-st-${r.id}`, org.favorite && `proj-fav-${r.id}`, `proj-meta-${r.id}`].filter(Boolean).join(' ')}>
               <span class="proj-thumb">${r.thumb ? html`<img src=${r.thumb} alt="" />` : html`<span class="proj-thumb-empty"><${Icon} name="image" size=${28} /></span>`}
-                ${busy === `open:${r.id}` && html`<span class="busy-veil"><${Spinner} large /> A abrir…</span>`}</span>
+                ${busy === `open:${r.id}` && html`<span class="busy-veil"><${Spinner} large /> A abrir…</span>`}
+                ${org.status !== 'draft' && html`<span id=${`proj-st-${r.id}`} class=${`proj-status ${org.status}`}>${org.status === 'published' || org.status === 'ready' ? html`<${Icon} name="check" size=${13} stroke=${2.6} />` : ''}${M.STATUSES[org.status]}</span>`}
+                ${org.favorite && html`<span id=${`proj-fav-${r.id}`} class="proj-fav-mark" role="img" aria-label="Favorito"><${Icon} name="star" size=${13} /></span>`}</span>
               <span class="proj-name">${r.name || 'Sem título'}</span>
-              <span class="proj-meta">${T.get(r.template).name} · ${U.relativeTime(r.updatedAt)}</span>
-              <span class="proj-organization"><span class=${`project-status ${M.cleanOrganization(r.data.organization).status}`}>${M.STATUSES[M.cleanOrganization(r.data.organization).status]}</span>${r.data.organization && r.data.organization.campaign && html`<span class="project-campaign">${r.data.organization.campaign}</span>`}</span>
+              <span id=${`proj-meta-${r.id}`} class="proj-meta">${metaOf(r)}</span>
+              ${org.campaign && html`<span class="project-campaign">${org.campaign}</span>`}
             </button>
-            <div class="proj-pieces" role="group" aria-label=${`Abrir ${r.name || 'Sem título'} em`}>
-              ${[['image', 'image', 'Abrir na imagem'], ['carousel', 'layers', 'Abrir no carrossel'], ['video', 'video', 'Abrir no vídeo']].map(([piece, icon, label]) => html`<button key=${piece} class="icon-btn"
-                aria-label=${`${label}: ${r.name || 'Sem título'}`} title=${label} onClick=${() => { if (busy && !navAnim.on) return; onOpen(r.data, `open:${r.id}`, piece); }}><${Icon} name=${icon} size=${16} /></button>`)}
-            </div>
-            <button class="icon-btn proj-favorite" aria-label=${`Favorito: ${r.name}`} aria-pressed=${M.cleanOrganization(r.data.organization).favorite} onClick=${() => favorite(r)}><${Icon} name="star" size=${18} /></button>
-            <button class="icon-btn proj-more" aria-label=${`Mais ações para ${r.name}`} aria-expanded=${menu === r.id}
+            <button class="proj-more icon-btn" aria-label=${`Mais ações para ${r.name}`} aria-expanded=${menu === r.id}
               onClick=${(e) => { e.stopPropagation(); setMenu(menu === r.id ? null : r.id); }}><${Icon} name="ellipsis" /></button>
             ${menu === r.id && html`<div class="menu pop" role="menu">
+              <button role="menuitem" onClick=${() => open('image')}><${Icon} name="image" /> Abrir na imagem</button>
+              <button role="menuitem" onClick=${() => open('carousel')}><${Icon} name="layers" /> Abrir no carrossel</button>
+              <button role="menuitem" onClick=${() => open('video')}><${Icon} name="video" /> Abrir no vídeo</button>
+              <button role="menuitem" onClick=${() => favorite(r)}><${Icon} name="star" /> ${org.favorite ? 'Tirar dos favoritos' : 'Marcar como favorito'}</button>
               <button role="menuitem" onClick=${() => setOrganizing(r)}><${Icon} name="folder-open" /> Organizar anúncio</button>
               <button role="menuitem" onClick=${() => duplicate(r)}><${Icon} name="copy" /> Duplicar</button>
               <button role="menuitem" disabled=${fileSaving} onClick=${() => saveFile(r.data)}><${Icon} name="save" /> Guardar ficheiro do projeto</button>
               <button role="menuitem" onClick=${() => setRecovery({ id: r.id })}><${Icon} name="clock" /> Histórico de versões</button>
               <button role="menuitem" class="danger" onClick=${() => remove(r)}><${Icon} name="trash-2" /> Mover para a reciclagem</button>
             </div>`}
-          </div>`)}
+          </div>`;
+          })}
         </div>`}
         ${recs && recs.length > 0 && !shown.length && html`<p class="workflow-empty">Nenhum anúncio corresponde aos filtros. <button class="btn link" onClick=${() => changeFilters({ ...W.DEFAULT_FILTERS })}>Limpar filtros</button></p>`}
         ${recs && !recs.length && html`<p class="home-empty">Ainda não há anúncios. O primeiro demora dois minutos.</p>`}
@@ -1141,7 +1176,10 @@
     const kind = key.split(':')[0];
     if (kind === 'x') return { block: key, field: `cx-${key.slice(2)}`, at: Date.now() };
     const block = { headline: 'H', kicker: 'H', intro: 'I', benefit: 'M', highlight: 'D', position: 'L', message: 'C', closing: 'F', contact: 'K' }[kind] || 'H';
-    const field = { headline: 'vt-headline', kicker: 'vt-kicker', intro: 'vt-intro', message: 'vt-message', closing: 'vt-closing' }[kind] || null;
+    // a list item: its own row (vt-benefits-<id>, vt-highlights-<id>, vt-positions-<id>)
+    const list = { benefit: 'benefits', highlight: 'highlights', position: 'positions' }[kind];
+    const field = list ? `vt-${list}-${key.slice(kind.length + 1)}`
+      : { headline: 'vt-headline', kicker: 'vt-kicker', intro: 'vt-intro', message: 'vt-message', closing: 'vt-closing' }[kind] || null;
     return { block, field, at: Date.now() };
   };
   const REGION_LABELS = {
@@ -1178,20 +1216,28 @@
     const [meetOpen, setMeetOpen] = useState(false);
     const [guides, setGuides] = useState(true);
     const [report, setReport] = useState(null);
+    const [lastField, setLastField] = useState(null); // the panel field last written in
+    // the field being written when the letters shrank: the note stays under it while they stay smaller
+    // (null: the cause was Estilo or the format, the note goes under the poster)
+    const noteCause = useRef({ on: false, field: null });
+    useEffect(() => { RS.appearance.setBar('surface'); }, []);
     const [pvLarge, setPvLarge] = useState(false);
-    const [previewCollapsed, setPreviewCollapsed] = useState(() => { try { return localStorage.getItem('rs-preview-collapsed') === 'true'; } catch { return false; } });
+    // the phone's sheet under the poster: 'half' (the poster about half the screen) or 'strip' (writing)
+    const [sheet, setSheet] = useState('half');
+    const sheetDrag = useRef(null);
     const [panelWidth, setPanelWidth] = useState(() => { try { return U.clamp(Number(localStorage.getItem('rs-panel-width')) || 410, 300, 580); } catch { return 410; } });
     const [viewportWidth, setViewportWidth] = useState(window.innerWidth);
     const panelDrag = useRef(null);
     const panelMax = Math.min(580, Math.max(300, viewportWidth - 410));
     const shownPanelWidth = Math.min(panelWidth, panelMax);
     useEffect(() => { const resize = () => setViewportWidth(window.innerWidth); window.addEventListener('resize', resize); return () => window.removeEventListener('resize', resize); }, []);
-    useEffect(() => { try { localStorage.setItem('rs-panel-width', String(panelWidth)); localStorage.setItem('rs-preview-collapsed', String(previewCollapsed)); } catch {} }, [panelWidth, previewCollapsed]);
+    useEffect(() => { try { localStorage.setItem('rs-panel-width', String(panelWidth)); } catch {} }, [panelWidth]);
     const resizePanel = (value) => setPanelWidth(U.clamp(Math.round(value), 300, panelMax));
     const [mode, setMode] = useState(['image', 'carousel', 'video'].includes(initialPiece) ? initialPiece : 'image'); // the piece on screen
     const [vFormat, setVFormat] = useState('story'); // the format the «Vídeo» stage plays (Reels and Stories are 9:16)
     const mobile = useMedia('(max-width: 860px)');
     const hist = useRef({ past: [], future: [], lastKey: null, lastAt: 0 });
+    const swapRef = useRef(null); // the next render's stage swap (RS.ui.stageSwap kind)
     const projRef = useRef(project);
     const imgRef = useRef(images);
     const saveTimer = useRef(null), saveQueue = useRef(Promise.resolve());
@@ -1245,11 +1291,16 @@
 
     const update = useCallback((fn, opts = {}) => {
       if (session.current.resolving) return;
+      // «Balão»: how the poster moves to its new look (a colour rolls down; see RS.ui.stageSwap)
+      if (opts.swap) swapRef.current = opts.swap;
+      else if (typeof opts.coalesce === 'string' && opts.coalesce.startsWith('color:')) swapRef.current = 'roll';
       setProject((prev) => {
         const next = U.clone(prev);
         fn(next);
         // an image item deleted takes its video edit with it (nothing left to «Repor»)
         M.pruneVideoTexts(next);
+        // an automatic name follows every change it is made of (trades, location, or the title of an ad without trades)
+        M.applyAutoName(next);
         next.updatedAt = Date.now();
         const h = hist.current, now = Date.now();
         if (!(opts.coalesce && h.lastKey === opts.coalesce && now - h.lastAt < 1200)) {
@@ -1266,12 +1317,16 @@
       if (session.current.resolving) return;
       const h = hist.current;
       if (!h.past.length) return;
+      swapRef.current = 'rewind';
+      RS.ui.sayNear(document.querySelector('.editor button[aria-label^="Desfazer"]'), 'Desfeito');
       setProject((cur) => { h.future.push(cur); h.lastKey = null; return h.past.pop(); });
     }, []);
     const redo = useCallback(() => {
       if (session.current.resolving) return;
       const h = hist.current;
       if (!h.future.length) return;
+      swapRef.current = 'rewind';
+      RS.ui.sayNear(document.querySelector('.editor button[aria-label^="Refazer"]'), 'Refeito');
       setProject((cur) => { h.past.push(cur); h.lastKey = null; return h.future.pop(); });
     }, []);
 
@@ -1476,7 +1531,9 @@
     // «Definições» (in ⋯): the settings sheet, over the editor
     const [settingsOpen, setSettingsOpen] = useState(false);
     // a piece and a section are independent: «Oferta» and «Contactos» never change the piece
-    const changeMode = (m) => setMode(m);
+    // «Balão» (Ilustrativo): the image becomes a carousel by dealing its slides; back, they gather
+    const [pieceMove, setPieceMove] = useState(null);
+    const changeMode = (m) => { setPieceMove(RS.ui.illustrative() && m !== mode && (mode === 'image' || m === 'image') ? { from: mode, to: m } : null); setMode(m); };
     const goTab = (id) => setTab(id);
     // «Carrossel»: the carousel of the ad, prepared after the frame
     const carouselOn = mode === 'carousel';
@@ -1510,6 +1567,7 @@
     const pendingReview = project.locales.length > 1 ? project.locales.flatMap((code) => RS.workflow.reviewRows(project, code)).filter((r) => r.status !== 'reviewed').length : 0;
     const staleCaptions = project.locales.filter((l) => ['stale', 'unverified'].includes(M.captionStatus(project, l)));
     const menuItems = [
+      mode === 'image' && { label: 'Comparar formatos', icon: 'scaling', title: 'A mesma língua nos três formatos', onClick: () => setComparisonOpen(true) },
       { label: fileSaving ? 'A preparar projeto…' : 'Guardar ficheiro', icon: 'save', disabled: fileSaving, title: 'Guardar uma cópia do projeto num ficheiro (.anuncio)', onClick: saveFile },
       { label: 'Histórico de versões', icon: 'clock', onClick: openHistory },
       { label: 'Mostrar QR', icon: 'qr-code', title: 'O seu WhatsApp para mostrar cara a cara', onClick: () => setMeetOpen(true) },
@@ -1524,27 +1582,45 @@
     // bracketed group is a second row: .tb-row)
     const sectionInfo = railFor(mode).find((t) => t.id === tab) || RAIL[0];
     const videoSection = video && ['fotos', 'estilo', 'sequencia'].includes(tab);
-    return html`<div class=${'editor screen' + (pvLarge ? ' pv-large' : '') + (video ? ' video-mode' : '') + (mobile && previewCollapsed ? ' preview-collapsed' : '')} style=${{ '--editor-panel-width': `${shownPanelWidth}px` }}>
+    // a note goes under its field while that field is on screen, else under the poster
+    const shrinking = !!noteFor(report, null);
+    if (shrinking !== noteCause.current.on) noteCause.current = { on: shrinking, field: shrinking ? lastField : null };
+    const note = noteFor(report, noteCause.current.field);
+    if (note && note.field && ![...document.querySelectorAll('[data-note-host]')].some((el) => el.dataset.noteHost === note.field)) note.field = null;
+    const langs = html`<${LocaleSwitcher} project=${project} update=${update} />`;
+    const undoRedo = html`<button class="icon-btn" onClick=${undo} disabled=${!hist.current.past.length} aria-label="Desfazer (Ctrl+Z)" title="Desfazer (Ctrl+Z)"><${Icon} name="undo-2" /></button>
+      <button class="icon-btn" onClick=${redo} disabled=${!hist.current.future.length} aria-label="Refazer (Ctrl+Y)" title="Refazer (Ctrl+Y)"><${Icon} name="redo-2" /></button>`;
+    // on a phone the ⋯ sits by the poster with undo and redo, and also enlarges it
+    const stageMenu = [menuItems[0] && menuItems[0].label === 'Comparar formatos' ? menuItems[0] : null,
+      mode === 'image' && project.format === 'story' ? { label: guides ? 'Esconder zonas do Instagram' : 'Mostrar zonas do Instagram', icon: 'smartphone', onClick: () => setGuides(!guides) } : null,
+      { label: pvLarge ? 'Reduzir' : 'Ampliar', icon: pvLarge ? 'zoom-out' : 'zoom-in', title: pvLarge ? 'Reduzir a pré-visualização' : 'Ampliar a pré-visualização', onClick: () => transition(() => setPvLarge(!pvLarge)) },
+      ...menuItems.filter((it) => it.label !== 'Comparar formatos')].filter(Boolean);
+    const stageTools = mobile ? html`${undoRedo}<${MoreMenu} items=${stageMenu} where="editor" />` : null;
+    return html`<div class=${'editor screen' + (pvLarge ? ' pv-large' : '') + (video ? ' video-mode' : '') + (mobile && sheet === 'strip' ? ' sheet-strip' : '')} style=${{ '--editor-panel-width': `${shownPanelWidth}px` }}>
       <header class=${'topbar' + (saveError || !S.isPersistent() ? ' has-save-warning' : '')}>
-        <button class="btn ghost" onClick=${exit} disabled=${leaving} aria-busy=${leaving} aria-label=${leaving ? 'A guardar e a voltar aos anúncios' : 'Voltar aos anúncios'}>
-          ${leaving ? html`<${Spinner} />` : html`<${Icon} name="chevron-left" />`} <span class="hide-sm">${leaving ? 'A guardar…' : 'Anúncios'}</span></button>
+        <div class="tb-left">
+        <button class="btn ghost tb-back" onClick=${exit} disabled=${leaving} aria-busy=${leaving} aria-label=${leaving ? 'A guardar e a voltar aos anúncios' : 'Voltar aos anúncios'}>
+          ${leaving ? html`<${Spinner} />` : html`<${Icon} name="chevron-left" />`}</button>
         <div class="name-wrap">
-          <input class="name-input" name="project-name" value=${project.name} aria-label="Nome do anúncio (só para si, não aparece na imagem)"
-            title="Nome do anúncio (só para si, não aparece na imagem)"
-            onInput=${(e) => update((p) => { p.name = e.target.value; p.nameAuto = false; }, { coalesce: 'name' })} />
-          <span class=${'save-state ' + saveState} role="status" aria-live="polite" aria-atomic="true"><span class="save-dot" aria-hidden="true"></span>${saveState === 'saved' && saves > 0 && S.isPersistent() && html`<svg key=${saves} class="save-check" viewBox="0 0 22 14" aria-hidden="true" focusable="false"><path d="M2 7.5 L7 12 L15.5 2" pathLength="100" /><path class="save-trowel" d="M0 0 L7 0 L5 -4 Z" /></svg>`}${saveState === 'saving' ? 'A guardar…' : saveState === 'error' ? 'Não foi possível guardar' : S.isPersistent() ? 'Guardado' : 'Só nesta sessão'}</span>
+          ${mobile
+            // on a phone the name may take two lines; Enter ends the edit
+            ? html`<textarea class="name-input" name="project-name" rows="2" value=${project.name} aria-label="Nome do anúncio (só para si, não aparece na imagem)"
+              onKeyDown=${(e) => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } }}
+              onInput=${(e) => { const v = e.target.value.replace(/[\r\n]+/g, ' '); update((p) => { p.name = v; p.nameAuto = false; }, { coalesce: 'name' }); }} />`
+            : html`<input class="name-input" name="project-name" value=${project.name} aria-label="Nome do anúncio (só para si, não aparece na imagem)"
+              title="Nome do anúncio (só para si, não aparece na imagem)"
+              onInput=${(e) => update((p) => { p.name = e.target.value; p.nameAuto = false; }, { coalesce: 'name' })} />`}
+          <span class=${'save-state ' + saveState} role="status" aria-live="polite" aria-atomic="true"><span class="save-dot" aria-hidden="true"></span>${saveState === 'saved' && saves > 0 && S.isPersistent() && html`<svg key=${saves} class="save-ticks" viewBox="0 0 26 16" aria-hidden="true" focusable="false"><path class="k1" d="M2 9l4 4 8-10" pathLength="100" /><path class="k2" d="M11 12l1 1 8-10" pathLength="100" /></svg>`}${saveState === 'saving' ? 'A guardar…' : saveState === 'error' ? 'Não foi possível guardar' : S.isPersistent() ? 'Guardado' : 'Só nesta sessão'}</span>
         </div>
-        <div class="tb-row">
+        </div>
+        <div class="tb-center">
           <${PieceSwitch} mode=${mode} onChange=${changeMode} />
-          <div class="spacer"></div>
-          <${LocaleSwitcher} project=${project} update=${update} />
-          <div class="tb-group">
-            <button class="icon-btn" onClick=${undo} disabled=${!hist.current.past.length} aria-label="Desfazer (Ctrl+Z)" title="Desfazer (Ctrl+Z)"><${Icon} name="undo-2" /></button>
-            <button class="icon-btn" onClick=${redo} disabled=${!hist.current.future.length} aria-label="Refazer (Ctrl+Y)" title="Refazer (Ctrl+Y)"><${Icon} name="redo-2" /></button>
-          </div>
         </div>
-        <${MoreMenu} items=${menuItems} where="editor" />
-        <button class="btn primary hide-sm" onClick=${() => setExportOpen(true)} title="Exportar (Ctrl+E)"><${Icon} name="download" /> Exportar</button>
+        <div class="tb-right">
+          ${!mobile && undoRedo}
+          ${!mobile && html`<${MoreMenu} items=${menuItems} where="editor" />`}
+          <button class="btn primary" onClick=${() => setExportOpen(true)} title="Exportar (Ctrl+E)"><${Icon} name="download" /> <span>Exportar</span></button>
+        </div>
         ${!conflict && (saveError || !S.isPersistent()) && html`<div class="save-recovery" role="alert">
           <span>${!S.isPersistent() ? 'Este navegador está a guardar apenas nesta sessão. Guarde um ficheiro antes de fechar.' : 'As alterações ainda não estão guardadas. ' + saveError}</span>
           ${S.isPersistent() && html`<button class="btn ghost sm" disabled=${saveState === 'saving'} onClick=${() => persist().catch(() => {})}>Tentar guardar novamente</button>`}
@@ -1555,14 +1631,21 @@
           <div class="row-btns"><button class="btn ghost sm" disabled=${resolvingConflict || !conflict.current || !!conflict.current.deletedAt} onClick=${() => resolveConflict('reload')}>Recarregar guardada</button><button class="btn primary sm" disabled=${resolvingConflict} onClick=${() => resolveConflict('copy')}>Guardar como cópia</button><button class="btn ghost sm" disabled=${resolvingConflict || !conflict.current || !!conflict.current.deletedAt} onClick=${() => resolveConflict('takeover')}>Continuar nesta janela</button><button class="btn ghost sm" disabled=${fileSaving} onClick=${saveFile}>Guardar ficheiro de segurança</button></div>
         </div>`}
       </header>
+      <${NoteContext.Provider} value=${note}>
       <div class="editor-body" inert=${resolvingConflict ? '' : undefined}>
         <nav class="rail" role="tablist" aria-label="Secções do editor">
           ${railFor(mode).map((t) => html`<button key=${t.id} role="tab" aria-selected=${sectionInfo.id === t.id} class=${sectionInfo.id === t.id ? 'on' : ''} onClick=${() => goTab(t.id)}>
             <${Icon} name=${t.icon} size=${20} /><span>${t.label}</span>
           </button>`)}
-          ${mobile && html`<button class="rail-export" onClick=${() => setExportOpen(true)}><${Icon} name="download" size=${20} /><span>Exportar</span></button>`}
         </nav>
-        <aside id="editor-panel" key=${`${mode}:${sectionInfo.id}`} class=${'panel' + (videoSection ? ' video-panel' : '')} role="tabpanel" aria-label=${sectionInfo.label}>
+        <aside id="editor-panel" key=${`${mode}:${sectionInfo.id}`} class=${'panel' + (videoSection ? ' video-panel' : '')} role="tabpanel" aria-label=${sectionInfo.label}
+          onInput=${(e) => setLastField(sectionInfo.id === 'estilo' || !e.target || !e.target.id ? null : e.target.id)}
+          onClick=${(e) => { if (sectionInfo.id === 'estilo' && e.target.closest && e.target.closest('button')) setLastField(null); }}
+          onfocusin=${(e) => { if (mobile && e.target && e.target.matches && e.target.matches('input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="file"]), textarea')) setSheet('strip'); }}>
+          ${mobile && html`<button class="sheet-handle" aria-label="Mudar o tamanho da pré-visualização" aria-expanded=${sheet === 'half'} aria-controls="editor-preview"
+            onClick=${() => { if (sheetDrag.current && sheetDrag.current.moved) { sheetDrag.current = null; return; } sheetDrag.current = null; setSheet(sheet === 'half' ? 'strip' : 'half'); }}
+            onPointerDown=${(e) => { sheetDrag.current = { y: e.clientY, moved: false }; }}
+            onPointerMove=${(e) => { const d = sheetDrag.current; if (!d || d.moved) return; const dy = e.clientY - d.y; if (Math.abs(dy) > 40) { d.moved = true; setSheet(dy < 0 ? 'strip' : 'half'); } }}><span aria-hidden="true"></span></button>`}
           ${sectionInfo.id === 'oferta' && html`<${TextPanel} ...${panelProps} />`}
           ${sectionInfo.id === 'contactos' && html`<${ContactsPanel} ...${panelProps} />`}
           ${videoSection ? html`<${VideoPanel} project=${project} update=${update} images=${images} photos=${vPhotos} P=${vP} vKey=${vKey}
@@ -1581,19 +1664,19 @@
           onPointerUp=${() => { panelDrag.current = null; }} onPointerCancel=${() => { panelDrag.current = null; }}
           onDblClick=${() => resizePanel(410)} onKeyDown=${(e) => { const next = { ArrowLeft: shownPanelWidth - (e.shiftKey ? 10 : 20), ArrowRight: shownPanelWidth + (e.shiftKey ? 10 : 20), Home: 300, End: panelMax }[e.key]; if (next != null) { e.preventDefault(); resizePanel(next); } }}></div>`}
         <div class="preview-shell">
-          ${mobile && html`<button class="preview-toggle" aria-expanded=${!previewCollapsed} aria-controls="editor-preview" onClick=${() => { setPreviewCollapsed(!previewCollapsed); setPvLarge(false); }}><${Icon} name=${previewCollapsed ? 'eye' : 'chevron-up'} size=${16} />${previewCollapsed ? 'Mostrar pré-visualização' : 'Recolher pré-visualização'}</button>`}
-          <div id="editor-preview" class="preview-content" hidden=${mobile && previewCollapsed}>
-        ${!(mobile && previewCollapsed) && (carouselOn ? html`<${CarouselStage} project=${project} update=${update} P=${cP} mobile=${mobile} onField=${(key) => { setTab('sequencia'); setCFocus(carouselFocus(key)); }} />`
-        : video ? html`<${VideoStage} P=${vP} project=${project} format=${vFormat} setFormat=${setVFormat} mobile=${mobile} quiet=${exportOpen || productionOpen || reuseOpen || coverAt !== null} onCover=${setCoverAt} coverReady=${!!vFresh} pvLarge=${pvLarge} setPvLarge=${setPvLarge} guides=${guides} setGuides=${setGuides} />`
+          <div id="editor-preview" class="preview-content">
+        ${(carouselOn ? html`<${CarouselStage} project=${project} update=${update} P=${cP} mobile=${mobile} deal=${!!pieceMove && pieceMove.from === 'image' && pieceMove.to === 'carousel'} topRight=${langs} tools=${stageTools} onField=${(key) => { setTab('sequencia'); setCFocus(carouselFocus(key)); }} />`
+        : video ? html`<${VideoStage} P=${vP} project=${project} format=${vFormat} setFormat=${setVFormat} mobile=${mobile} topRight=${langs} tools=${stageTools} quiet=${exportOpen || productionOpen || reuseOpen || coverAt !== null} onCover=${setCoverAt} coverReady=${!!vFresh} pvLarge=${pvLarge} setPvLarge=${setPvLarge} guides=${guides} setGuides=${setGuides} />`
         : html`<${Workspace} project=${project} images=${images} update=${update} onSelect=${focusField}
-          guides=${guides} setGuides=${setGuides} report=${report} onReport=${setReport} busy=${stageBusy}
+          guides=${guides} setGuides=${setGuides} report=${report} onReport=${setReport} busy=${stageBusy} note=${note} topRight=${langs} tools=${stageTools} swapRef=${swapRef} gather=${!!pieceMove && pieceMove.from === 'carousel' && pieceMove.to === 'image'} onCause=${() => setLastField(null)}
           choosePhoto=${choosePhoto} chooseLogo=${chooseLogo} mobile=${mobile} pvLarge=${pvLarge} setPvLarge=${setPvLarge}
           onConvert=${() => changeMode('video')} onCompare=${() => setComparisonOpen(true)} />`)}
           </div>
         </div>
       </div>
+      <//>
       ${historyOpen && html`<${RecoveryDialog} projectId=${project.id} onClose=${() => setHistoryOpen(false)} onRestore=${restored} onSnapshot=${() => persist(true)} editorOptions=${() => ({ editorId: session.current.token, expectedRevision: session.current.revision })} />`}
-      ${organizationOpen && html`<${OrganizationDialog} project=${project} onClose=${() => setOrganizationOpen(false)} onSave=${(o) => update((p) => { p.organization = o; })} />`}
+      ${organizationOpen && html`<${OrganizationDialog} project=${project} onClose=${() => setOrganizationOpen(false)} onSave=${(o) => update((p) => { p.organization = o; M.applyAutoName(p); })} />`}
       ${reviewLocale && html`<${TranslationDialog} project=${project} update=${update} initialLocale=${reviewLocale} onClose=${() => setReviewLocale(null)} onEditVideo=${(code) => { setReviewLocale(null); resolveCheck({ locale: code, videoTab: 'textos' }); }} />`}
       ${reuseOpen && html`<${ReuseDialog} project=${project} images=${images} update=${update} onChange=${setBrand} onClose=${() => setReuseOpen(false)} />`}
       ${productionOpen && html`<${ProductionDialog} project=${project} update=${update} images=${images} onClose=${() => setProductionOpen(false)} />`}
@@ -1675,7 +1758,7 @@
           const on = code === project.locale;
           // a language with translations to review is marked (⋯ › «Rever traduções»)
           const toReview = project.locales.length > 1 && RS.workflow.reviewRows(project, code).some((r) => r.status !== 'reviewed');
-          return html`<span key=${code} class=${'chip' + (on ? ' on' : '')}>
+          return html`<span key=${code} data-code=${code} class=${'chip' + (on ? ' on' : '')}>
             <button class="chip-main" aria-pressed=${on} title=${`Editar em ${l.label}${toReview ? ' · traduções por rever' : ''}`} onClick=${() => update((p) => { p.locale = code; }, { coalesce: 'locale' })}>${l.short}${toReview && html`<span class="chip-dot"><span class="sr-only"> (traduções por rever)</span></span>`}</button>
             ${project.locales.length > 1 && on && html`<button class="chip-x" aria-label=${`Remover ${l.label}`} onClick=${() => removeLocale(code)}><${Icon} name="x" size=${12} stroke=${2.6} /></button>`}
           </span>`;
@@ -1686,7 +1769,8 @@
         <p class="menu-note">Os textos são traduzidos quando ainda são os textos prontos; o resto é copiado para traduzir.</p>
         ${missing.map((l) => html`<button key=${l.code} role="menuitem" onClick=${() => {
           setOpen(false);
-          update((p) => { Object.assign(p, M.addLocale(p, l.code, p.locale)); });
+          update((p) => { Object.assign(p, M.addLocale(p, l.code, p.locale)); }, { swap: 'type' });
+          RS.ui.greet(document.querySelector('.editor .locales .chip.add'), l.code);
           toast(`${l.label} adicionado. Confira e traduza os textos à esquerda.`);
         }}><span class="menu-code">${l.short}</span> ${l.label}</button>`)}
       </div>`}
@@ -1756,13 +1840,22 @@
     }, [value]);
     return html`<textarea ref=${ref} id=${id} rows=${rows} value=${value} placeholder=${placeholder} onInput=${onInput} onBlur=${onBlur}></textarea>`;
   }
+  // «Balão» (2026-10-28): what the app says about the poster sits under the field that
+  // caused it, in a grey bubble; under the poster when the cause was Estilo or a format.
+  const NoteContext = createContext(null);
+  function noteFor(report, lastField) {
+    if (!report || !(report.shrink < 0.97 || (report.minTextSize > 0 && report.minTextSize < 26))) return null;
+    return { field: lastField || null, text: lastField === 'f-headline' ? 'Título longo, a letra ficou mais pequena.' : 'Texto longo, a letra ficou mais pequena.' };
+  }
   function Field({ label, id, value, onInput, multiline, placeholder, hint, type = 'text' }) {
-    return html`<div class="field">
+    const note = useContext(NoteContext);
+    return html`<div class="field" data-note-host=${id}>
       <label for=${id}>${label}</label>
       ${multiline
         ? html`<${AutoTextarea} id=${id} value=${value} onInput=${onInput} placeholder=${placeholder} />`
         : html`<input id=${id} type=${type} value=${value} onInput=${onInput} placeholder=${placeholder} />`}
       ${hint && html`<small class="field-hint">${hint}</small>`}
+      ${note && note.field === id && html`<p class="say field-note" role="status">${note.text}</p>`}
     </div>`;
   }
   function EyeMini({ on, onClick, what }) {
@@ -1887,11 +1980,27 @@
 
   // «Fala comigo»: the recruiter's WhatsApp number, the pill switch and the message
   // the candidate sends (generated until the person writes their own; «Repor»).
+  // The start of a message, at most `n` characters, cut at a word (the chat bubble on the poster).
+  function messageStart(s, n = 40) {
+    const one = String(s || '').replace(/\s+/g, ' ').trim();
+    if (one.length <= n) return one;
+    const head = one.slice(0, n - 1);
+    const cut = head.lastIndexOf(' ');
+    return `${(cut > n / 3 ? head.slice(0, cut) : head).replace(/[\s,.;:!?-]+$/, '')}…`;
+  }
   function WhatsAppFields({ project, update }) {
     const w = project.whatsapp || { country: '351', number: '' };
     const t = project.texts[project.locale];
     const valid = !w.number.trim() || !!C.digits(w.country, w.number);
-    const setW = (patch, coalesce) => update((p) => { p.whatsapp = { country: '351', number: '', ...(p.whatsapp || {}), ...patch }; }, coalesce ? { coalesce } : {});
+    const complete = !!w.number.trim() && valid;
+    // the ✓ pops when the person completes the number, not when an ad opens with one
+    const [popOk, setPopOk] = useState(false);
+    // «Balão»: a number the person completes rings the poster's WhatsApp button (Workspace listens)
+    const setW = (patch, coalesce) => {
+      const next = { ...w, ...patch };
+      if (!C.digits(w.country, w.number) && C.digits(next.country, next.number)) { setPopOk(true); RS.ui.emit('wa-complete', { message: messageStart(C.adMessage(project, project.locale)) }); }
+      update((p) => { p.whatsapp = { country: '351', number: '', ...(p.whatsapp || {}), ...patch }; }, coalesce ? { coalesce } : {});
+    };
     // An empty message means "generated", so an emptied field would snap back
     // to the generated text while the person writes: until they leave the
     // field (or change language) it stays as they left it.
@@ -1908,6 +2017,7 @@
           </select>
           <input id="f-contact-wa" type="tel" inputmode="tel" autocomplete="tel" value=${w.number} placeholder="912 345 678"
             onInput=${(e) => { const v = e.target.value; setW({ number: v }, 'wa-number'); }} />
+          ${complete && html`<span class=${'field-ok' + (popOk ? ' pop' : '')} aria-hidden="true"><${Icon} name="check" size=${16} /></span>`}
         </div>
         ${valid ? html`<small class="field-hint">Os candidatos falam consigo no WhatsApp com um toque.</small>`
           : html`<small class="field-hint warn">Número incompleto: confirme o indicativo e os algarismos.</small>`}
@@ -1998,12 +2108,10 @@
   const PERIOD_LABELS = { hour: 'hora', day: 'dia', week: 'semana', month: 'mês' };
   function TextPanel({ project, update }) {
     const t = project.texts[project.locale];
-    const loc = M.localeInfo(project.locale);
     const set = (key) => (e) => {
       const value = e.target.value;
       update((p) => {
         p.texts[p.locale][key] = value;
-        if (key === 'headline' && p.nameAuto !== false && p.locale === p.locales[0]) p.name = value.replace(/\s*\n\s*/g, ' ').trim() || p.name;
       }, { coalesce: `text:${key}` });
     };
     const show = (key) => (v) => update((p) => { p.show[key] = v; });
@@ -2036,7 +2144,6 @@
     return html`<div class="panel-inner">
       <div class="panel-head">
         <h2>Oferta</h2>
-        <p>A escrever em <strong>${loc.label}</strong>. A pré-visualização acompanha cada letra e o texto ajusta-se sozinho ao espaço.</p>
       </div>
       <${Group} title="Profissões do anúncio" fold="texto:profissoes" closed summary=${project.trades.length ? tradesLabel(project.trades) : 'Nenhuma'}>
         <div class="preset">
@@ -2108,7 +2215,7 @@
     const waOwn = wa && C.digits(wa.country, wa.number);
     const waTwin = waOwn && project.show.waCta !== false && (t.contacts || []).find((c) => C.digits(wa.country, c.text) === waOwn);
     return html`<div class="panel-inner">
-      <div class="panel-head"><h2>Contactos</h2><p>Como os candidatos chegam até si: o WhatsApp, os outros contactos e o código QR.</p></div>
+      <div class="panel-head"><h2>Contactos</h2></div>
       <${Group} title="O seu WhatsApp">
         <${WhatsAppFields} project=${project} update=${update} />
       <//>
@@ -2256,7 +2363,7 @@
       </div>
       <label class="lib-search">Pesquisar fotografias<input type="search" value=${query} placeholder="Nome, descrição, etiquetas…" onInput=${(e) => setQuery(e.target.value)} /></label>
       ${effective === 'mine' && html`<div class="library-filters"><label class="check"><input type="checkbox" checked=${favorite} onChange=${(e) => setFavorite(e.target.checked)} /> Só favoritas</label><label>Etiqueta<select value=${tag} onChange=${(e) => setTag(e.target.value)}><option value="">Todas</option>${[...new Set(mine.flatMap((m) => m.tags || []))].sort().map((t) => html`<option key=${t} value=${t}>${t}</option>`)}</select></label></div>`}
-      ${libWait && html`<${BrickLoader} label="A carregar a biblioteca…" />`}
+      ${libWait && html`<${TypingLoader} label="A carregar a biblioteca…" />`}
       ${!lib ? html`<div class="lib-grid" aria-busy="true" aria-label="A carregar a biblioteca">
         ${[0, 1, 2, 3, 4, 5].map((i) => html`<span key=${i} class="lib-skel"></span>`)}
       </div>` : items.length ? html`<div class=${'lib-grid' + (effective === 'mine' ? ' own-photos' : '') + (locked ? ' is-busy' : '')}>
@@ -2286,7 +2393,7 @@
     const adj = ph ? { ...M.DEFAULT_FX, ...(ph.adj || {}) } : M.DEFAULT_FX;
     const setAdj = (k) => (v) => update((p) => { p.photo.adj = { ...M.DEFAULT_FX, ...(p.photo.adj || {}), [k]: v }; }, { coalesce: `adj-${k}` });
     return html`<div class="panel-inner">
-      <div class="panel-head"><h2>Fotos</h2><p>Arraste ficheiros para aqui ou diretamente para o anúncio.</p></div>
+      <div class="panel-head"><h2>Fotos</h2></div>
       <${Group} title="Fotografia">
         <${DropZone} id="f-photo" kind="photo" label="Escolher fotografia" sub="JPG, PNG ou WebP. No telemóvel pode tirar uma na hora." img=${images.photo} onFile=${choosePhoto}
           busy=${imgBusy === 'photo'} busyLabel="A preparar a fotografia…" />
@@ -2361,9 +2468,9 @@
   function LookPanel({ project, update, images, brand, setBrand, onReuse }) {
     const st = project.style;
     const tpl = T.get(project.template);
-    const setColor = (key) => (v, live) => update((p) => { p.style[key] = v; if (key === 'primary' || key === 'accent') p.style.customColors = true; }, { coalesce: live ? `color:${key}` : undefined });
+    const setColor = (key) => (v, live) => update((p) => { p.style[key] = v; if (key === 'primary' || key === 'accent') p.style.customColors = true; }, { coalesce: live ? `color:${key}` : undefined, swap: 'roll' });
     return html`<div class="panel-inner">
-      <div class="panel-head"><h2>Estilo</h2><p>Modelo, cores, letra e tamanhos. O contraste é corrigido automaticamente para tudo se ler bem.</p></div>
+      <div class="panel-head"><h2>Estilo</h2></div>
       <${Group} title="Modelo" fold="aspeto:modelo" closed summary=${tpl.name} hint="Troque de composição. O texto, as imagens e as cores da marca mantêm-se.">
         <${TemplateGallery} project=${project} update=${update} images=${images} />
       <//>
@@ -2372,7 +2479,7 @@
           ${M.PALETTES.map((pl) => {
             const on = U.normHex(st.primary) === U.normHex(pl.primary) && U.normHex(st.accent) === U.normHex(pl.accent);
             return html`<button key=${pl.id} role="listitem" class=${'palette' + (on ? ' on' : '')} title=${pl.name} aria-label=${`Paleta ${pl.name}`}
-              onClick=${() => update((p) => { p.style.primary = pl.primary; p.style.accent = pl.accent; p.style.customColors = true; })}>
+              onClick=${() => update((p) => { p.style.primary = pl.primary; p.style.accent = pl.accent; p.style.customColors = true; }, { swap: 'roll' })}>
               <span style=${`background:${pl.primary}`}></span><span style=${`background:${pl.accent}`}></span>
             </button>`;
           })}
@@ -2380,7 +2487,7 @@
         ${images.logo && html`<button class="btn ghost sm" onClick=${() => {
           const pal = A.logoPalette(images.logo);
           if (!pal) { toast('Não encontrámos cores fortes no logótipo.', { kind: 'error' }); return; }
-          update((p) => { p.style.primary = pal.primary; p.style.accent = pal.accent; p.style.customColors = true; });
+          update((p) => { p.style.primary = pal.primary; p.style.accent = pal.accent; p.style.customColors = true; }, { swap: 'roll' });
           toast('Cores tiradas do logótipo');
         }}><${Icon} name="pipette" size=${16} /> Usar as cores do logótipo</button>`}
         <div class="color-grid">
@@ -2389,7 +2496,7 @@
           <${ColorField} id="c-bg" label="Fundo" value=${st.bg} onChange=${setColor('bg')} />
           <${ColorField} id="c-text" label="Texto" value=${st.text} onChange=${setColor('text')} />
         </div>
-        <button class="btn link sm" onClick=${() => update((p) => { const d = tpl.defaults; Object.assign(p.style, { primary: d.primary, accent: d.accent, bg: d.bg, text: d.text, customColors: false }); })}>
+        <button class="btn link sm" onClick=${() => update((p) => { const d = tpl.defaults; Object.assign(p.style, { primary: d.primary, accent: d.accent, bg: d.bg, text: d.text, customColors: false }); }, { swap: 'roll' })}>
           <${Icon} name="rotate-ccw" size=${15} /> Repor as cores do modelo ${tpl.name}
         </button>
       <//>
@@ -2431,7 +2538,27 @@
   }
 
   // ---------------------------------------------------------------- workspace (live preview)
-  function Workspace({ project, images, update, onSelect, guides, setGuides, report, onReport, choosePhoto, chooseLogo, mobile, pvLarge, setPvLarge, busy, onConvert, onCompare }) {
+  function Workspace({ project, images, update, onSelect, guides, setGuides, report, onReport, choosePhoto, chooseLogo, mobile, pvLarge, setPvLarge, busy, onConvert, onCompare, note, topRight, tools, swapRef, gather = false, onCause = () => {} }) {
+    const lastFmt = useRef(null);
+    // «Balão» (Ilustrativo): a number just completed rings the poster's WhatsApp button and a chat
+    // bubble types the start of its message; the button appears with the number, so the ring
+    // waits for the render that draws it (for a second at most)
+    const waPending = useRef(null);
+    const [waMoment, setWaMoment] = useState(null);
+    useEffect(() => RS.ui.on('wa-complete', ({ message }) => { if (RS.ui.illustrative()) waPending.current = { message, at: Date.now() }; }), []);
+    useEffect(() => {
+      if (!waMoment) return undefined;
+      const typed = setTimeout(() => setWaMoment((m) => (m && m.id === waMoment.id ? { ...m, typing: false } : m)), 600);
+      const gone = setTimeout(() => setWaMoment((m) => (m && m.id === waMoment.id ? null : m)), 2500);
+      return () => { clearTimeout(typed); clearTimeout(gone); };
+    }, [waMoment && waMoment.id]);
+    // dragging the photo: the centre lines while it sits on the centre, and in Ilustrativo a spirit level
+    const [level, setLevel] = useState(null);
+    const levelTimer = useRef(0);
+    useEffect(() => () => clearTimeout(levelTimer.current), []);
+    // back from the carousel in Ilustrativo the slides gather into the poster
+    const [gathering, setGathering] = useState(gather);
+    useEffect(() => { if (!gathering) return undefined; const t = setTimeout(() => setGathering(false), 500); return () => clearTimeout(t); }, [gathering]);
     const wrapRef = useRef();
     const canvasRef = useRef();
     const regionsRef = useRef([]);
@@ -2455,15 +2582,32 @@
         if (!c) return;
         const dpr = Math.min(2, window.devicePixelRatio || 1);
         const pw = Math.round(cssW * dpr), phh = Math.round(cssH * dpr);
+        // «Balão»: a change asked to move (a new language, colour, format, undo) leaves under a copy of the old poster;
+        // the first drawing of this stage has no old poster (a change made on the carousel or the video waits for nothing)
+        const kind = swapRef && lastFmt.current ? swapRef.current : null;
+        if (swapRef) swapRef.current = null;
+        const swap = kind ? RS.ui.stageSwap(c.parentElement, c, kind, { from: lastFmt.current && [lastFmt.current.w, lastFmt.current.h], to: [fmt.w, fmt.h] }) : null;
+        lastFmt.current = fmt;
         if (c.width !== pw) c.width = pw;
         if (c.height !== phh) c.height = phh;
         const ctx = c.getContext('2d');
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.clearRect(0, 0, c.width, c.height);
-        const res = E.render(ctx, project, { images, scale: (cssW / fmt.w) * dpr, mode: 'editor', guides });
+        // a drawing that fails is reported, and the old poster still leaves (never left over the stage)
+        let res;
+        try { res = E.render(ctx, project, { images, scale: (cssW / fmt.w) * dpr, mode: 'editor', guides }); }
+        catch (err) { console.error('The poster could not be drawn', err); }
+        finally { if (swap) swap.commit(); }
+        if (!res) return;
         regionsRef.current = res.regions;
         infoRef.current = res.photo;
         onReport(res.report);
+        const wa = waPending.current;
+        if (wa) {
+          const g = res.regions.find((r) => r.key === 'contact:wa');
+          if (g) { waPending.current = null; RS.haptics.tick(); setWaMoment({ id: Date.now(), g, message: wa.message, typing: true }); }
+          else if (Date.now() - wa.at > 1000) waPending.current = null;
+        }
       });
       return () => cancelAnimationFrame(id);
     }, [project, images, k, guides]);
@@ -2492,6 +2636,7 @@
         const [a, b] = [...pointers.current.values()];
         pinch.current = { d0: dist(a, b), z0: M.photoForFormat(project.photo, project.format).zoom };
         dragRef.current = null;
+        setLevel(null);
         return;
       }
       const pt = toPoster(e);
@@ -2514,9 +2659,14 @@
         if (!d.moved) return;
         const { rect, dw, dh } = infoRef.current;
         const fxMin = rect.w / 2 / dw, fyMin = rect.h / 2 / dh;
-        const fx = U.clamp(d.fx - dx / dw, fxMin, 1 - fxMin);
-        const fy = U.clamp(d.fy - dy / dh, fyMin, 1 - fyMin);
-        update((p) => M.setPhotoFrame(p, p.format, { fx, fy }), { coalesce: 'photo-drag' });
+        const s = M.snapPhotoFrame(U.clamp(d.fx - dx / dw, fxMin, 1 - fxMin), U.clamp(d.fy - dy / dh, fyMin, 1 - fyMin), { dw, dh });
+        // only an axis the photo can move along has a centre to settle on
+        const x = s.x && dw - rect.w > 1, y = s.y && dh - rect.h > 1;
+        if ((x && !d.snapX) || (y && !d.snapY)) RS.haptics.tick();
+        d.snapX = x; d.snapY = y;
+        clearTimeout(levelTimer.current);
+        setLevel({ x, y, rect, offset: U.clamp(((s.fx - 0.5) * dw) / (rect.w / 2), -1, 1), leaving: false });
+        update((p) => M.setPhotoFrame(p, p.format, { fx: s.fx, fy: s.fy }), { coalesce: 'photo-drag' });
         return;
       }
       if (e.pointerType !== 'mouse') return;
@@ -2529,6 +2679,12 @@
       const d = dragRef.current;
       dragRef.current = null;
       if (!d) return;
+      if (d.moved) {
+        // the lines go with the finger; the spirit level leaves a moment later
+        setLevel((v) => v && { ...v, leaving: true });
+        clearTimeout(levelTimer.current);
+        levelTimer.current = setTimeout(() => setLevel(null), 300);
+      }
       if (!d.moved && d.g) {
         if (d.g.key === 'photo' && !project.photo) choosePhoto();
         else onSelect(d.g.key);
@@ -2552,25 +2708,22 @@
 
     const cursor = hover ? (hover.key === 'photo' ? (project.photo ? 'grab' : 'pointer') : 'pointer') : 'default';
     const showBusy = useDelayed(!!busy, 300);
-    const notes = [];
-    if (report) {
-      if (!project.photo) notes.push({ icon: 'image-plus', text: mobile ? 'Sem fotografia' : 'Sem fotografia: arraste uma para o anúncio.', kind: 'info' });
-      if (report.shrink < 0.97) notes.push({ icon: 'scaling', text: html`<span>Texto reduzido para <${CountUp} value=${Math.round(report.shrink * 100)} />%</span>`, kind: report.shrink < 0.7 ? 'warn' : 'info', title: 'Para letra maior: encurte os textos, oculte um bloco ou experimente outro formato.' });
-      if (report.photoUpscale > 1.6) notes.push({ icon: 'triangle-alert', text: 'Fotografia com pouca resolução', kind: 'warn' });
-      if (report.minTextSize > 0 && report.minTextSize < 26) notes.push({ icon: 'type', text: `Texto pequeno: ${Math.round(report.minTextSize)} px`, kind: 'warn', title: 'Confirme a leitura em Comparar formatos. Pode encurtar o texto ou aumentar o tamanho em Aspeto.' });
-    }
+    // the app speaking about the poster: grey bubbles under it (a note about a field sits under that field)
+    const touch = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+    const hint = !project.photo ? (touch ? 'Sem fotografia: toque no cartaz para escolher uma.' : 'Sem fotografia: arraste uma para o anúncio.')
+      : touch ? 'Toque num texto do cartaz para o mudar.' : 'Clique num texto do cartaz para o mudar.';
+    // the formats and the language: above the poster on a computer, along its bottom edge
+    // on a phone (with undo, redo and the ⋯)
+    const formats = html`<div class="stage-left">
+          <${FormatSwitch} value=${project.format} compact=${mobile} onChange=${(f) => { onCause(); update((p) => { p.format = f; }, { coalesce: 'format', swap: 'tape' }); }} />
+          ${project.format === 'story' && !mobile && html`<label class="switch dark"><input type="checkbox" checked=${guides} onChange=${(e) => setGuides(e.target.checked)} /><span class="switch-ui"></span> <span class="hide-sm">Zonas do Instagram</span><span class="show-sm">Zonas</span></label>`}
+        </div>`;
     return html`<main class="workspace">
-      <div class="ws-bar">
-        <${FormatSwitch} value=${project.format} compact=${mobile} onChange=${(f) => transition(() => update((p) => { p.format = f; }, { coalesce: 'format' }))} />
-        <button class="btn ghost sm" onClick=${onCompare} aria-label="Comparar formatos">Comparar<span class="hide-sm"> formatos</span></button>
-        ${project.format === 'story' && html`<label class="switch dark"><input type="checkbox" checked=${guides} onChange=${(e) => setGuides(e.target.checked)} /><span class="switch-ui"></span> <span class="hide-sm">Zonas do Instagram</span><span class="show-sm">Zonas</span></label>`}
-        ${mobile && html`<button class="icon-btn ws-size" onClick=${() => transition(() => setPvLarge(!pvLarge))} aria-label=${pvLarge ? 'Reduzir pré-visualização' : 'Ampliar pré-visualização'}>
-          <${Icon} name=${pvLarge ? 'zoom-out' : 'zoom-in'} size=${18} /></button>`}
-      </div>
+      ${!mobile && html`<div class="ws-bar stage-top">${formats}<div class="stage-right">${topRight}</div></div>`}
       <div class=${'stage' + (dropping ? ' dropping' : '')} ref=${wrapRef}
         onDragOver=${(e) => { e.preventDefault(); setDropping(true); }} onDragLeave=${(e) => { if (e.currentTarget === e.target) setDropping(false); }} onDrop=${onDrop}>
-        ${showBusy && html`<div class="stage-busy"><${BrickLoader} label=${busy} /></div>`}
-        ${k > 0 && html`<div class=${'poster-wrap' + (busy ? ' loading' : '')} style=${`width:${cssW}px;height:${cssH}px`}>
+        ${showBusy && html`<div class="stage-busy"><${TypingLoader} label=${busy} /></div>`}
+        ${k > 0 && html`<div class=${'poster-wrap' + (busy ? ' loading' : '') + (gathering ? ' gather' : '')} style=${`width:${cssW}px;height:${cssH}px`}>
           <canvas ref=${canvasRef} class="poster" style=${`width:${cssW}px;height:${cssH}px;cursor:${cursor}`}
             role="img" aria-label=${`Pré-visualização do anúncio, formato ${fmt.label} ${fmt.w} por ${fmt.h}`}
             onPointerDown=${onPointerDown} onPointerMove=${onPointerMove} onPointerUp=${onPointerUp} onPointerCancel=${onPointerUp}
@@ -2579,13 +2732,21 @@
           ${hover && html`<div class="hover-box" style=${`left:${hover.x * k - 4}px;top:${hover.y * k - 4}px;width:${hover.w * k + 8}px;height:${hover.h * k + 8}px`}>
             <span class=${'hover-label' + (hover.y * k < 30 ? ' below' : '')}>${regionLabel(hover.key)}</span>
           </div>`}
+          ${level && !level.leaving && level.x && html`<i class="guide-v" aria-hidden="true" style=${`left:${(level.rect.x + level.rect.w / 2) * k}px;top:${level.rect.y * k}px;height:${level.rect.h * k}px`}></i>`}
+          ${level && !level.leaving && level.y && html`<i class="guide-h" aria-hidden="true" style=${`top:${(level.rect.y + level.rect.h / 2) * k}px;left:${level.rect.x * k}px;width:${level.rect.w * k}px`}></i>`}
+          ${level && RS.ui.illustrative() && html`<${RS.ui.SpiritLevel} offset=${level.offset} snapped=${level.x} leaving=${level.leaving} />`}
+          ${waMoment && html`<i class="wa-ring" aria-hidden="true" style=${`left:${waMoment.g.x * k}px;top:${waMoment.g.y * k}px;width:${waMoment.g.w * k}px;height:${waMoment.g.h * k}px`}></i>
+            <span class=${'chat-bubble' + (waMoment.g.y * k < 60 ? ' below' : '')} aria-hidden="true"
+              style=${waMoment.g.y * k < 60 ? `left:${waMoment.g.x * k}px;top:${(waMoment.g.y + waMoment.g.h) * k + 10}px` : `left:${waMoment.g.x * k}px;bottom:${cssH - waMoment.g.y * k + 10}px`}>
+              ${waMoment.typing ? html`<span class="typing-dots"><i></i><i></i><i></i></span>` : waMoment.message}</span>`}
         </div>`}
         ${dropping && html`<div class="drop-hint"><${Icon} name="image-plus" size=${22} /> Largue para usar como fotografia (ou sobre o logótipo para o substituir)</div>`}
       </div>
-      <div class="ws-notes" aria-live="polite">
-        ${notes.length ? notes.map((n) => html`<span class=${'note ' + n.kind} title=${n.title || ''}><${Icon} name=${n.icon} size=${15} /> ${n.text}</span>`)
-          : html`<span class="note ok"><${Icon} name="check" size=${15} /> Tudo cabe no tamanho escolhido</span>`}
-        <span class="ws-tip hide-sm"><${Icon} name="mouse-pointer-click" size=${15} /> Clique num elemento do anúncio para o editar.</span>
+      ${mobile && html`<div class="stage-tools">${formats}<div class="stage-right">${topRight}${tools}</div></div>`}
+      <div class="stage-foot" aria-live="polite">
+        ${note && note.field === null && html`<p class="say stage-note">${note.text}</p>`}
+        ${report && report.photoUpscale > 1.6 && html`<p class="say stage-note">Fotografia com pouca resolução neste formato.</p>`}
+        <p class=${'say stage-hint' + (project.photo ? '' : ' no-photo')}>${hint}</p>
       </div>
     </main>`;
   }
@@ -2595,7 +2756,7 @@
   // sound; a click pauses and resumes it. An edit keeps the time it was at.
   const SOUND_NAMES = { generated: 'música da app', own: 'som próprio', none: 'sem som' };
   // quiet: something else needs the attention (the export dialog): «Ouvir» stops.
-  function VideoStage({ P, project, format, setFormat, mobile, quiet, onCover, coverReady, pvLarge, setPvLarge, guides, setGuides }) {
+  function VideoStage({ P, project, format, setFormat, mobile, quiet, onCover, coverReady, pvLarge, setPvLarge, guides, setGuides, topRight, tools }) {
     const wrapRef = useRef();
     const canvasRef = useRef();
     const at = useRef(0); // the time on screen
@@ -2663,7 +2824,7 @@
     }, [P, k, cssW, cssH, paused, clock, seekTick]);
     const toggle = () => { seekTarget.current = null; if (listening) setListening(false); setPaused((p) => !p); };
     return html`<main class=${'workspace video-stage' + (paused ? ' paused' : '')}>
-      <div class="ws-bar">
+      <div class="ws-bar stage-top">
         <${FormatSwitch} value=${format} compact=${mobile} onChange=${(f) => transition(() => setFormat(f))} />
         ${format === 'story' && html`<button class="btn ghost sm" aria-pressed=${guides} onClick=${() => setGuides(!guides)} aria-label="Mostrar zonas de segurança do vídeo">Zonas</button>`}
         <button class="btn sm ws-pause" onClick=${toggle} aria-label=${paused ? 'Continuar vídeo' : 'Pausar vídeo'} title=${paused ? 'Continuar vídeo' : 'Pausar vídeo'}><${Icon} name=${paused ? 'play' : 'pause'} size=${16} /></button>
@@ -2671,6 +2832,7 @@
         ${vid.sound !== 'none' && html`<button class=${'btn sm ws-listen' + (listening ? ' on' : '')} aria-pressed=${listening} aria-label=${listening ? 'Parar o som' : 'Ouvir o vídeo'} onClick=${() => { seekTarget.current = null; setListening(!listening); }}
           title=${listening ? 'Parar o som' : 'Ver o vídeo com o som'}>
           <${Icon} name=${listening ? 'square' : 'volume-2'} size=${15} /><span class="hide-sm">${listening ? 'Parar' : 'Ouvir'}</span></button>`}
+        <div class="stage-right">${topRight}${tools}</div>
       </div>
       <div class="stage" ref=${wrapRef}>
         ${k > 0 && P && html`<div class="poster-wrap" style=${`width:${cssW}px;height:${cssH}px`}>
@@ -2978,7 +3140,7 @@
       ${choosing && html`<${VideoPhotos} project=${project} ids=${picked} onChange=${(ids) => setPhotoList(ids.length ? 'chosen' : 'trades', ids)} />`}
     <//>`;
     const vs = vid.show || M.DEFAULT_VIDEO_SHOW;
-    const [title, intro] = { estilo: ['Estilo', 'O modelo do vídeo, as cores e a letra.'], sequencia: ['Sequência', 'A duração, os textos e o som do vídeo.'],
+    const [title] = { estilo: ['Estilo', 'O modelo do vídeo, as cores e a letra.'], sequencia: ['Sequência', 'A duração, os textos e o som do vídeo.'],
       fotos: ['Fotos', 'As fotografias do vídeo e o enquadramento de cada uma.'] }[section] || ['Vídeo', ''];
     // «Fotos» of a model without photos says so and where to change it
     const noPhotos = poster ? html`<div class="video-note"><${Icon} name="info" size=${15} />
@@ -2987,7 +3149,7 @@
         <span>Este estilo não usa fotografias. <button type="button" class="btn link sm" onClick=${() => onSection('estilo')}>Mudar de estilo</button></span></div>`;
     return html`<div class="panel-inner">
       <div class="panel-head"><h2>${title}</h2>
-        <p>${style.name}${P ? html` · <${CountUp} value=${P.timeline.duration} /> s` : ''}. ${intro}</p></div>
+        <span class="panel-meta">${style.name}${P ? html`, <${CountUp} value=${P.timeline.duration} /> s` : ''}</span></div>
       <div class="video-section" data-section=${section}>
         ${section === 'fotos' && (photosBlock || noPhotos)}
         ${section === 'estilo' && html`
@@ -3541,16 +3703,16 @@
         toast('Este aparelho não deixou partilhar o vídeo. Use «Descarregar».', { kind: 'error' });
       }
     });
-    const cancelVideo = () => { if (abortRef.current) abortRef.current.abort(); };
+    const cancelExport = () => { if (abortRef.current) abortRef.current.abort(); };
 
     // The carousel: its slides numbered from 01, a folder per language (and per
     // format, when more than one is chosen), with the publication text, in a ZIP.
-    async function carouselOut(step) {
+    async function carouselOut(step, signal) {
       const out = [];
       for (const f of formats) {
         const ls = combos.filter((c) => c.f === f).map((c) => c.l);
         if (!ls.length) continue;
-        const files = await RS.production.carouselFiles(project, { locales: ls, format: f, type: ext, images,
+        const files = await RS.production.carouselFiles(project, { locales: ls, format: f, type: ext, images, signal,
           onProgress: (label, x) => step(label, x != null ? Math.round(x * 100) : null), yieldUI: afterPaint });
         for (const file of files) {
           if (file.name.endsWith('/publicacao.txt')) { if (!out.some((x) => x.name === file.name)) out.push(file); }
@@ -3559,15 +3721,19 @@
       }
       return out;
     }
+    // (Cancelar stops the making: nothing is saved)
     const downloadCarousel = () => combos.length && busyRun('download', async (step) => {
+      abortRef.current = new AbortController();
+      step('A preparar…');
       try {
-        const files = await carouselOut(step);
+        const files = await carouselOut(step, abortRef.current.signal);
         step('A guardar…');
         const zipName = `${U.slug(project.name)}-carrossel.zip`;
         const ok = await U.saveBlob(U.zip(files), zipName, [{ description: 'Arquivo ZIP', accept: { 'application/zip': ['.zip'] } }]);
         const n = files.filter((f) => !f.name.endsWith('.txt')).length;
         if (ok) celebrate(zipName, () => toast(`Carrossel guardado: ${n} ${n === 1 ? 'imagem' : 'imagens'}, numeradas pela ordem de publicação.`));
       } catch (err) {
+        if (err && err.name === 'AbortError') { toast('Carrossel cancelado.'); return; }
         console.error(err);
         RS.haptics.error();
         toast('Não foi possível criar o carrossel. Tente de novo.', { kind: 'error' });
@@ -3575,8 +3741,11 @@
     });
     // shares the slides of the first language and format (one post)
     const shareCarousel = () => combos.length && busyRun('share', async (step) => {
+      abortRef.current = new AbortController();
+      const signal = abortRef.current.signal;
+      step('A preparar…');
       try {
-        const files = (await RS.production.carouselFiles(project, { locales: [first.l], format: first.f, type: ext, images, onProgress: (label) => step(label), yieldUI: afterPaint }))
+        const files = (await RS.production.carouselFiles(project, { locales: [first.l], format: first.f, type: ext, images, signal, onProgress: (label) => step(label), yieldUI: afterPaint }))
           .filter((f) => !f.name.endsWith('.txt')).map((f) => new File([f.bytes], f.name.split('/').pop(), { type: ext === 'png' ? 'image/png' : 'image/jpeg' }));
         if (!navigator.canShare({ files })) throw new Error('share');
         step('A abrir a partilha…');
@@ -3584,7 +3753,8 @@
         await navigator.share({ files, text: caption });
         toast('Partilhado. O texto da publicação também foi copiado.');
       } catch (err) {
-        if (err && err.name === 'AbortError') return;
+        // (Cancelar while making says so; closing the share sheet says nothing)
+        if (err && err.name === 'AbortError') { if (signal.aborted) toast('Carrossel cancelado.'); return; }
         console.error(err);
         RS.haptics.error();
         toast('Este aparelho não deixou partilhar. Use «Descarregar».', { kind: 'error' });
@@ -3737,7 +3907,7 @@
                 ${doing('download') ? html`<${Spinner} /> ${busyText()}` : html`<${Icon} name="video" /> ${canShare && mobile ? 'Descarregar' : vLabel}`}</button>
               ${canShare && !mobile && html`<button class=${'btn ghost' + (doing('share') ? ' busy' : '')} disabled=${!!busy || !!done || !combos.length || noVideo} aria-busy=${doing('share')} onClick=${shareVideo} title="Abre a partilha do Windows">
                 ${doing('share') ? html`<${Spinner} /> ${busyText()}` : html`<${Icon} name="external-link" /> Partilhar`}</button>`}
-              ${busy && html`<button class="btn ghost danger-text" onClick=${cancelVideo}><${Icon} name="x" /> Cancelar</button>`}
+              ${busy && html`<button class="btn ghost danger-text" onClick=${cancelExport}><${Icon} name="x" /> Cancelar</button>`}
               ${mobile && !busy && html`<button class="btn ghost" onClick=${saveFile} disabled=${fileSaving} aria-busy=${!!fileSaving}>${fileSaving ? html`<${Spinner} /> A preparar projeto…` : html`<${Icon} name="save" /> Guardar projeto`}</button>`}
             </div>` : carousel ? html`<div class=${'export-actions' + (busy ? ' is-busy' : '')}>
               ${canShare && mobile && html`<button class=${'btn primary lg' + (doing('share') ? ' busy' : '')} disabled=${!!busy || !!done || !combos.length} aria-busy=${doing('share')} onClick=${shareCarousel}>
@@ -3746,6 +3916,7 @@
                 ${doing('download') ? html`<${Spinner} /> ${busyText()}` : html`<${Icon} name="download" /> ${label}`}</button>
               ${canShare && !mobile && html`<button class=${'btn ghost' + (doing('share') ? ' busy' : '')} disabled=${!!busy || !!done || !combos.length} aria-busy=${doing('share')} onClick=${shareCarousel} title="Abre a partilha do Windows">
                 ${doing('share') ? html`<${Spinner} /> ${busyText()}` : html`<${Icon} name="external-link" /> Partilhar`}</button>`}
+              ${busy && html`<button class="btn ghost danger-text" onClick=${cancelExport}><${Icon} name="x" /> Cancelar</button>`}
             </div>` : html`<div class=${'export-actions' + (busy ? ' is-busy' : '')}>
               ${canShare && mobile && html`<button class=${'btn primary lg' + (doing('share') ? ' busy' : '')} disabled=${!!busy || !!done || !combos.length} aria-busy=${doing('share')} onClick=${share}>
                 ${doing('share') ? html`<${Spinner} /> ${busyText()}` : html`<${Icon} name="external-link" /> Partilhar`}</button>`}
@@ -3785,7 +3956,7 @@
     const [anim, setAnim] = useState(navAnim.on);
     useEffect(() => { navAnim.subs.add(setAnim); return () => navAnim.subs.delete(setAnim); }, []);
     const show = useDelayed(!!busy && !anim, 300);
-    return html`<div class=${'top-progress' + (show ? ' on' : '')} aria-hidden="true">${show && html`<${CotaLoader} bar />`}</div>
+    return html`<div class=${'top-progress' + (show ? ' on' : '')} aria-hidden="true">${show && html`<${TypingLoader} bar />`}</div>
       <div class="sr-only" role="status" aria-live="polite">${busy ? `${BUSY_LABELS[busy.split(':')[0]] || 'A abrir'}…` : ''}</div>`;
   }
 
@@ -3954,7 +4125,7 @@
   // a tick under the finger (Android vibration, iPhone switches; quiet on a PC)
   RS.haptics.install();
   // Ilustrativo: a brick jumps out of a main control when it is pressed
-  RS.ui.tapBricks(document);
+  RS.ui.tapBubbles(document);
   // iPhone Safari applies :active (the press of every button) only on pages that listen to touches
   document.addEventListener('touchstart', () => {}, { passive: true });
   // the «selected» pill glides in every segmented control, tab row and section bar

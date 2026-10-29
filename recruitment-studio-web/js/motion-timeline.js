@@ -117,6 +117,7 @@ RS.motionTimeline = (() => {
       vacancies: vacancies ? { count: vacancies.value, word: vacancies.label } : null,
       positionsTitle: pick('positionsTitle'),
       positions: seen('positions') ? items('positions').map((x) => String(x.text).trim()) : [],
+      positionIds: seen('positions') ? items('positions').map((x) => x.id) : [],
       // the ad's other contacts (for a card without a WhatsApp number), unless hidden
       contacts: seen('contacts') ? items('contacts').map((x) => String(x.text).trim()) : [],
       message: pick('message'),

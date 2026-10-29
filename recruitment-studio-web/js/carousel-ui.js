@@ -25,7 +25,8 @@ RS.carouselUI = ({ Icon, queueThumb, afterPaint, Group, VideoTexts, PhotoLibrary
     const c = carouselOf(project);
     const def = RS.motion.styleOf(M.carouselRecipe({ ...project, carousel: c })).recipe;
     if (!def || !def.photos) return Promise.resolve([]);
-    const key = JSON.stringify([c.style, c.photos, project.trades, project.photo && project.photo.asset]);
+    // (asked again once the ad's own photo has loaded: it is one of the set)
+    const key = JSON.stringify([c.style, c.photos, project.trades, project.photo && project.photo.asset, !!(images && images.photo)]);
     if (!photoSets.has(key)) {
       if (photoSets.size > 6) photoSets.clear();
       photoSets.set(key, RS.slides.photos({ ...project, carousel: c }, images));
@@ -36,7 +37,8 @@ RS.carouselUI = ({ Icon, queueThumb, afterPaint, Group, VideoTexts, PhotoLibrary
   // keeps the last carousel until the new one is ready (no flash per key).
   function useCarousel(project, images, on) {
     const [prep, setPrep] = useState(null);
-    const key = carouselKey(project);
+    // (worked out only while the carousel is on screen)
+    const key = on ? carouselKey(project) : '';
     useEffect(() => {
       if (!on || !RS.slides || !RS.motion.styleOf(M.carouselRecipe({ ...project, carousel: carouselOf(project) })).recipe) return undefined;
       let live = true;
@@ -71,9 +73,12 @@ RS.carouselUI = ({ Icon, queueThumb, afterPaint, Group, VideoTexts, PhotoLibrary
     canvas.dataset.index = String(index);
   }
 
-  function CarouselStage({ project, update, P, mobile, onField }) {
+  function CarouselStage({ project, update, P, mobile, onField, topRight, tools, deal = false }) {
     const c = carouselOf(project);
     const [at, setAt] = useState(0);
+    // «Balão» (Ilustrativo, from the image piece): the poster deals its slides, once
+    const [dealing, setDealing] = useState(deal);
+    useEffect(() => { if (!dealing) return undefined; const t = setTimeout(() => setDealing(false), 1000); return () => clearTimeout(t); }, [dealing]);
     const n = P ? P.slides.length : 0;
     const i = Math.min(at, Math.max(0, n - 1));
     const wrap = useRef(), main = useRef(), prev = useRef(), next = useRef(), press = useRef(null);
@@ -103,7 +108,13 @@ RS.carouselUI = ({ Icon, queueThumb, afterPaint, Group, VideoTexts, PhotoLibrary
     }, [P, i, mainW, sideW, n]);
     const go = (j) => setAt(Math.max(0, Math.min(n - 1, j)));
     const setFormat = (f) => update((p) => { p.carousel = { ...carouselOf(p), format: f }; });
-    const down = (e) => { press.current = { x: e.clientX, y: e.clientY }; };
+    // the press keeps the pointer (a finger leaving the slide still ends the swipe);
+    // a press the browser cancels is neither a swipe nor a tap
+    const down = (e) => {
+      press.current = { x: e.clientX, y: e.clientY };
+      try { e.currentTarget.setPointerCapture(e.pointerId); } catch (err) { /* a pointer the browser no longer tracks */ }
+    };
+    const cancel = () => { press.current = null; };
     const up = (e) => {
       const s = press.current; press.current = null;
       if (!s || !P) return;
@@ -115,19 +126,21 @@ RS.carouselUI = ({ Icon, queueThumb, afterPaint, Group, VideoTexts, PhotoLibrary
       if (key && onField) onField(key, P.slides[i]);
     };
     const s = P && P.slides[i];
-    return html`<div class="carousel-stage" data-style=${P ? P.carouselStyle : ''}>
-      <div class="cs-head">
+    return html`<div class=${'carousel-stage' + (dealing ? ' dealing' : '')} data-style=${P ? P.carouselStyle : ''}
+      onAnimationEnd=${(e) => { if (dealing && e.target.classList.contains('cs-next')) setDealing(false); }}>
+      <div class="cs-head stage-top">
         <div class="seg small cs-formats" role="radiogroup" aria-label="Formato do carrossel">
           ${M.CAROUSEL_FORMATS.map((f) => html`<button key=${f} type="button" role="radio" aria-checked=${c.format === f} class=${c.format === f ? 'on' : ''}
             title=${`${M.FORMATS[f].w} × ${M.FORMATS[f].h}`} onClick=${() => setFormat(f)}>${FORMAT_LABEL[f]}</button>`)}
         </div>
         ${P && P.slidePlan && P.slidePlan.few && html`<span class="cs-note" role="status">O Instagram pede pelo menos 2 diapositivos.</span>`}
+        <div class="stage-right">${topRight}${tools}</div>
       </div>
       <div class="cs-track" ref=${wrap} tabIndex="0" aria-roledescription="carrossel" aria-label=${s ? `Diapositivo ${i + 1} de ${n}: ${slideName(s)}` : 'Carrossel'}
         onKeyDown=${(e) => { if (e.key === 'ArrowLeft') { e.preventDefault(); go(i - 1); } else if (e.key === 'ArrowRight') { e.preventDefault(); go(i + 1); } }}>
         <canvas ref=${prev} class=${'cs-side cs-prev' + (i > 0 ? '' : ' cs-none')} aria-hidden="true" onClick=${() => go(i - 1)}></canvas>
         <canvas ref=${main} class="cs-main" data-style=${P ? P.carouselStyle : ''} role="img" aria-label=${s ? `Diapositivo ${i + 1}: ${slideName(s)}` : 'A preparar o carrossel…'}
-          onPointerDown=${down} onPointerUp=${up}></canvas>
+          onPointerDown=${down} onPointerUp=${up} onPointerCancel=${cancel}></canvas>
         <canvas ref=${next} class=${'cs-side cs-next' + (i < n - 1 ? '' : ' cs-none')} aria-hidden="true" onClick=${() => go(i + 1)}></canvas>
         ${!P && html`<span class="cs-wait" role="status">A preparar o carrossel…</span>`}
       </div>
@@ -148,24 +161,26 @@ RS.carouselUI = ({ Icon, queueThumb, afterPaint, Group, VideoTexts, PhotoLibrary
   const styleName = (id) => (id === 'ad' ? 'Do anúncio' : RS.motion.styleOf(id).recipe ? RS.motion.styleOf(id).name : id);
   const setCarousel = (update, patch, coalesce) => update((p) => { p.carousel = { ...carouselOf(p), ...patch }; }, coalesce ? { coalesce } : {});
   // a style's real cover for this ad, drawn after the frame, one card at a time
-  // (width: its size on screen; the gallery's «Começar por» draws it larger)
+  // (width: its size on screen; the gallery's «Começar por» draws it larger);
+  // a photo style's card shows the ad's photos, as its slides will
   function StyleCover({ project, images, style, width = 112 }) {
     const ref = useRef();
     const key = carouselKey({ ...project, carousel: { ...carouselOf(project), style } });
     useEffect(() => {
       if (!RS.slides) return undefined;
       const job = {};
+      let live = true;
       queueThumb(job, () => {
-        const c = ref.current;
-        if (!c) return;
+        if (!ref.current) return;
         const q = { ...project, carousel: { ...carouselOf(project), style, cover: style === 'ad' ? 'poster' : 'style', format: 'portrait' } };
         if (!RS.motion.styleOf(M.carouselRecipe(q)).recipe) return;
-        try {
-          const P = RS.slides.prepare(q, { format: 'portrait', locale: q.locale, images: images || {}, photos: { hero: null, cards: [], full: [] }, lite: true });
-          drawSlide(c, P, 0, width);
-        } catch (err) { console.error(err); }
+        carouselPhotos(q, images).then((full) => {
+          if (!live || !ref.current) return;
+          const P = RS.slides.prepare(q, { format: 'portrait', locale: q.locale, images: images || {}, photos: { hero: null, cards: [], full }, lite: true });
+          drawSlide(ref.current, P, 0, width);
+        }).catch((err) => console.error(err));
       });
-      return () => queueThumb.cancel && queueThumb.cancel(job);
+      return () => { live = false; if (queueThumb.cancel) queueThumb.cancel(job); };
     }, [style, key, images, width]);
     return html`<canvas ref=${ref} class="cstyle-cover" aria-hidden="true"></canvas>`;
   }
@@ -180,7 +195,7 @@ RS.carouselUI = ({ Icon, queueThumb, afterPaint, Group, VideoTexts, PhotoLibrary
     const in34 = c.format === 'feed34';
     const cover = M.carouselCover({ ...project, carousel: c });
     return html`<div class="panel-inner carousel-panel cstyle-panel">
-      <div class="panel-head"><h2>Estilo</h2><p>O estilo do carrossel e as suas cores. Os textos e as fotografias são os do anúncio.</p></div>
+      <div class="panel-head"><h2>Estilo</h2></div>
       <${Group} title="Estilos" where="carrossel" fold="carousel:styles">
         <div class="cstyle-grid" role="radiogroup" aria-label="Estilo do carrossel">
           ${STYLE_CARDS.map((id) => html`<button key=${id} type="button" role="radio" aria-checked=${c.style === id} data-style=${id}
@@ -196,7 +211,12 @@ RS.carouselUI = ({ Icon, queueThumb, afterPaint, Group, VideoTexts, PhotoLibrary
         ${in34 && html`<p class="group-hint">«Capa: cartaz do anúncio» — Indisponível em 3:4: o cartaz não tem formato 3:4.</p>`}
       <//>
       <${Group} title="Cores" where="carrossel" fold="carousel:colors">
-        ${seg([['style', 'Do estilo'], ['brand', 'Da marca'], ...M.PALETTES.slice(0, 4).map((pl) => [pl.id, pl.name])], c.colors, (v) => setCarousel(update, { colors: v }), 'Cores do carrossel')}
+        ${seg([['style', 'Do estilo'], ['brand', 'Da marca']], c.colors === 'style' || c.colors === 'brand' ? c.colors : null, (v) => setCarousel(update, { colors: v }), 'Cores do carrossel')}
+        <div class="palettes video-palettes" role="radiogroup" aria-label="Paletas prontas">
+          ${M.PALETTES.map((pl) => html`<button key=${pl.id} type="button" role="radio" aria-checked=${c.colors === pl.id} class=${'palette' + (c.colors === pl.id ? ' on' : '')}
+            title=${pl.name} aria-label=${`Paleta ${pl.name}`} onClick=${() => setCarousel(update, { colors: pl.id })}>
+            <span style=${`background:${pl.primary}`}></span><span style=${`background:${pl.accent}`}></span></button>`)}
+        </div>
         <label class="field cstyle-accent">Cor de destaque <input type="color" value=${c.accent || '#ff7b35'} onInput=${(e) => setCarousel(update, { accent: e.target.value }, 'carousel:accent')} /></label>
         ${c.accent && html`<button type="button" class="btn link sm" onClick=${() => setCarousel(update, { accent: null })}>Repor a cor de destaque</button>`}
       <//>
@@ -258,7 +278,7 @@ RS.carouselUI = ({ Icon, queueThumb, afterPaint, Group, VideoTexts, PhotoLibrary
     const extraText = (id) => ((((c.texts || {})[project.locale] || {}).extra) || {})[id] || '';
     const rowAt = (e) => { const el = document.elementFromPoint && document.elementFromPoint(e.clientX, e.clientY); const row = el && el.closest && el.closest('.cseq-row'); return row ? keys.indexOf(row.dataset.key) : -1; };
     return html`<div class="panel-inner carousel-panel cseq-panel">
-      <div class="panel-head"><h2>Sequência</h2><p>Os diapositivos, pela ordem. Arraste para mudar a ordem; o olho tira um bloco do carrossel. Os textos seguem o anúncio até os mudar aqui.</p></div>
+      <div class="panel-head"><h2>Sequência</h2></div>
       ${plan.few && html`<p class="video-note"><${Icon} name="info" size=${15} /> <span>O Instagram pede pelo menos 2 diapositivos: mostre mais um bloco ou acrescente um diapositivo de texto.</span></p>`}
       ${plan.left.length > 0 && html`<p class="video-note"><${Icon} name="info" size=${15} /> <span>Fica de fora (máximo de 20 diapositivos): ${plan.left.map((l) => `${l.count} em «${l.label}»`).join(', ')}.</span></p>`}
       <ol class="cseq-list">
@@ -327,7 +347,7 @@ RS.carouselUI = ({ Icon, queueThumb, afterPaint, Group, VideoTexts, PhotoLibrary
     const [choosing, setChoosing] = useState(c.photos.mode === 'chosen');
     const setIds = (ids) => setCarousel(update, { photos: { mode: ids.length ? 'chosen' : 'trades', ids, focus: c.photos.focus || {} } });
     return html`<div class="panel-inner carousel-panel cphoto-panel">
-      <div class="panel-head"><h2>Fotos</h2><p>As fotografias que o carrossel usa.</p></div>
+      <div class="panel-head"><h2>Fotos</h2></div>
       ${!takes ? html`<p class="video-note"><${Icon} name="info" size=${15} /> <span>Este estilo não usa fotografias. <button type="button" class="btn link sm" onClick=${onStyle}>Mudar de estilo</button></span></p>`
       : html`<${Group} title=${takes === 1 ? 'Fundo' : 'Fotografias'} where="carrossel" fold="carousel:photos">
           ${seg([['trades', 'Das funções do anúncio'], ['chosen', 'Escolher']], choosing ? 'chosen' : 'trades', (v) => {

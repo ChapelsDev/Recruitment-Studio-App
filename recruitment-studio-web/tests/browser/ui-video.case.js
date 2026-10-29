@@ -134,7 +134,7 @@
     assert(d.texts['pt-PT'].headline !== 'Pintores, venham já', 'the image title changed too');
     assertEqual(prep(d, 'pt-PT').content.headline, 'Pintores, venham já');
     // a second language has its own texts
-    $('.topbar .locales .chip.add').click();
+    $('.stage-top .locales .chip.add').click();
     (await waitFor(() => byText('.locales .menu [role="menuitem"]', /Français/), 'French in the menu')).click();
     const fr = await waitFor(() => byText('.video-panel .texts-locales button', /^\s*FR\s*$/), 'the FR chip');
     if (fr.getAttribute('aria-checked') !== 'true') fr.click();

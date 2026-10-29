@@ -68,6 +68,19 @@ RS.util = (() => {
     if (unit === 'second') return 'agora mesmo';
     return rtf.format(Math.round(diff / div), unit);
   }
+  // The day of `ts` in words, counted in local calendar days: hoje, ontem, há 3 dias,
+  // há 1 semana, há 2 meses… (the home's cards, «Balão» 2026-10-28)
+  function relativeDay(ts, now = Date.now()) {
+    const day = (t) => { const d = new Date(t); return Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000; };
+    const n = Math.max(0, Math.round(day(now) - day(ts)));
+    if (n === 0) return 'hoje';
+    if (n === 1) return 'ontem';
+    if (n < 7) return `há ${n} dias`;
+    const count = (k, one, many) => (k === 1 ? `há 1 ${one}` : `há ${k} ${many}`);
+    if (n < 30) return count(Math.floor(n / 7), 'semana', 'semanas');
+    if (n < 365) return count(Math.floor(n / 30), 'mês', 'meses');
+    return count(Math.floor(n / 365), 'ano', 'anos');
+  }
 
   // ---------------------------------------------------------------- files
   function blobToDataURL(blob) {
@@ -110,7 +123,12 @@ RS.util = (() => {
     return new Promise((resolve) => {
       const input = document.createElement('input');
       input.type = 'file'; input.name = 'file'; input.accept = accept;
-      input.onchange = () => resolve(input.files && input.files[0] ? input.files[0] : null);
+      input.tabIndex = -1;
+      input.style.cssText = 'position:fixed;left:-10000px;top:0;width:1px;height:1px;';
+      const finish = (file) => { input.remove(); resolve(file); };
+      input.onchange = () => finish(input.files && input.files[0] ? input.files[0] : null);
+      input.addEventListener('cancel', () => finish(null));
+      document.body.appendChild(input);
       input.click();
     });
   }
@@ -171,8 +189,56 @@ RS.util = (() => {
     return d;
   }
 
+  // One focus boundary for every modal, including confirmations opened above
+  // another dialog. Install once; ordinary forms never participate.
+  function installModalFocus(doc = document) {
+    const selector = '[aria-modal="true"][role="dialog"], [aria-modal="true"][role="alertdialog"]';
+    const visible = (el) => {
+      for (let n = el; n && n.nodeType === 1; n = n.parentElement) {
+        if (n.hidden || n.inert) return false;
+        const style = doc.defaultView.getComputedStyle(n);
+        if (style.display === 'none' || style.visibility === 'hidden') return false;
+      }
+      return true;
+    };
+    const top = () => [...doc.querySelectorAll(selector)].filter(visible).at(-1);
+    const controls = (box) => [...box.querySelectorAll('button, input, textarea, select, a[href], summary, [tabindex]')]
+      .filter((el) => !el.disabled && !el.matches(':disabled') && el.tabIndex >= 0 && el.type !== 'hidden' && visible(el));
+    let active = null;
+    const previous = new WeakMap();
+    const focus = (box, last = false) => {
+      const items = controls(box), target = last ? items.at(-1) : items[0];
+      if (!box.hasAttribute('tabindex')) box.tabIndex = -1;
+      (target || box).focus({ preventScroll: true });
+    };
+    const sync = () => {
+      const next = top();
+      if (next === active) return;
+      const old = active; active = next;
+      if (next && !previous.has(next)) previous.set(next, doc.activeElement);
+      const restore = old && previous.get(old);
+      if (restore?.isConnected && (!next || next.contains(restore))) restore.focus({ preventScroll: true });
+      if (next && !next.contains(doc.activeElement)) focus(next);
+    };
+    const keys = (e) => {
+      const box = top();
+      if (!box || e.key !== 'Tab') return;
+      const items = controls(box), first = items[0], last = items.at(-1), current = doc.activeElement;
+      if (!items.length || !box.contains(current) || current === box || (e.shiftKey ? current === first : current === last)) {
+        e.preventDefault(); e.stopPropagation(); focus(box, e.shiftKey);
+      }
+    };
+    const entered = (e) => { const box = top(); if (box && !box.contains(e.target)) focus(box); };
+    const observer = new MutationObserver(sync);
+    observer.observe(doc.body, { childList: true, subtree: true });
+    doc.addEventListener('keydown', keys, true);
+    doc.addEventListener('focusin', entered);
+    sync();
+    return () => { observer.disconnect(); doc.removeEventListener('keydown', keys, true); doc.removeEventListener('focusin', entered); };
+  }
+
   return {
     uid, clamp, clone, hexToRgb, rgbToHex, isHex, normHex, mix, luminance, contrast, isDark, onColor,
-    ensureContrast, rgba, slug, relativeTime, blobToDataURL, dataURLToBlob, saveBlob, pickFile, zip, debounce,
+    ensureContrast, rgba, slug, relativeTime, relativeDay, blobToDataURL, dataURLToBlob, saveBlob, pickFile, zip, debounce, installModalFocus,
   };
 })();

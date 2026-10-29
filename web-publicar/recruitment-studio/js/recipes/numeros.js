@@ -271,7 +271,7 @@
     id: 'numeros', name: 'Números', concept: 'Cada número roda como um conta-quilómetros e ocupa o ecrã inteiro.',
     font: { head: { family: 'Anton', weight: 400 }, bold: { family: 'Anton', weight: 400 } },
     palettes: { dark: { bg: '#0B0B0B', ink: '#FFFFFF', main: '#FFC400', accent: '#FFC400' } },
-    bgModes: ['dark'], photos: 0, travel: 'crane', pages: true,
+    bgModes: ['dark'], photos: 0, travel: 'crane', pages: true, slides: { V: true },
     // the numbers first: the highlights right after the hook; the total needs the benefits
     order: ['D', 'M', 'V', 'L', 'C', 'F'], needs: { V: ['M'] },
     labels: { benefits: { 'pt-PT': 'vantagens', 'de-CH': 'Vorteile', 'de-DE': 'Vorteile', fr: 'avantages', it: 'vantaggi', en: 'benefits', es: 'ventajas' } },

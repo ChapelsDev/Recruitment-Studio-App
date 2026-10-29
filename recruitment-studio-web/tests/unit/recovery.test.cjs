@@ -35,7 +35,8 @@ function device(factory = new IDBFactory(), clock = { now: Date.now() }) {
   }
   const RS = ctx.RS;
   RS.library.index = async () => ({ items: [] });
-  const project = () => RS.model.newProject(TPL);
+  // the names these tests give are typed by hand (not the automatic name of 2026-10-28)
+  const project = () => Object.assign(RS.model.newProject(TPL), { nameAuto: false });
   return { RS, S: RS.store, M: RS.model, A: RS.assets, project, factory, clock, navigator: sandbox.navigator };
 }
 

@@ -15,6 +15,14 @@ RS.model = (() => {
     { code: 'es', label: 'Español', short: 'ES' },
   ];
   const localeInfo = (code) => LOCALES.find((l) => l.code === code) || LOCALES[0];
+  // The languages in Portuguese words, for the home's cards: «Português e francês».
+  const LOCALE_NAMES_PT = { 'pt-PT': 'português', 'de-CH': 'alemão (Suíça)', 'de-DE': 'alemão', fr: 'francês', it: 'italiano', en: 'inglês', es: 'espanhol' };
+  function languagesLine(codes) {
+    const names = (codes || []).map((c) => LOCALE_NAMES_PT[c] || localeInfo(c).label);
+    if (!names.length) return '';
+    const joined = names.length === 1 ? names[0] : `${names.slice(0, -1).join(', ')} e ${names[names.length - 1]}`;
+    return joined.charAt(0).toUpperCase() + joined.slice(1);
+  }
 
   // Stock labels swapped automatically when a language is added.
   const STOCK = {
@@ -602,6 +610,26 @@ RS.model = (() => {
   }
 
   const knownTrades = (ids) => (Array.isArray(ids) ? ids : []).filter((id, i, all) => RS.trades.get(id) && all.indexOf(id) === i);
+  // The ad's automatic name («Balão», 2026-10-28): its trades, plus the location from
+  // «Organizar». One trade: its label; two: «Pedreiros e serventes»; more: «…, … e mais N»;
+  // none: the first language's headline. A name typed by hand (nameAuto false) is never touched.
+  const oneLine = (v) => String(v || '').replace(/\s*\n\s*/g, ' ').trim();
+  function autoName(p) {
+    const ts = knownTrades(p.trades).map((id) => RS.trades.get(id));
+    const shortOf = (t) => t.short || t.label;
+    const lower = (v) => v.charAt(0).toLowerCase() + v.slice(1);
+    let name;
+    if (!ts.length) name = oneLine(p.texts && p.locales && p.texts[p.locales[0]] && p.texts[p.locales[0]].headline);
+    else if (ts.length === 1) name = ts[0].label;
+    else if (ts.length === 2) name = `${shortOf(ts[0])} e ${lower(shortOf(ts[1]))}`;
+    else name = `${shortOf(ts[0])}, ${lower(shortOf(ts[1]))} e mais ${ts.length - 2}`;
+    const where = p.organization && typeof p.organization.location === 'string' ? p.organization.location.trim() : '';
+    return where ? `${name}, ${where}` : name;
+  }
+  function applyAutoName(p) {
+    if (p.nameAuto !== false) p.name = autoName(p) || p.name;
+    return p;
+  }
 
   // opts.trades (or opts.trade) picks construction-trade presets (RS.trades), the
   // first being the main one; otherwise the template's own trade, then its
@@ -615,10 +643,11 @@ RS.model = (() => {
       : { ...(SAMPLES[template.sample] ? SAMPLES[template.sample]() : SAMPLES.construction()), qr: '' };
     texts.waMessage = '';
     const d = template.defaults;
-    return {
+    return applyAutoName({
       v: 1,
       id: uid(),
       name: texts.headline,
+      nameAuto: true,
       trade: trades[0] || null,
       trades,
       whatsapp: null,
@@ -649,7 +678,7 @@ RS.model = (() => {
       video: clone(DEFAULT_VIDEO),
       // a new ad shows its offer sheet on the image too (old ads keep theirs)
       offer: { ...clone(DEFAULT_OFFER), visibility: { ...DEFAULT_OFFER.visibility, image: true } },
-    };
+    });
   }
 
   // Applies a template to an existing project: layout and surfaces change,
@@ -714,7 +743,7 @@ RS.model = (() => {
       nt.waMessage = keep.waMessage || '';
       p.texts[code] = nt;
     }
-    if (p.nameAuto !== false && p.texts[p.locales[0]]) p.name = p.texts[p.locales[0]].headline;
+    applyAutoName(p);
     return pruneVideoTexts(p);
   }
 
@@ -838,6 +867,13 @@ RS.model = (() => {
     if (patch === null) delete project.photo.frames[format];
     else project.photo.frames[format] = cleanFrame({ ...photoForFormat(project.photo, format), ...patch });
   }
+  // A dragged photo settles on the centre when it is within `threshold` poster
+  // pixels of it, on each axis (dw/dh: the drawn photo's size in poster pixels).
+  function snapPhotoFrame(fx, fy, { dw, dh, threshold = 16 } = {}) {
+    const x = Math.abs(fx - 0.5) * dw < threshold;
+    const y = Math.abs(fy - 0.5) * dh < threshold;
+    return { fx: x ? 0.5 : fx, fy: y ? 0.5 : fy, x, y };
+  }
 
   function normalize(raw) {
     if (!raw || typeof raw !== 'object' || !raw.texts || !raw.locales) throw new Error('not a project');
@@ -913,16 +949,20 @@ RS.model = (() => {
     };
     // after the video: a first carousel starts from the video's recipe and look
     p.carousel = cleanCarousel(p.carousel, p);
+    // an ad from before the automatic name kept it automatic only if its name is still
+    // its first headline (the old automatic name); a name typed by hand stays
+    if (p.nameAuto === undefined) p.nameAuto = !p.name || oneLine(p.name) === oneLine((p.texts[p.locales[0]] || {}).headline);
+    applyAutoName(p);
     return pruneVideoTexts(p);
   }
 
   return {
-    LOCALES, localeInfo, STOCK, FORMATS, FORMAT_ORDER, FONTS, PALETTES, SAMPLES, DEFAULT_SHOW, DEFAULT_FX, DEFAULT_VIDEO, DEFAULT_VIDEO_SHOW, DURATIONS, RECIPES, MAX_VIDEO_PHOTOS,
+    LOCALES, localeInfo, languagesLine, autoName, applyAutoName, STOCK, FORMATS, FORMAT_ORDER, FONTS, PALETTES, SAMPLES, DEFAULT_SHOW, DEFAULT_FX, DEFAULT_VIDEO, DEFAULT_VIDEO_SHOW, DURATIONS, RECIPES, MAX_VIDEO_PHOTOS,
     mergeList, cleanVideoTexts, cleanVideoShow, pruneVideoTexts, pickBenefits, videoPhotoFocus, setVideoPhotoFocus, carouselFocusView, setCarouselPhotoFocus,
     MOTIONS, DEFAULT_OFFER, CURRENCIES, PERIODS, OFFER_OUTPUTS, offerVisible, offerProjection, captionStatus, confirmPublicationText, cleanCarousel,
     CAROUSEL_STYLE_IDS, CAROUSEL_FORMATS, CAROUSEL_BLOCKS, CAROUSEL_BLOCK_LABELS, DEFAULT_CAROUSEL, TEMPLATE_RECIPE, carouselRecipe, carouselCover, recommendCarousel, carouselAssetIds, remapCarouselAssets,
     STATUSES, foldText, cleanOrganization, cleanTranslationReview, CHANNELS, cleanPublication, publicationURL,
     DEFAULT_BRAND, newProject, applyTemplate, setTrades, addLocale, removeLocale, readyTextLocales, applyTradeTexts,
-    caption, publicationText, setPublicationText, photoSelectionKey, photoSnapshot, offerParts, offerText, normalize, item, iconItem, photoForFormat, setPhotoFrame,
+    caption, publicationText, setPublicationText, photoSelectionKey, photoSnapshot, offerParts, offerText, normalize, item, iconItem, photoForFormat, setPhotoFrame, snapPhotoFrame,
   };
 })();

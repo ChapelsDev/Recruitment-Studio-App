@@ -17,7 +17,19 @@
   // ---------------------------------------------------------------- the lock screen
   function wallpaper(R, P) {
     const { ctx } = R, img = P.photos[0];
-    if (!img) return; // the background colour, drawn by the framework
+    if (!img) {
+      // a carousel without a photo: the ad's trade drawing in the lower screen,
+      // faint behind the notifications (the video keeps its plain screen)
+      const card = P.act('K');
+      if (P.piece === 'carousel' && RS.carouselArt && !(card && R.t >= card.start)) { // the contact card stays clear
+        const W = P.fmt.w, H = P.fmt.h, size = Math.min(W, H * 0.62);
+        ctx.save(); ctx.globalAlpha = 0.4;
+        RS.carouselArt.draw(ctx, { x: (W - size) / 2, y: H - size - H * 0.04, w: size, h: size, ink: P.C.ink, accent: P.C.accent, paper: P.C.bg,
+          seed: (P.project.trades || [])[0] || 'obras', mode: 'line', trade: (P.project.trades || [])[0] || 'obras' });
+        ctx.restore();
+      }
+      return; // else the background colour, drawn by the framework
+    }
     ctx.save(); K.screenPhoto(ctx, img, P.fmt, R.t, P.timeline.duration, 0, P.focusOf(img)); ctx.restore();
     ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillRect(0, 0, P.fmt.w, P.fmt.h);
   }

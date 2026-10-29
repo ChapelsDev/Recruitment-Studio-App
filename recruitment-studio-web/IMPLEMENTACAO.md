@@ -410,6 +410,34 @@ Verificação:
 Limites conhecidos: o carrossel é estático (o animado fica para a próxima
 ronda, como decidido); só as seis receitas acima têm estilo de carrossel; o
 LinkedIn (PDF) não foi feito; a aceitação em aparelhos reais (Instagram e
-TikTok no telemóvel) é do dono. Pequenas melhorias anotadas para depois:
-foco do campo ao tocar num item de lista, deslizar sem captura do ponteiro,
-cancelar a criação do ZIP do carrossel, mais paletas no carrossel.
+TikTok no telemóvel) é do dono.
+
+### Pontos adiados corrigidos — 28 de outubro de 2026
+
+Os pequenos pontos deixados pela revisão final, cada um com um teste que falhou
+antes e passa depois:
+
+- Tocar numa vantagem, num destaque ou numa vaga do diapositivo abre
+  «Sequência» com a linha desse item pronta a escrever (as vagas passaram a ter
+  o seu identificador no conteúdo do carrossel).
+- Deslizar no palco segura o ponteiro (um dedo que sai do diapositivo continua
+  a contar) e um toque que o navegador cancela já não é lido como deslizar.
+- As fotografias do carrossel voltam a ser pedidas quando a fotografia do
+  anúncio acaba de carregar.
+- O cartão do estilo Notificações mostra as fotografias do anúncio, como os
+  diapositivos.
+- **Cancelar** enquanto o ZIP (ou a partilha) do carrossel se prepara; nada é
+  guardado e aparece «Carrossel cancelado.».
+- **Cores** do carrossel: todas as paletas prontas (as do vídeo), não só quatro.
+- No separador **Imagem**, o carrossel já não é calculado a cada letra.
+
+Dois pontos ficaram sem alteração, por decisão registada: «Começar por:
+Vídeo › Tijolo» já dá o estilo Tijolo ao carrossel (o caso descrito não
+acontece; um teste fixa-o); e a assinatura da publicação continua a incluir o
+aspeto do carrossel (um carrossel publicado cujo aspeto mudou está
+desatualizado; o planeador de publicação está escondido).
+
+Verificação: `npm test` 286/286 duas vezes; testes reais no Edge 575/575 duas
+vezes seguidas (uma execução anterior, feita em paralelo com os testes em
+Node, falhou 4 casos de tempo — fotogramas, grua — que passaram nas seguintes);
+capturas do painel Estilo em computador (claro) e telemóvel (escuro).

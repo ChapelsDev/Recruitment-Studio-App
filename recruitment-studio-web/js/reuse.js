@@ -80,7 +80,7 @@ RS.reuse = (() => {
   }
   function instantiate(template) {
     const p = M.normalize(template.project);
-    p.id = U.uid(); p.name = template.name; p.createdAt = p.updatedAt = Date.now(); p.deletedAt = null;
+    p.id = U.uid(); p.name = template.name; p.nameAuto = false; p.createdAt = p.updatedAt = Date.now(); p.deletedAt = null; // the model's own name, chosen by the person
     p.organization = M.cleanOrganization(); p.publication = M.cleanPublication();
     return p;
   }

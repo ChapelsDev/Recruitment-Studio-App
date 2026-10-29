@@ -161,3 +161,43 @@ RS.install = (() => {
 
   return { URL_KEY, WELCOME_KEY, STEPS, DEMOS, platform, phone, detect, checkAddress, appAddress, rememberAddress, markWelcomed, shouldWelcome };
 })();
+
+// Readiness comes from the active service worker's actual cache, never a saved
+// "installed" flag. No network calls when merely inspecting its state.
+RS.offline = (() => {
+  const listeners = new Set();
+  let listening = false, last = null;
+  const publish = (state) => { last = { ...state, controlled: !!navigator.serviceWorker?.controller }; for (const fn of listeners) fn(last); return last; };
+  const unavailable = () => location.protocol === 'file:'
+    ? { mode: 'file', error: '', running: false }
+    : !navigator.serviceWorker ? { mode: 'unavailable', error: 'Este navegador não permite preparar uma cópia offline.', running: false } : null;
+  async function request(type) {
+    const missing = unavailable(); if (missing) return publish(missing);
+    const registration = await navigator.serviceWorker.getRegistration(), worker = navigator.serviceWorker.controller || registration?.active;
+    if (!worker) return publish({ mode: 'unavailable', error: 'A cópia offline ainda não está instalada. Ligue à rede e reabra a aplicação.', running: false });
+    return new Promise((resolve, reject) => {
+      const channel = new MessageChannel(); let timer;
+      const close = () => { clearTimeout(timer); channel.port1.close(); };
+      const deadline = () => { clearTimeout(timer); timer = setTimeout(() => { close(); reject(new Error('Não foi possível confirmar a cache. Tente verificar novamente.')); }, 60000); };
+      channel.port1.onmessage = ({ data }) => {
+        deadline();
+        if (data.error) { close(); reject(new Error(data.error)); return; }
+        const state = publish({ ...data.state, mode: 'web' });
+        if (data.done) { close(); resolve(state); }
+      };
+      deadline(); try { worker.postMessage({ type }, [channel.port2]); } catch (e) { close(); reject(e); }
+    });
+  }
+  const check = () => request('rs-offline-query').catch((e) => publish({ ...(last || {}), error: e.message, running: false }));
+  const prepare = () => request('rs-offline-prepare').catch((e) => publish({ ...(last || {}), error: e.message, running: false }));
+  function subscribe(fn) {
+    listeners.add(fn); if (last) fn(last);
+    if (!listening && navigator.serviceWorker) {
+      listening = true;
+      navigator.serviceWorker.addEventListener('message', ({ data }) => { if (data?.type === 'rs-offline-status') publish({ ...data.state, mode: 'web' }); });
+      navigator.serviceWorker.addEventListener('controllerchange', check);
+    }
+    check(); return () => listeners.delete(fn);
+  }
+  return { check, prepare, subscribe };
+})();

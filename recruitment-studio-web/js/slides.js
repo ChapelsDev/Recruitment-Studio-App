@@ -212,7 +212,7 @@ RS.slides = (() => {
     const h = C.highlights.find((x) => has(x.value) || has(x.label) || has(`${x.value} ${x.label}`));
     if (h) return `highlight:${h.id}`;
     const p = C.positions.findIndex(has);
-    if (p >= 0) return `position:${p}`;
+    if (p >= 0) return `position:${C.positionIds ? C.positionIds[p] : p}`;
     if (has(C.message)) return 'message';
     if (C.contact && (has(C.contact.display) || has(C.contact.cta) || has(C.contact.hint))) return 'contact';
     if (C.contacts.some(has)) return 'contact';

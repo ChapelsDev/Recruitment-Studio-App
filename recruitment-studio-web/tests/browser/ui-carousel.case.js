@@ -15,8 +15,8 @@
   test('carousel: «Carrossel» draws the first slide; › and the dots move; «3:4» changes the format', async () => {
     await waitFor(() => ($('.home') || $('.editor') || $('.gallery')) && idle(), 'the app', 20000);
     await H.goHome();
-    // an ad of its own (this case may run alone): «Criar anúncio», the first template
-    await tap(() => $('.new-card') && idle() && $('.new-card'), '«Criar anúncio» on the home');
+    // an ad of its own (this case may run alone): «Novo anúncio», the first template
+    await tap(() => $('.new-ad') && idle() && $('.new-ad'), '«Novo anúncio» on the home');
     await tap(() => idle() && $$('.tpl-card')[0], 'the first template');
     await waitFor(() => $('.editor') && idle(), 'the editor');
     await tap(piece('Carrossel'), 'the «Carrossel» piece');
@@ -55,6 +55,33 @@
     (await waitFor(() => $('.cstyle-card[data-style="numeros"]'), 'Números')).click();
     (await waitFor(() => $('.cstyle-card[data-style="contrato"]'), 'Contrato')).click();
     await waitFor(() => main() && main().dataset.style === 'contrato' && $('.carousel-stage').dataset.style === 'contrato', 'the stage on Contrato', 8000);
+  });
+
+  test('carousel: a tap on a benefit or a position opens «Sequência» with that row\'s field in focus', async () => {
+    await waitFor(() => $('.editor') && idle(), 'the editor');
+    await tap(piece('Carrossel'), 'the «Carrossel» piece');
+    await tap(() => byText('.rail [role="tab"]', /^\s*Estilo\s*$/), 'the Estilo tab');
+    await tap(() => $('.cstyle-card[data-style="apresentacao"]'), 'the Apresentação card');
+    const saved = await H.saved((d) => d.carousel && d.carousel.style === 'apresentacao');
+    const P = RS.slides.prepare(RS.model.normalize(saved), { format: 'portrait', locale: 'pt-PT', images: {}, photos: { hero: null, cards: [], full: [] } });
+    for (const [kind, list] of [['benefit', 'benefits'], ['position', 'positions']]) {
+      let found = null;
+      for (let j = 0; j < P.slides.length && !found; j++) {
+        const boxes = [];
+        RS.slides.render(document.createElement('canvas').getContext('2d'), P, j, { scale: 1, boxes });
+        for (const b of boxes) {
+          const key = RS.slides.hit(P, j, b.x + b.w / 2, b.y + b.h / 2);
+          if (key && key.startsWith(`${kind}:`)) { found = { j, b, id: key.slice(kind.length + 1) }; break; }
+        }
+      }
+      assert(found, `no ${kind} on any slide`);
+      await tap(() => $$('.carousel-stage .cs-dot')[found.j], `the dot of slide ${found.j + 1}`);
+      const c = await waitFor(() => { const m = main(); return m && m.dataset.style === 'apresentacao' && m.dataset.index === String(found.j) && m; }, `slide ${found.j + 1} on the stage`, 8000);
+      const r = c.getBoundingClientRect();
+      const at = { bubbles: true, pointerId: 1, pointerType: 'mouse', button: 0, isPrimary: true, clientX: r.left + ((found.b.x + found.b.w / 2) / P.fmt.w) * r.width, clientY: r.top + ((found.b.y + found.b.h / 2) / P.fmt.h) * r.height };
+      c.dispatchEvent(new PointerEvent('pointerdown', at)); c.dispatchEvent(new PointerEvent('pointerup', at));
+      await waitFor(() => document.activeElement && document.activeElement.id === `vt-${list}-${found.id}` && document.activeElement.closest('.cseq-panel'), `the ${kind} row «vt-${list}-${found.id}» in focus`, 5000);
+    }
   });
 
   test('carousel: «Fotos» › «Enquadrar» keeps the carousel\'s own point (the video\'s stays) and the slides use it', async () => {
@@ -107,8 +134,8 @@
   test('carousel: «Exportar» › «Instagram carrossel» saves a ZIP of 1080 × 1350 slides for PT and FR, slide 1 as the stage draws it; TikTok is 1080 × 1920', async () => {
     await waitFor(() => $('.editor') && idle(), 'the editor');
     // a second language
-    if (!$$('.topbar .locales .chip-main').some((b) => /FR/.test(b.textContent))) {
-      $('.topbar .locales .chip.add').click();
+    if (!$$('.stage-top .locales .chip-main').some((b) => /FR/.test(b.textContent))) {
+      $('.stage-top .locales .chip.add').click();
       (await waitFor(() => byText('.locales .menu [role="menuitem"]', /Français/), 'French in the menu')).click();
       await H.saved((d) => d.locales.includes('fr'));
     }

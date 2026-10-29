@@ -68,6 +68,19 @@ RS.util = (() => {
     if (unit === 'second') return 'agora mesmo';
     return rtf.format(Math.round(diff / div), unit);
   }
+  // The day of `ts` in words, counted in local calendar days: hoje, ontem, há 3 dias,
+  // há 1 semana, há 2 meses… (the home's cards, «Balão» 2026-10-28)
+  function relativeDay(ts, now = Date.now()) {
+    const day = (t) => { const d = new Date(t); return Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000; };
+    const n = Math.max(0, Math.round(day(now) - day(ts)));
+    if (n === 0) return 'hoje';
+    if (n === 1) return 'ontem';
+    if (n < 7) return `há ${n} dias`;
+    const count = (k, one, many) => (k === 1 ? `há 1 ${one}` : `há ${k} ${many}`);
+    if (n < 30) return count(Math.floor(n / 7), 'semana', 'semanas');
+    if (n < 365) return count(Math.floor(n / 30), 'mês', 'meses');
+    return count(Math.floor(n / 365), 'ano', 'anos');
+  }
 
   // ---------------------------------------------------------------- files
   function blobToDataURL(blob) {
@@ -226,6 +239,6 @@ RS.util = (() => {
 
   return {
     uid, clamp, clone, hexToRgb, rgbToHex, isHex, normHex, mix, luminance, contrast, isDark, onColor,
-    ensureContrast, rgba, slug, relativeTime, blobToDataURL, dataURLToBlob, saveBlob, pickFile, zip, debounce, installModalFocus,
+    ensureContrast, rgba, slug, relativeTime, relativeDay, blobToDataURL, dataURLToBlob, saveBlob, pickFile, zip, debounce, installModalFocus,
   };
 })();
