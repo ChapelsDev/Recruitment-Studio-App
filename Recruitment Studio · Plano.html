@@ -1,0 +1,507 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Recruitment Studio · Plano</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+  /* Layout: single reading column, orange "Balão" identity echoing the app —
+     message-bubble cards (one smaller corner bottom-left), phased roadmap rail. */
+  :root {
+    --bg: #faf7f3;
+    --surface: #ffffff;
+    --surface-2: #f3ede6;
+    --fg: #241d16;
+    --muted: #6b5f52;
+    --line: #e6ddd2;
+    --accent: #f26b1d;
+    --accent-soft: #fdecdf;
+    --accent-ink: #9a3c08;
+    --ok: #2f8f5b;
+    --ok-soft: #e4f3ea;
+    --warn: #c47f12;
+    --warn-soft: #faf0d8;
+    --crit: #c0392b;
+    --crit-soft: #fae5e1;
+    --font-display: "Rubik", "Trebuchet MS", system-ui, sans-serif;
+    --font-body: "Rubik", system-ui, -apple-system, sans-serif;
+    --radius: 18px;
+    --radius-sm: 10px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #17120d;
+      --surface: #211a13;
+      --surface-2: #2b2219;
+      --fg: #f1e9df;
+      --muted: #ab9d8d;
+      --line: #392e22;
+      --accent: #ff8c42;
+      --accent-soft: #3a2614;
+      --accent-ink: #ffc79a;
+      --ok: #5fd08c;
+      --ok-soft: #1c3326;
+      --warn: #e2b05a;
+      --warn-soft: #352a15;
+      --crit: #ef8577;
+      --crit-soft: #39201c;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #17120d;
+    --surface: #211a13;
+    --surface-2: #2b2219;
+    --fg: #f1e9df;
+    --muted: #ab9d8d;
+    --line: #392e22;
+    --accent: #ff8c42;
+    --accent-soft: #3a2614;
+    --accent-ink: #ffc79a;
+    --ok: #5fd08c;
+    --ok-soft: #1c3326;
+    --warn: #e2b05a;
+    --warn-soft: #352a15;
+    --crit: #ef8577;
+    --crit-soft: #39201c;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-body);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap {
+    max-width: 920px;
+    margin: 0 auto;
+    padding-left: max(18px, env(safe-area-inset-left, 0px));
+    padding-right: max(18px, env(safe-area-inset-right, 0px));
+    padding-block: 36px 72px;
+  }
+
+  h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; line-height: 1.2; margin: 0; }
+  p { margin: 0; }
+  a { color: var(--accent-ink); }
+
+  /* --- Hero --- */
+  .hero { margin-bottom: 40px; }
+  .brand {
+    display: inline-flex; align-items: center; gap: 10px;
+    font-family: var(--font-display); font-weight: 600; letter-spacing: .02em;
+    color: var(--accent-ink); font-size: .9rem; text-transform: uppercase;
+  }
+  .logo {
+    width: 30px; height: 30px; flex: none;
+    background: var(--accent);
+    border-radius: 50% 50% 50% 6px;
+    display: grid; place-items: center;
+    color: #fff; font-weight: 700; font-size: 1rem;
+  }
+  .hero h1 { font-size: clamp(1.9rem, 5vw, 2.9rem); font-weight: 700; margin: 18px 0 12px; }
+  .hero .lede { font-size: clamp(1rem, 2.4vw, 1.18rem); color: var(--muted); max-width: 62ch; }
+  .meta {
+    margin-top: 22px; display: flex; flex-wrap: wrap; gap: 10px;
+  }
+  .meta span {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 999px; padding: 6px 14px; font-size: .82rem; color: var(--muted);
+  }
+  .meta b { color: var(--fg); font-weight: 600; }
+
+  /* --- Section --- */
+  section { margin-top: 44px; }
+  .eyebrow {
+    display: flex; align-items: center; gap: 10px;
+    font-size: .78rem; text-transform: uppercase; letter-spacing: .12em;
+    color: var(--accent-ink); font-weight: 600; margin-bottom: 6px;
+  }
+  .eyebrow::before {
+    content: ""; width: 22px; height: 3px; border-radius: 2px; background: var(--accent); flex: none;
+  }
+  section > h2 { font-size: clamp(1.35rem, 3.5vw, 1.8rem); font-weight: 600; margin-bottom: 8px; }
+  section > .intro { color: var(--muted); max-width: 64ch; margin-bottom: 20px; }
+
+  /* --- Bubble cards --- */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius) var(--radius) var(--radius) 6px;
+    padding: 20px 22px;
+  }
+  .grid { display: grid; gap: 14px; }
+  .grid.two { grid-template-columns: repeat(2, 1fr); }
+  .grid.three { grid-template-columns: repeat(3, 1fr); }
+  @media (max-width: 680px) { .grid.two, .grid.three { grid-template-columns: 1fr; } }
+
+  .card h3 { font-size: 1.02rem; font-weight: 600; margin-bottom: 6px; display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+  .card p { color: var(--muted); font-size: .93rem; }
+  .card ul { margin: 10px 0 0; padding-left: 18px; color: var(--muted); font-size: .9rem; }
+  .card li { margin: 4px 0; }
+
+  /* --- Pills / badges --- */
+  .pill { font-size: .68rem; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; padding: 3px 9px; border-radius: 999px; white-space: nowrap; }
+  .p-crit { background: var(--crit-soft); color: var(--crit); }
+  .p-now { background: var(--accent-soft); color: var(--accent-ink); }
+  .p-next { background: var(--warn-soft); color: var(--warn); }
+  .p-later { background: var(--surface-2); color: var(--muted); }
+  .p-ok { background: var(--ok-soft); color: var(--ok); }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+  .legend .pill { font-size: .72rem; }
+
+  /* --- Pricing --- */
+  .tiers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  @media (max-width: 680px) { .tiers { grid-template-columns: 1fr; } }
+  .tier { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius) var(--radius) var(--radius) 6px; padding: 20px; display: flex; flex-direction: column; }
+  .tier.feature { border-color: var(--accent); box-shadow: 0 10px 30px -18px var(--accent); }
+  .tier h3 { font-size: 1.1rem; }
+  .price { font-family: var(--font-display); font-size: 1.9rem; font-weight: 700; margin: 8px 0 2px; }
+  .price small { font-size: .82rem; font-weight: 400; color: var(--muted); }
+  .tier ul { list-style: none; margin: 14px 0 0; padding: 0; font-size: .88rem; color: var(--muted); }
+  .tier li { padding: 6px 0; border-top: 1px solid var(--line); }
+  .tier li::before { content: "✓ "; color: var(--ok); font-weight: 700; }
+
+  /* --- Translation stack --- */
+  .stack { display: grid; gap: 10px; }
+  .layer { display: grid; grid-template-columns: 34px 1fr; gap: 14px; align-items: start; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 14px 16px; }
+  .layer .n { width: 34px; height: 34px; border-radius: 50% 50% 50% 5px; background: var(--accent-soft); color: var(--accent-ink); font-family: var(--font-display); font-weight: 700; display: grid; place-items: center; }
+  .layer h3 { font-size: .98rem; margin-bottom: 3px; }
+  .layer p { color: var(--muted); font-size: .9rem; }
+  .flow { text-align: center; color: var(--muted); font-size: .8rem; letter-spacing: .04em; }
+
+  /* --- Roadmap --- */
+  .phases { display: grid; gap: 0; }
+  .phase { display: grid; grid-template-columns: 26px 1fr; gap: 18px; }
+  .rail { display: flex; flex-direction: column; align-items: center; }
+  .dot { width: 18px; height: 18px; border-radius: 50%; background: var(--accent); margin-top: 6px; flex: none; border: 3px solid var(--bg); box-shadow: 0 0 0 2px var(--accent); }
+  .line { width: 2px; flex: 1; background: var(--line); margin: 4px 0; }
+  .phase:last-child .line { display: none; }
+  .phase-body { padding-bottom: 26px; }
+  .phase-body h3 { font-size: 1.1rem; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .phase-body .tag { font-size: .74rem; color: var(--accent-ink); font-weight: 600; }
+  .phase-body ul { margin: 10px 0 0; padding-left: 18px; color: var(--muted); font-size: .92rem; }
+  .phase-body li { margin: 5px 0; }
+
+  /* --- Platform table --- */
+  .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius-sm); }
+  table { border-collapse: collapse; width: 100%; font-size: .9rem; min-width: 460px; }
+  th, td { text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--line); }
+  th { font-family: var(--font-display); font-weight: 600; background: var(--surface-2); font-size: .82rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+  tr:last-child td { border-bottom: none; }
+  td b { color: var(--fg); }
+
+  .note { background: var(--accent-soft); border-radius: var(--radius-sm); padding: 14px 16px; font-size: .9rem; color: var(--accent-ink); margin-top: 18px; }
+  .note b { font-weight: 600; }
+
+  footer { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--line); color: var(--muted); font-size: .82rem; }
+</style>
+
+<div class="wrap">
+  <header class="hero">
+    <span class="brand"><span class="logo">R</span> Recruitment Studio</span>
+    <h1>Do editor offline a produto vendível</h1>
+    <p class="lede">Resumo do que foi discutido e do que falta implementar para a app gerar receita: o que já existe, o modelo de negócio, o motor de tradução, a arquitetura técnica, a parte legal e a ordem de execução.</p>
+    <div class="meta">
+      <span><b>Base atual:</b> PWA offline, 15 profissões, 7 línguas</span>
+      <span><b>Alvo:</b> agências de trabalho temporário e construtoras</span>
+      <span><b>Estado:</b> produto forte, comercialização por construir</span>
+    </div>
+  </header>
+
+  <!-- ESTADO ATUAL -->
+  <section>
+    <div class="eyebrow">Ponto de partida</div>
+    <h2>O que já está feito</h2>
+    <p class="intro">A app é sólida como produto. Tudo o que falta é a camada que permite cobrar. É importante não reconstruir o que já funciona.</p>
+    <div class="grid two">
+      <div class="card">
+        <h3>Já funciona <span class="pill p-ok">pronto</span></h3>
+        <ul>
+          <li>Imagem, carrossel e vídeo para Instagram, Facebook, TikTok e WhatsApp</li>
+          <li>15 profissões de obra com textos prontos; 7 línguas (pt, de-CH, de-DE, fr, it, en, es)</li>
+          <li>Botão e QR que abrem o WhatsApp com mensagem escrita</li>
+          <li>Funciona sem rede (service worker), instalável, +230 testes</li>
+          <li>Motor de tradução por frases já existe em <code>trades.js</code></li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Limita a venda <span class="pill p-crit">a resolver</span></h3>
+        <ul>
+          <li>Sem contas, sem pagamentos, sem servidor, sem endereço público</li>
+          <li>Todo o conteúdo de valor (fotos, textos) vai no navegador, de graça</li>
+          <li>Dados só no aparelho: se o navegador limpa, perde-se tudo</li>
+          <li>Origem e licença das 48 fotografias por confirmar</li>
+          <li>Repositório com 3 cópias da app e <code>.git</code> de 379 MB</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- MODELO DE NEGÓCIO -->
+  <section>
+    <div class="eyebrow">Modelo de receita</div>
+    <h2>Subscrição em três planos</h2>
+    <p class="intro">Venda direta no site com Stripe, sem lojas nem comissões. Preços indicativos, a validar com clientes reais. O que separa os planos é o acesso a funcionalidades servidas a partir do servidor.</p>
+    <div class="tiers">
+      <div class="tier">
+        <h3>Grátis</h3>
+        <div class="price">0&nbsp;€</div>
+        <ul>
+          <li>Editor completo</li>
+          <li>1 marca</li>
+          <li>Marca de água nas peças</li>
+          <li>Amostra de fotografias</li>
+        </ul>
+      </div>
+      <div class="tier feature">
+        <h3>Pro <span class="pill p-now">base</span></h3>
+        <div class="price">19–29&nbsp;€<small> /mês</small></div>
+        <ul>
+          <li>Sem marca de água</li>
+          <li>1 pacote de setor</li>
+          <li>Tradução IA (limite mensal)</li>
+          <li>Sincronização entre aparelhos</li>
+          <li>Página de candidatura</li>
+        </ul>
+      </div>
+      <div class="tier">
+        <h3>Agência</h3>
+        <div class="price">59–99&nbsp;€<small> /mês</small></div>
+        <ul>
+          <li>Todos os pacotes</li>
+          <li>Várias marcas / marca branca</li>
+          <li>Equipa e quadro de candidatos</li>
+          <li>Métricas por anúncio e língua</li>
+          <li>Tradução IA alargada</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- FUNCIONALIDADES -->
+  <section>
+    <div class="eyebrow">A implementar</div>
+    <h2>Funcionalidades por valor</h2>
+    <p class="intro">Ordenadas pelo valor estimado para o cliente. É isto que transforma a app de "faço imagens" em "recebo e giro candidatos".</p>
+    <div class="legend">
+      <span class="pill p-now">fazer primeiro</span>
+      <span class="pill p-next">a seguir</span>
+      <span class="pill p-later">mais tarde</span>
+    </div>
+    <div class="grid two">
+      <div class="card">
+        <h3>Página de candidatura <span class="pill p-now">fazer primeiro</span></h3>
+        <p>O QR e o link levam a um formulário curto: profissão, experiência, línguas, disponibilidade, telefone e documentos. É a razão de as empresas pagarem.</p>
+      </div>
+      <div class="card">
+        <h3>Quadro de candidatos <span class="pill p-now">fazer primeiro</span></h3>
+        <p>Estados recebido → contactado → entrevista → colocado, com respostas prontas para WhatsApp. Um mini-ATS para quem nunca pagaria um a sério.</p>
+      </div>
+      <div class="card">
+        <h3>Métricas por anúncio <span class="pill p-next">a seguir</span></h3>
+        <p>Cliques, leituras de QR e candidaturas por peça e por língua. Mostra ao cliente quanto custou cada candidato e justifica a subscrição.</p>
+      </div>
+      <div class="card">
+        <h3>Tradução e adaptação IA <span class="pill p-next">a seguir</span></h3>
+        <p>Primeira versão automática do texto livre; o cliente revê. Entra no plano pago porque cada uso tem custo. Detalhe na secção seguinte.</p>
+      </div>
+      <div class="card">
+        <h3>Pacotes de setor e país <span class="pill p-next">a seguir</span></h3>
+        <p>Hotelaria, logística, agricultura, limpezas; ou Pacote Suíça / Alemanha. O motor é o mesmo, muda o JSON de frases, profissões e fotos.</p>
+      </div>
+      <div class="card">
+        <h3>Publicação direta <span class="pill p-later">mais tarde</span></h3>
+        <p>Via API da Meta no Instagram e Facebook, depois portais de emprego. Dá muito valor mas exige revisão e aprovação da Meta.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- TRADUÇÃO -->
+  <section>
+    <div class="eyebrow">Motor de tradução</div>
+    <h2>Tradução offline em camadas</h2>
+    <p class="intro">O motor local trata tudo o que conhece; a IA do servidor entra só no texto que ninguém traduziu ainda. Com o uso, a memória cresce e as chamadas pagas descem sozinhas. A revisão humana antes de publicar fica sempre.</p>
+    <div class="stack">
+      <div class="layer">
+        <div class="n">1</div>
+        <div><h3>Livro de frases das profissões</h3><p>Já existe. Troca a frase de origem pela da língua de destino. Instantâneo, grátis, offline. Estender a italiano e espanhol.</p></div>
+      </div>
+      <div class="layer">
+        <div class="n">2</div>
+        <div><h3>Memória de traduções aprovadas</h3><p>Reusa pares que o cliente já confirmou (base já em <code>reuse.js</code>). Melhora com cada aprovação. <b>É aqui que recomendo pôr o esforço.</b></p></div>
+      </div>
+      <div class="layer">
+        <div class="n">3</div>
+        <div><h3>Glossário de termos de obra</h3><p>Quando falha a frase inteira, traduz termo a termo (estaleiro → chantier → Baustelle) e avisa que é parcial.</p></div>
+      </div>
+      <div class="layer">
+        <div class="n">4</div>
+        <div><h3>IA do servidor <span class="pill p-next">pago</span></h3><p>Só para texto novo e livre. Haiku ≈ 0,15 cêntimos/anúncio, Opus ≈ 5. A chave vive no servidor, nunca no navegador.</p></div>
+      </div>
+    </div>
+    <div class="flow">camada 1 → 2 → 3 &nbsp;(local, grátis)&nbsp; → 4 &nbsp;(servidor, só se preciso)&nbsp; → revisão humana → publicar</div>
+    <div class="note"><b>Opção extra:</b> tradutor local do navegador (Chrome/Android) como reforço grátis, nunca como base — não existe no Safari. Modelo neural embutido (Bergamot/WASM) só se quiseres offline a sério numa versão de secretária; pesa dezenas de MB por par.</div>
+  </section>
+
+  <!-- ARQUITETURA -->
+  <section>
+    <div class="eyebrow">Técnico</div>
+    <h2>Arquitetura e segurança</h2>
+    <p class="intro">Regra central: tudo o que corre no navegador pode ser copiado, por isso o valor e as regras ficam no servidor. Encriptar a PWA toda não é possível em nenhuma plataforma.</p>
+    <div class="grid three">
+      <div class="card">
+        <h3>Servidor</h3>
+        <ul>
+          <li>Supabase: login, Postgres, ficheiros</li>
+          <li><b>Row Level Security</b> em todas as tabelas</li>
+          <li>Stripe Checkout + webhook</li>
+          <li>Chaves de IA e Stripe só aqui</li>
+          <li>Pacotes, IA, sync, candidatos servidos a quem paga</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>App / PWA</h3>
+        <ul>
+          <li>Cabeçalhos de segurança (CSP, nosniff…)</li>
+          <li>Licença com tolerância offline (ex. 14 dias)</li>
+          <li>Minificar / ofuscar na build</li>
+          <li>Conteúdo premium sai do navegador</li>
+          <li>Dados de candidatos nunca no aparelho</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Alojamento</h3>
+        <ul>
+          <li>Domínio próprio</li>
+          <li>Cloudflare Pages ou Netlify</li>
+          <li>Página de entrada com preços</li>
+          <li>Percurso de boas-vindas</li>
+          <li>Sincronização obrigatória (iPhone)</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- LEGAL -->
+  <section>
+    <div class="eyebrow">Não pode faltar</div>
+    <h2>Legal e conformidade</h2>
+    <p class="intro">Pontos que podem travar a venda. Alguns precisam de confirmação com um jurista; estão marcados.</p>
+    <div class="grid two">
+      <div class="card">
+        <h3>Fotografias <span class="pill p-crit">bloqueante</span></h3>
+        <p>Origem e licença das 48 fotografias por confirmar (nomes em UUID sugerem IA ou descarga). Confirmar uso comercial antes de vender, ou substituir.</p>
+      </div>
+      <div class="card">
+        <h3>Faturação <span class="pill p-crit">Portugal</span></h3>
+        <p>Faturar a empresas exige software certificado pela AT. Ligar o Stripe ao Moloni ou InvoiceXpress.</p>
+      </div>
+      <div class="card">
+        <h3>RGPD <span class="pill p-next">com candidatos</span></h3>
+        <p>Política de privacidade e termos. Ao guardar dados de candidatos passas a subcontratante: precisas de um DPA com cada cliente.</p>
+      </div>
+      <div class="card">
+        <h3>Linguagem dos anúncios <span class="pill p-next">confirmar</span></h3>
+        <p>Acrescentar "(m/w/d)" automático em de-DE e de-CH. Diretiva de transparência salarial da UE: confirmar alcance com jurista.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- PLATAFORMAS -->
+  <section>
+    <div class="eyebrow">Multiplataforma</div>
+    <h2>O que esperar por plataforma</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Plataforma</th><th>Estado</th><th>Ponto a vigiar</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><b>Android / Windows / macOS</b> (Chrome, Edge)</td><td><span class="pill p-ok">forte</span></td><td>Suporta quase tudo, sem surpresas</td></tr>
+          <tr><td><b>iPhone / iPad</b> (Safari)</td><td><span class="pill p-next">cuidado</span></td><td>Só instala pelo Safari; dados apagados após 7 dias sem uso → sync obrigatória</td></tr>
+          <tr><td><b>Exportação de vídeo</b></td><td><span class="pill p-next">testar</span></td><td>WebCodecs no Safari é irregular; testar em iPhone real de 3–4 anos</td></tr>
+          <tr><td><b>Lojas</b> (Play / Microsoft)</td><td><span class="pill p-later">opcional</span></td><td>PWABuilder empacota com pouco esforço</td></tr>
+          <tr><td><b>App Store</b> (Apple)</td><td><span class="pill p-later">evitar no início</span></td><td>Rejeita "só um site"; regras de pagamento próprias</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ROADMAP -->
+  <section>
+    <div class="eyebrow">Ordem de execução</div>
+    <h2>Por onde avançar</h2>
+    <p class="intro">Validar antes de programar. A fase 0 dá rendimento já e ensina o que os clientes valorizam.</p>
+    <div class="phases">
+      <div class="phase">
+        <div class="rail"><div class="dot"></div><div class="line"></div></div>
+        <div class="phase-body">
+          <h3>Fase 0 <span class="tag">validar · sem código</span></h3>
+          <ul>
+            <li>Falar com 5–10 agências; oferecer anúncios feitos com a app a preço por campanha</li>
+            <li>Confirmar licença das fotografias</li>
+            <li>Arrumar o repositório: uma só fonte, ficheiros gerados fora do git</li>
+          </ul>
+        </div>
+      </div>
+      <div class="phase">
+        <div class="rail"><div class="dot"></div><div class="line"></div></div>
+        <div class="phase-body">
+          <h3>Fase 1 <span class="tag">fundação comercial</span></h3>
+          <ul>
+            <li>Alojamento público + domínio + página de preços</li>
+            <li>Supabase (contas, RLS) e Stripe</li>
+            <li>Sincronização offline/online</li>
+            <li>Cabeçalhos de segurança + build minificada</li>
+          </ul>
+        </div>
+      </div>
+      <div class="phase">
+        <div class="rail"><div class="dot"></div><div class="line"></div></div>
+        <div class="phase-body">
+          <h3>Fase 2 <span class="tag">o que faz pagar</span></h3>
+          <ul>
+            <li>Página de candidatura por anúncio</li>
+            <li>Quadro de candidatos</li>
+            <li>Métricas por anúncio e língua</li>
+            <li>Motor de tradução em camadas (1–3, offline)</li>
+          </ul>
+        </div>
+      </div>
+      <div class="phase">
+        <div class="rail"><div class="dot"></div><div class="line"></div></div>
+        <div class="phase-body">
+          <h3>Fase 3 <span class="tag">crescer</span></h3>
+          <ul>
+            <li>Tradução IA no servidor (camada 4) com limites por plano</li>
+            <li>Pacotes de setor e país via <code>register()</code></li>
+            <li>Marca branca para agências</li>
+            <li>Publicação direta (Meta) quando aprovada</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="eyebrow">Primeiro passo técnico</div>
+    <h2>Sem servidor, de valor imediato</h2>
+    <div class="grid two">
+      <div class="card">
+        <h3>Motor de tradução em camadas</h3>
+        <p>Acrescentar ao <code>trades.js</code> a procura em camadas (frases → memória aprovada → glossário) e um glossário inicial de obra. Offline, sem mexer no fluxo de revisão.</p>
+      </div>
+      <div class="card">
+        <h3>Build minificada + cabeçalhos</h3>
+        <p>Passo de build com esbuild que minifica o JS para a versão publicada, mantendo o fonte legível. Adicionar CSP e cabeçalhos ao <code>_headers</code> e ao <code>web.config</code>.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    Plano de trabalho · Recruitment Studio. Preços e prazos são estimativas a validar com clientes e, nos pontos legais, com um jurista.
+  </footer>
+</div>
+
+</body></html>
