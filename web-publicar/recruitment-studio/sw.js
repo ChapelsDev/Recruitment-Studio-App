@@ -1,7 +1,7 @@
 // Offline cache, used only when the app is served over http(s) (e.g. installed
 // on a phone). tools/build-web.mjs rewrites CACHE and CORE for each publish, so
 // phones pick up new versions by themselves.
-const CACHE = 'recruitment-studio-7631227526';
+const CACHE = 'recruitment-studio-5ce9b7cd65';
 const CORE = [
   "./",
   "./assets/app.css",
@@ -31,6 +31,7 @@ const CORE = [
   "./js/carousel-ui.js",
   "./js/contact.js",
   "./js/engine.js",
+  "./js/frame-meter.js",
   "./js/haptics.js",
   "./js/icons.js",
   "./js/install.js",
@@ -38,6 +39,7 @@ const CORE = [
   "./js/motion-kit.js",
   "./js/motion-timeline.js",
   "./js/motion.js",
+  "./js/phone.js",
   "./js/production-ui.js",
   "./js/production.js",
   "./js/recipes/apresentacao.js",

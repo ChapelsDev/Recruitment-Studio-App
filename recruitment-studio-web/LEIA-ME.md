@@ -37,10 +37,15 @@ TikTok e o WhatsApp, pensada para funções de obra. Cada anúncio dá três pe�
   ↶ ↷ · **⋯** · **Exportar**. Por cima do cartaz: os formatos à esquerda e as
   línguas (com **+**) à direita. Por baixo, um balão cinzento com a dica
   («Clique num texto do cartaz para o mudar.»).
-- **Editor, no telemóvel:** em cima ‹, o nome (até duas linhas) e **Exportar**;
-  por baixo a peça; depois o cartaz a cerca de meio ecrã e, ao longo da sua
-  aresta de baixo, os formatos, a língua, ↶ ↷ e **⋯** (com **Comparar formatos**,
-  **Ampliar** / **Reduzir** e, no Story, **Mostrar zonas do Instagram**). Os painéis abrem por baixo do cartaz (ver «Espaço
+- **Editor, no telemóvel (sem barra em cima):** o cartaz, o carrossel ou o vídeo
+  começa logo no topo do ecrã. Por cima flutuam, em vidro escuro, ‹ (com a
+  bolinha de «Guardado» ao lado), a peça (imagem · carrossel · vídeo) e
+  **Exportar** (redondo, cor de laranja). Na imagem e no carrossel, uma fila fina
+  de vidro na base do cartaz tem os formatos, a língua, ↶ ↷ e **⋯**; o **⋯**
+  começa com o **nome do anúncio** (e «Guardado») e tem **Comparar formatos** e,
+  no Story, **Mostrar zonas do Instagram**. No carrossel deslize entre as
+  páginas; o número da página («01 / 08») está no canto do diapositivo. O vídeo é
+  um leitor (ver «Navegar no vídeo»). Os painéis abrem por baixo (ver «Espaço
   para editar»).
 - **⋯ do editor:** Comparar formatos (na imagem) · Guardar ficheiro · Histórico
   de versões · Mostrar QR · Organizar · Rever traduções (n) · Rever publicação ·
@@ -187,8 +192,7 @@ ser feito um ajuste. O carrossel e o vídeo usam as fotografias que escolher em
 A comparação e a verificação de exportação avisam se o texto desenhado fica abaixo
 de 26 px no ficheiro de 1080 px de largura (cerca de 8,7 px quando visto a 360 px).
 É um aviso prático para conferir a leitura; não é uma certificação de acessibilidade.
-A pequena assinatura da marca não entra nesta medida. No vídeo Story, **Zonas**
-mostra uma sobreposição de segurança só na revisão, sem aparecer no ficheiro.
+A pequena assinatura da marca não entra nesta medida.
 
 ## Navegar no vídeo e escolher a capa
 
@@ -197,8 +201,18 @@ contador e botões por momento com o respetivo tempo. O momento atual fica
 destacado; as setas permitem avançar ou recuar. Os mesmos controlos aparecem
 na escolha da capa e funcionam com rato, toque e teclado.
 Arrastar a barra ou escolher um momento pausa o vídeo nesse fotograma; **Continuar**
-retoma a reprodução e **Ouvir** começa a partir desse instante. No telemóvel pode
-ampliar a pré-visualização para ter mais espaço.
+retoma a reprodução e **Ouvir** começa a partir desse instante.
+
+**No telemóvel o vídeo é um leitor:** um toque no vídeo mostra os botões — em
+cima o formato, a língua e o som; ao meio a pausa; em baixo o tempo, o nome do
+momento, a barra (com um tracinho por momento), **Capa**, ↶ ↷, **⋯** e **⛶**.
+Enquanto o vídeo toca, os botões (e os de cima do editor) desaparecem passados
+3 segundos sem tocar; fica só uma linha cor de laranja com o progresso. Em pausa
+ficam. Um toque no vídeo (fora dos botões) esconde-os ou volta a mostrá-los.
+**⛶** põe o vídeo no ecrã inteiro, sempre na vertical; para sair, **⛶** outra
+vez ou o gesto de voltar do telemóvel. Com o painel lá em cima o vídeo fica
+pequeno e mostra menos botões. No computador o vídeo mantém a barra temporal e
+**Escolher capa** por baixo.
 
 **Escolher capa** abre uma pré-visualização em 9:16 com o fotograma real do vídeo.
 O botão fica indisponível enquanto as fotografias e o vídeo estão a ser preparados,
@@ -274,11 +288,14 @@ completo**, que junta todas as peças e línguas num único ZIP.
 
 ## Espaço para editar
 
-No telemóvel, os painéis abrem como uma folha por baixo do cartaz, com uma pega
-em cima. A folha tem duas paragens: o cartaz a cerca de meio ecrã, ou só uma tira
-dele. Toque na pega (ou arraste-a para cima ou para baixo) para trocar; ao
-escrever num campo a folha sobe sozinha para a tira, e a barra das secções
-afasta-se. Para ver o cartaz maior, **⋯ › Ampliar**.
+No telemóvel, os painéis abrem como uma folha por baixo do cartaz. A cabeça da
+folha (a pega e o nome da secção) arrasta-se e a folha segue o dedo; ao largar
+prende numa de três alturas: **em baixo** (só a cabeça: o cartaz no maior
+tamanho), **a meio** (onde abre) e **em cima** (para escrever: o cartaz numa
+tira). A seta ao lado do nome faz o mesmo para quem não quer arrastar. Ao
+escrever num campo a folha sobe sozinha e a barra das secções afasta-se; escolher
+uma secção com a folha em baixo trá-la a meio. O cartaz nunca fica tapado:
+encolhe para caber no espaço que sobra.
 
 No computador, arraste a divisória entre os campos e a pré-visualização. Também
 pode focá-la com Tab e usar as setas esquerda/direita (Shift para passos menores),
@@ -354,14 +371,24 @@ e vale logo.
   vertical), com uma linha branca a mostrar o centro, e o telemóvel
   Android vibra de leve.
 - **Tema: Automático · Claro · Escuro.** «Automático» segue o telemóvel ou o
-  computador e muda sozinho quando o aparelho passa a escuro à noite. Os
-  anúncios e os vídeos nunca mudam de cor: o que vai para o Instagram é igual
-  nos dois temas.
+  computador e muda sozinho quando o aparelho passa a escuro à noite. O escuro é
+  o «Carvão quente»: fundo carvão, painéis e cartões um degrau acima, e o que
+  está escolhido numa pastilha cor de laranja com letra preta. Os anúncios e os
+  vídeos nunca mudam de cor: o que vai para o Instagram é igual nos dois temas.
 - **Vibração** (ligada à partida): no Android, um toque leve nos botões, e
-  padrões próprios para «pronto» e «erro»; no iPhone, o toque do sistema nos
-  botões (o iPhone não deixa vibrar de outra maneira, por isso «pronto» e
-  «erro» não vibram); no computador nada vibra (nem num portátil com ecrã
-  tátil).
+  padrões próprios para «pronto» e «erro»; no iPhone, o toque do sistema só nos
+  botões onde nunca se começa um deslizar — a barra de baixo, os botões que
+  flutuam por cima do cartaz, os do leitor de vídeo e os botões grandes no fundo
+  das janelas — para que deslizar por cima de cartões e listas nunca abra nada
+  (o iPhone não deixa vibrar de outra maneira, por isso «pronto» e «erro» não
+  vibram); no computador nada vibra (nem num portátil com ecrã tátil).
+- **Versão** (no fim): a cópia em uso. Cinco toques seguidos mostram (ou
+  escondem) um pequeno medidor de fluidez — imagens por segundo e «travões»
+  (imagens que levaram mais de 50 ms) — útil para dizer como corre no telemóvel.
+- **Barra de estado do iPhone:** na app instalada, a página desenha por baixo da
+  hora e da bateria: no início fica cor de laranja; no editor fica uma sombra
+  escura por cima do cartaz. Se continuar cinzenta, tire a app do ecrã principal
+  e volte a pô-la (o iPhone só lê este pedido ao instalar).
 
 Em qualquer estilo, nada faz esperar: um toque novo salta a animação que está
 a correr para o fim e faz o que foi pedido; o desenho das miniaturas e dos

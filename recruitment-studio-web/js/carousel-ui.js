@@ -94,7 +94,9 @@ RS.carouselUI = ({ Icon, queueThumb, afterPaint, Group, VideoTexts, PhotoLibrary
     }, []);
     const fmt = M.FORMATS[c.format] || M.FORMATS.portrait;
     // the current slide fits the stage; the neighbours peek at two thirds of it
-    const mainW = Math.max(120, Math.min(box.w * (mobile ? 0.86 : 0.56) || 320, ((box.h || 600) - 40) * fmt.w / fmt.h));
+    // (once measured the height is real, even a small one: the slide never runs out of the stage)
+    const tall = box.w ? box.h : 600;
+    const mainW = Math.max(mobile ? 40 : 120, Math.min(box.w * (mobile ? 0.86 : 0.56) || 320, (tall - (mobile ? 12 : 40)) * fmt.w / fmt.h));
     const sideW = Math.round(mainW * 0.62);
     useEffect(() => {
       if (!P) return undefined;
@@ -128,7 +130,7 @@ RS.carouselUI = ({ Icon, queueThumb, afterPaint, Group, VideoTexts, PhotoLibrary
     const s = P && P.slides[i];
     return html`<div class=${'carousel-stage' + (dealing ? ' dealing' : '')} data-style=${P ? P.carouselStyle : ''}
       onAnimationEnd=${(e) => { if (dealing && e.target.classList.contains('cs-next')) setDealing(false); }}>
-      <div class="cs-head stage-top">
+      <div class=${'cs-head stage-top' + (mobile ? ' tools-row' : '')}>
         <div class="seg small cs-formats" role="radiogroup" aria-label="Formato do carrossel">
           ${M.CAROUSEL_FORMATS.map((f) => html`<button key=${f} type="button" role="radio" aria-checked=${c.format === f} class=${c.format === f ? 'on' : ''}
             title=${`${M.FORMATS[f].w} × ${M.FORMATS[f].h}`} onClick=${() => setFormat(f)}>${FORMAT_LABEL[f]}</button>`)}
@@ -143,8 +145,12 @@ RS.carouselUI = ({ Icon, queueThumb, afterPaint, Group, VideoTexts, PhotoLibrary
           onPointerDown=${down} onPointerUp=${up} onPointerCancel=${cancel}></canvas>
         <canvas ref=${next} class=${'cs-side cs-next' + (i < n - 1 ? '' : ' cs-none')} aria-hidden="true" onClick=${() => go(i + 1)}></canvas>
         ${!P && html`<span class="cs-wait" role="status">A preparar o carrossel…</span>`}
+        ${mobile && html`<button type="button" class="sr-only" aria-label="Diapositivo anterior" disabled=${i <= 0} onClick=${() => go(i - 1)}></button>
+          <button type="button" class="sr-only" aria-label="Diapositivo seguinte" disabled=${i >= n - 1} onClick=${() => go(i + 1)}></button>`}
+        ${mobile && html`<span class="cs-count cs-badge" aria-live="polite"
+          style=${`top:${Math.max(Math.max(0, (box.h - mainW * fmt.h / fmt.w) / 2) + 8, 52)}px;right:${Math.max(0, (box.w - mainW) / 2) + 8}px`}>${n ? html`<strong>${String(i + 1).padStart(2, '0')}</strong> / ${String(n).padStart(2, '0')}` : ''}</span>`}
       </div>
-      <div class="cs-nav">
+      ${!mobile && html`<div class="cs-nav">
         <button type="button" class="icon-btn" aria-label="Diapositivo anterior" disabled=${i <= 0} onClick=${() => go(i - 1)}><${Icon} name="chevron-left" /></button>
         <span class="cs-count">${n ? html`<strong>${String(i + 1).padStart(2, '0')}</strong> / ${String(n).padStart(2, '0')} · ${slideName(s)}` : ''}</span>
         <button type="button" class="icon-btn" aria-label="Diapositivo seguinte" disabled=${i >= n - 1} onClick=${() => go(i + 1)}><${Icon} name="chevron-right" /></button>
@@ -152,7 +158,7 @@ RS.carouselUI = ({ Icon, queueThumb, afterPaint, Group, VideoTexts, PhotoLibrary
       <div class="cs-dots" role="group" aria-label="Diapositivos">
         ${(P ? P.slides : []).map((x, j) => html`<button key=${j} type="button" class=${'cs-dot' + (j === i ? ' on' : '')} aria-label=${`Diapositivo ${j + 1}: ${slideName(x)}`}
           aria-current=${j === i ? 'true' : undefined} onClick=${() => go(j)}></button>`)}
-      </div>
+      </div>`}
     </div>`;
   }
 

@@ -9,6 +9,14 @@ RS.haptics = (() => {
   const PATTERNS = Object.freeze({ tick: 8, success: Object.freeze([12, 60, 18]), error: Object.freeze([30, 50, 30]) });
   const TICK_SELECTOR = '.btn, .icon-btn, .chip-main, .tchip, .seg button, .rail button, .video-tabs [role="tab"], .motion-card, .ms-card, .tpl-card, .proj-open, .lengths button, .eye, .add-row, .palette, .vt-remove, .vt-restore';
   const SWITCHES = '.switch input[type="checkbox"]';
+  // iPhone: a native switch answers drags, so one under a finger that starts a scroll
+  // takes the gesture (and opens the card). Only controls where no scroll starts
+  // get one: the floating bar, the editor's floating controls, the video player,
+  // the big buttons fixed under a sheet. Nothing inside a scrolling area.
+  const IOS_SELECTOR = '.editor .rail button, .editor .topbar button, .editor .topbar [role="radio"], .player button, .player [role="radio"], .export-actions .btn';
+  const SCROLLERS = '.panel, .gallery, .home-main, .modal, .menu, .lib-grid, .ip-pop';
+  const inScroller = (el) => !!el.closest(SCROLLERS) && !el.closest('.export-actions');
+  const tickable = (el) => el.matches(IOS_SELECTOR) && !inScroller(el);
 
   // 'ios' on iPhone / iPad (iPadOS says «Macintosh» but has touch) from iOS 17.4;
   // 'android' where vibrate works on a phone or tablet; 'none' elsewhere (a PC, even with touch).
@@ -87,10 +95,14 @@ RS.haptics = (() => {
       const marked = new Set();
       const scan = (node) => {
         if (node.nodeType !== 1 || node.classList.contains('haptic-switch') || !on()) return;
-        if (node.matches(TICK_SELECTOR)) decorate(node);
-        node.querySelectorAll(TICK_SELECTOR).forEach(decorate);
-        const sw = node.matches(SWITCHES) ? [node] : node.querySelectorAll(SWITCHES);
-        sw.forEach((i) => { if (!i.hasAttribute('switch')) { i.setAttribute('switch', ''); marked.add(i); } });
+        // the app's own switches, found by class (cheap: most changes are inside panels)
+        const labels = node.classList.contains('switch') ? [node] : node.getElementsByClassName('switch');
+        for (const l of labels) { const i = l.querySelector(':scope > input[type="checkbox"]'); if (i && !i.hasAttribute('switch')) { i.setAttribute('switch', ''); marked.add(i); } }
+        if (node.matches(SWITCHES) && !node.hasAttribute('switch')) { node.setAttribute('switch', ''); marked.add(node); }
+        // most changes happen inside a panel or a sheet's body: nothing there ticks
+        if (inScroller(node) && !node.querySelector('.export-actions')) return;
+        if (tickable(node)) decorate(node);
+        node.querySelectorAll(IOS_SELECTOR).forEach((el) => { if (tickable(el)) decorate(el); });
       };
       const clear = () => root.querySelectorAll('.haptic-switch').forEach((l) => l.remove());
       const top = root.nodeType === 9 ? root.documentElement : root;
@@ -102,7 +114,7 @@ RS.haptics = (() => {
       const mo = new MutationObserver((records) => {
         for (const r of records) {
           if (r.type === 'childList') r.addedNodes.forEach(scan);
-          else if (r.target.matches(TICK_SELECTOR)) { if (r.target.disabled) undecorate(r.target); else if (on()) decorate(r.target); }
+          else if (tickable(r.target)) { if (r.target.disabled) undecorate(r.target); else if (on()) decorate(r.target); }
         }
       });
       mo.observe(root, { childList: true, subtree: true, attributes: true, attributeFilter: ['disabled'] });
@@ -113,5 +125,5 @@ RS.haptics = (() => {
     return () => { stops.forEach((f) => f()); current = before; };
   }
 
-  return { PATTERNS, TICK_SELECTOR, mode, detect, tick, success, error, install };
+  return { PATTERNS, TICK_SELECTOR, IOS_SELECTOR, SCROLLERS, mode, detect, tick, success, error, install };
 })();

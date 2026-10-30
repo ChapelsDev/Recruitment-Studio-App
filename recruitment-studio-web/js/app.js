@@ -79,6 +79,9 @@
       stroke-width=${stroke} stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d=${RS.ICON_PATHS[name] || ''} /></svg>`;
   }
   if (!RS.ICON_PATHS.pause) RS.ICON_PATHS.pause = 'M8 5v14M16 5v14';
+  // the phone player's ⛶ (in and out of full screen)
+  if (!RS.ICON_PATHS['maximize-2']) RS.ICON_PATHS['maximize-2'] = 'M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7';
+  if (!RS.ICON_PATHS['minimize-2']) RS.ICON_PATHS['minimize-2'] = 'M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7';
   function Spinner({ large }) {
     return html`<span class=${'spinner' + (large ? ' lg' : '')} aria-hidden="true"></span>`;
   }
@@ -210,7 +213,14 @@
     if (window.scheduler && typeof window.scheduler.postTask === 'function') window.scheduler.postTask(fn, { priority: 'background' }).catch(() => {});
     else setTimeout(fn, 0);
   };
+  // a finger moving (a scroll, a drag) goes first: the queue waits until it has been still
+  // for 250 ms (2026-10-29: a card prepared mid-scroll was a long task under the finger)
+  let lastGesture = -1e9;
+  const gesture = () => { lastGesture = performance.now(); };
+  for (const t of ['touchstart', 'touchmove', 'wheel', 'scroll']) window.addEventListener(t, gesture, { passive: true, capture: true });
   function runThumbJob() {
+    const wait = 250 - (performance.now() - lastGesture);
+    if (wait > 0) { setTimeout(runThumbJob, wait); return; } // (still the queue's turn: thumbTask stays true)
     thumbTask = false;
     const next = thumbJobs.entries().next();
     if (next.done) return;
@@ -359,6 +369,9 @@
   // settle: every model is prepared again, so not on every key.
   function MotionCard({ style, project: live, images, photos, on, onPick, disabled, width = 62 }) {
     const project = useSettled(live, 300);
+    // on a phone the cards are still pictures (2026-10-29: eight cards playing at 12 fps took the
+    // phone's whole time while «Estilo» scrolled); the stage plays the chosen one
+    const phone = useMedia('(max-width: 860px)');
     const ref = useRef();
     const [visible, setVisible] = useState(false);
     useEffect(() => {
@@ -380,7 +393,7 @@
       return () => thumbJobs.delete(job);
     }, [cardKey(project), style, images, photos]);
     return html`<button ref=${ref} type="button" role="radio" aria-checked=${on} class=${'motion-card' + (on ? ' on' : '')} disabled=${disabled} onClick=${onPick}>
-      ${P ? html`<${VideoPreview} prepared=${P} width=${width} still=${visible ? null : 1.2} fps=${12} />`
+      ${P ? html`<${VideoPreview} prepared=${P} width=${width} still=${visible && !phone ? null : 1.2} fps=${12} />`
         : html`<span class="poster-thumb motion-wait" style=${`width:${width}px;height:${Math.round(width * 16 / 9)}px`} aria-hidden="true"></span>`}
       <span>${style.name}</span>
     </button>`;
@@ -499,7 +512,27 @@
         <p class="settings-note">Um toque leve no telemóvel quando carrega nos botões.</p>
       </section>
       <${OfflinePanel} />
+      <${SettingsVersion} />
     </div>`;
+  }
+  // The version of the copy in use (the offline cache's name); five quick taps on it show
+  // or hide the hidden frame meter (RS.frameMeter) for a test on the phone.
+  function SettingsVersion() {
+    const [version, setVersion] = useState('');
+    const taps = useRef([]);
+    useEffect(() => {
+      if (!window.caches || !/^https?:$/.test(location.protocol)) return;
+      caches.keys().then((keys) => {
+        const k = keys.filter((x) => x.startsWith('recruitment-studio-')).pop();
+        if (k) setVersion(k.slice('recruitment-studio-'.length));
+      }).catch(() => {});
+    }, []);
+    const tap = () => {
+      const now = Date.now();
+      taps.current = taps.current.filter((t) => now - t < 3000).concat(now);
+      if (taps.current.length >= 5) { taps.current = []; RS.frameMeter.toggle(); }
+    };
+    return html`<p class="settings-version" onClick=${tap}>Versão ${version || 'deste computador'}</p>`;
   }
   // The home's «Definições»: a dialog (a sheet rising from the bottom on a phone).
   function SettingsSheet({ onClose }) {
@@ -1221,10 +1254,14 @@
     // (null: the cause was Estilo or the format, the note goes under the poster)
     const noteCause = useRef({ on: false, field: null });
     useEffect(() => { RS.appearance.setBar('surface'); }, []);
-    const [pvLarge, setPvLarge] = useState(false);
-    // the phone's sheet under the poster: 'half' (the poster about half the screen) or 'strip' (writing)
-    const [sheet, setSheet] = useState('half');
-    const sheetDrag = useRef(null);
+    // the phone's panel under the preview (2026-10-29): three stops — 'top' (writing, the
+    // preview a strip), 'middle' (where it opens), 'bottom' (the preview at its largest);
+    // a drag on its head follows the finger and snaps (RS.phone)
+    const [sheet, setSheet] = useState('middle');
+    const [stopsPx, setStopsPx] = useState(null);
+    const sheetDrag = useRef(null), sheetPanel = useRef(null), sheetPreview = useRef(null), sheetProbe = useRef(null);
+    const flipFrom = useRef(null), lastSheetY = useRef(null), settleTimer = useRef(0);
+    const [settleTick, setSettleTick] = useState(0);
     const [panelWidth, setPanelWidth] = useState(() => { try { return U.clamp(Number(localStorage.getItem('rs-panel-width')) || 410, 300, 580); } catch { return 410; } });
     const [viewportWidth, setViewportWidth] = useState(window.innerWidth);
     const panelDrag = useRef(null);
@@ -1236,6 +1273,80 @@
     const [mode, setMode] = useState(['image', 'carousel', 'video'].includes(initialPiece) ? initialPiece : 'image'); // the piece on screen
     const [vFormat, setVFormat] = useState('story'); // the format the «Vídeo» stage plays (Reels and Stories are 9:16)
     const mobile = useMedia('(max-width: 860px)');
+    // the stops for this window: the status bar's height and the home indicator's room
+    // come from a hidden probe sized with var(--safe-top) and the bottom inset
+    useLayoutEffect(() => {
+      if (!mobile) { setStopsPx(null); return undefined; }
+      const measure = () => {
+        const probe = sheetProbe.current;
+        const head = document.querySelector('.editor .sheet-head');
+        setStopsPx(RS.phone.stops(window.innerHeight, {
+          safeTop: probe ? probe.offsetHeight : 0,
+          barRoom: 104 + (probe ? probe.offsetWidth : 0),
+          head: (head && head.offsetHeight) || 60,
+        }));
+      };
+      measure();
+      const vv = window.visualViewport;
+      window.addEventListener('resize', measure);
+      if (vv) vv.addEventListener('resize', measure);
+      return () => { window.removeEventListener('resize', measure); if (vv) vv.removeEventListener('resize', measure); };
+    }, [mobile]);
+    const sheetY = mobile && stopsPx ? stopsPx[sheet] : null;
+    // FLIP: the panel and the preview start where they were (the finger, or the last stop)
+    // and glide to the new stop with transform only; Calmo jumps
+    useLayoutEffect(() => {
+      const panel = sheetPanel.current, pv = sheetPreview.current;
+      const from = flipFrom.current != null ? flipFrom.current : lastSheetY.current;
+      flipFrom.current = null;
+      lastSheetY.current = sheetY;
+      if (!panel || !pv || sheetY == null) return undefined;
+      const clear = () => { panel.classList.remove('settling'); pv.classList.remove('settling'); panel.style.transform = ''; pv.style.transform = ''; };
+      if (from == null || from === sheetY || document.documentElement.dataset.motion === 'calm') { clear(); return undefined; }
+      panel.classList.remove('settling'); pv.classList.remove('settling');
+      panel.style.transform = `translateY(${from - sheetY}px)`;
+      pv.style.transformOrigin = '50% 0';
+      pv.style.transform = `scale(${Math.max(0.05, from - 8) / Math.max(1, sheetY - 8)})`;
+      void panel.offsetHeight; // the start position is laid out before the glide
+      panel.classList.add('settling'); pv.classList.add('settling');
+      panel.style.transform = ''; pv.style.transform = '';
+      settleTimer.current = setTimeout(clear, 420);
+      return () => clearTimeout(settleTimer.current);
+    }, [sheetY, settleTick]);
+    // the head follows the finger: transform only while it moves, a stop when it lets go
+    const sheetDown = (e) => {
+      if (sheetY == null || (e.target.closest && e.target.closest('.sheet-toggle')) || (e.pointerType === 'mouse' && e.button !== 0)) return;
+      // a glide still running ends here: its last step must not undo this drag (deferred minor)
+      clearTimeout(settleTimer.current);
+      if (sheetPanel.current) sheetPanel.current.classList.remove('settling');
+      if (sheetPreview.current) sheetPreview.current.classList.remove('settling');
+      sheetDrag.current = { id: e.pointerId, startY: e.clientY, y0: sheetY, y: sheetY, t: performance.now(), v: 0, moved: false };
+      if (e.currentTarget.setPointerCapture) { try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* gone */ } }
+    };
+    const sheetMove = (e) => {
+      const d = sheetDrag.current;
+      if (!d || d.id !== e.pointerId || !stopsPx) return;
+      const dy = e.clientY - d.startY;
+      if (!d.moved && Math.abs(dy) < 4) return;
+      if (!d.moved) { const ed = e.currentTarget.closest && e.currentTarget.closest('.editor'); if (ed) ed.classList.add('sheet-dragging'); }
+      d.moved = true;
+      const y = U.clamp(d.y0 + dy, stopsPx.top - 40, stopsPx.bottom + 40), now = performance.now();
+      d.v = (y - d.y) / Math.max(1, now - d.t); d.t = now; d.y = y;
+      const panel = sheetPanel.current, pv = sheetPreview.current;
+      if (panel) { panel.classList.remove('settling'); panel.style.transform = `translateY(${y - d.y0}px)`; }
+      if (pv) { pv.classList.remove('settling'); pv.style.transformOrigin = '50% 0'; pv.style.transform = `scale(${Math.max(0.05, y - 8) / Math.max(1, d.y0 - 8)})`; }
+    };
+    const sheetUp = (e) => {
+      const d = sheetDrag.current;
+      if (!d || d.id !== e.pointerId) return;
+      sheetDrag.current = null;
+      const ed = e.currentTarget.closest && e.currentTarget.closest('.editor');
+      if (ed) ed.classList.remove('sheet-dragging');
+      if (!d.moved) return;
+      flipFrom.current = d.y;
+      setSheet(RS.phone.snap(d.y, d.v, stopsPx));
+      setSettleTick((n) => n + 1);
+    };
     const hist = useRef({ past: [], future: [], lastKey: null, lastAt: 0 });
     const swapRef = useRef(null); // the next render's stage swap (RS.ui.stageSwap kind)
     const projRef = useRef(project);
@@ -1510,6 +1621,28 @@
     const stageBusy = imgBusy === 'photo' ? 'A preparar a fotografia…' : imgBusy === 'logo' ? 'A preparar o logótipo…' : imgLoading ? 'A carregar as imagens…' : null;
     // «Vídeo»: the video of the ad, prepared once for the panel and the stage.
     const video = mode === 'video';
+    // the phone's video player: the floating top shows and hides with its buttons
+    // (chromeOn), and ⛶ fills the screen, still vertical (playerFull: a history entry,
+    // so the phone's back gesture leaves it; Escape too)
+    const [chromeOn, setChromeOn] = useState(true);
+    const [playerFull, setPlayerFull] = useState(false);
+    const setFull = (on) => {
+      if (on) { try { history.pushState({ rsPlayerFull: true }, ''); } catch { /* no history here */ } setPlayerFull(true); return; }
+      setPlayerFull(false);
+      if (history.state && history.state.rsPlayerFull) history.back();
+    };
+    useEffect(() => {
+      if (!playerFull) return undefined;
+      const pop = () => setPlayerFull(false);
+      const key = (e) => { if (e.key === 'Escape') setFull(false); };
+      window.addEventListener('popstate', pop);
+      window.addEventListener('keydown', key);
+      return () => { window.removeEventListener('popstate', pop); window.removeEventListener('keydown', key); };
+    }, [playerFull]);
+    // leaving the video (or the phone width) in full screen also takes its history entry back,
+    // and so does closing the editor (deferred minor, 2026-10-30)
+    useEffect(() => { if (!video || !mobile) { if (playerFull) setFull(false); setChromeOn(true); } }, [video, mobile]);
+    useEffect(() => () => { if (history.state && history.state.rsPlayerFull) history.back(); }, []);
     const vPhotos = useVideoPhotos(project, images, video);
     // prepared again only when something the video shows changes (not the ad's name)
     const vKey = videoKey(project);
@@ -1534,7 +1667,8 @@
     // «Balão» (Ilustrativo): the image becomes a carousel by dealing its slides; back, they gather
     const [pieceMove, setPieceMove] = useState(null);
     const changeMode = (m) => { setPieceMove(RS.ui.illustrative() && m !== mode && (mode === 'image' || m === 'image') ? { from: mode, to: m } : null); setMode(m); };
-    const goTab = (id) => setTab(id);
+    // a section chosen while the panel sits at the bottom brings it up to the middle
+    const goTab = (id) => { setTab(id); if (sheet === 'bottom') setSheet('middle'); };
     // «Carrossel»: the carousel of the ad, prepared after the frame
     const carouselOn = mode === 'carousel';
     const cP = useCarousel(project, images, carouselOn);
@@ -1544,7 +1678,7 @@
     useEffect(() => { if (mode === 'image' && tab === 'sequencia') setTab('oferta'); }, [mode]);
     const review = () => setReviewLocale(project.locale);
     const resolveCheck = (check) => {
-      setExportOpen(false); setPvLarge(false);
+      setExportOpen(false);
       if (check.review) { setReviewLocale(check.locale); return; }
       update((p) => { if (check.locale) p.locale = check.locale; if (check.format && !check.videoTab) p.format = check.format; }, { coalesce: 'check-navigation' });
       if (check.videoTab) {
@@ -1593,25 +1727,32 @@
     // on a phone the ⋯ sits by the poster with undo and redo, and also enlarges it
     const stageMenu = [menuItems[0] && menuItems[0].label === 'Comparar formatos' ? menuItems[0] : null,
       mode === 'image' && project.format === 'story' ? { label: guides ? 'Esconder zonas do Instagram' : 'Mostrar zonas do Instagram', icon: 'smartphone', onClick: () => setGuides(!guides) } : null,
-      { label: pvLarge ? 'Reduzir' : 'Ampliar', icon: pvLarge ? 'zoom-out' : 'zoom-in', title: pvLarge ? 'Reduzir a pré-visualização' : 'Ampliar a pré-visualização', onClick: () => transition(() => setPvLarge(!pvLarge)) },
       ...menuItems.filter((it) => it.label !== 'Comparar formatos')].filter(Boolean);
-    const stageTools = mobile ? html`${undoRedo}<${MoreMenu} items=${stageMenu} where="editor" />` : null;
-    return html`<div class=${'editor screen' + (pvLarge ? ' pv-large' : '') + (video ? ' video-mode' : '') + (mobile && sheet === 'strip' ? ' sheet-strip' : '')} style=${{ '--editor-panel-width': `${shownPanelWidth}px` }}>
+    // the save signal: a dot (and the two ticks) with its words; on a phone (2026-10-29: no
+    // bar on top) the dot stays beside ‹ and the words go into the ⋯ with the ad's name
+    const saveWords = saveState === 'saving' ? 'A guardar…' : saveState === 'error' ? 'Não foi possível guardar' : S.isPersistent() ? 'Guardado' : 'Só nesta sessão';
+    const saveTicks = saveState === 'saved' && saves > 0 && S.isPersistent() && html`<svg key=${saves} class="save-ticks" viewBox="0 0 26 16" aria-hidden="true" focusable="false"><path class="k1" d="M2 9l4 4 8-10" pathLength="100" /><path class="k2" d="M11 12l1 1 8-10" pathLength="100" /></svg>`;
+    const saveSignal = html`<span class=${'save-state ' + saveState} role="status" aria-live="polite" aria-atomic="true"><span class="save-dot" aria-hidden="true"></span>${saveTicks}<span class="save-words">${saveWords}</span></span>`;
+    const nameHead = html`<label class="menu-name"><span>Nome do anúncio</span>
+      <textarea class="name-input" name="project-name" rows="2" value=${project.name} aria-label="Nome do anúncio (só para si, não aparece na imagem)"
+        onKeyDown=${(e) => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } }}
+        onInput=${(e) => { const v = e.target.value.replace(/[\r\n]+/g, ' '); update((p) => { p.name = v; p.nameAuto = false; }, { coalesce: 'name' }); }} /></label>
+      <span class=${'menu-save ' + saveState} aria-hidden="true">${saveWords}</span>`;
+    const stageTools = mobile ? html`${undoRedo}<${MoreMenu} items=${stageMenu} where="editor" head=${nameHead} />` : null;
+    const SHEET_LABEL = { bottom: 'Painel em baixo. Subir.', middle: 'Painel a meio. Subir.', top: 'Painel em cima. Baixar.' };
+    return html`<div class=${'editor screen' + (video ? ' video-mode' : '') + (mobile ? ` sheet-${sheet}` : '') + (mobile && video && !chromeOn ? ' chrome-off' : '') + (mobile && video && playerFull ? ' player-full' : '')}
+      style=${{ '--editor-panel-width': `${shownPanelWidth}px`, ...(sheetY != null ? { '--sheet-y': `${sheetY}px` } : {}) }}>
+      ${mobile && html`<i class="safe-probe" ref=${sheetProbe} aria-hidden="true"></i>`}
       <header class=${'topbar' + (saveError || !S.isPersistent() ? ' has-save-warning' : '')}>
         <div class="tb-left">
         <button class="btn ghost tb-back" onClick=${exit} disabled=${leaving} aria-busy=${leaving} aria-label=${leaving ? 'A guardar e a voltar aos anúncios' : 'Voltar aos anúncios'}>
           ${leaving ? html`<${Spinner} />` : html`<${Icon} name="chevron-left" />`}</button>
-        <div class="name-wrap">
-          ${mobile
-            // on a phone the name may take two lines; Enter ends the edit
-            ? html`<textarea class="name-input" name="project-name" rows="2" value=${project.name} aria-label="Nome do anúncio (só para si, não aparece na imagem)"
-              onKeyDown=${(e) => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } }}
-              onInput=${(e) => { const v = e.target.value.replace(/[\r\n]+/g, ' '); update((p) => { p.name = v; p.nameAuto = false; }, { coalesce: 'name' }); }} />`
-            : html`<input class="name-input" name="project-name" value=${project.name} aria-label="Nome do anúncio (só para si, não aparece na imagem)"
-              title="Nome do anúncio (só para si, não aparece na imagem)"
-              onInput=${(e) => update((p) => { p.name = e.target.value; p.nameAuto = false; }, { coalesce: 'name' })} />`}
-          <span class=${'save-state ' + saveState} role="status" aria-live="polite" aria-atomic="true"><span class="save-dot" aria-hidden="true"></span>${saveState === 'saved' && saves > 0 && S.isPersistent() && html`<svg key=${saves} class="save-ticks" viewBox="0 0 26 16" aria-hidden="true" focusable="false"><path class="k1" d="M2 9l4 4 8-10" pathLength="100" /><path class="k2" d="M11 12l1 1 8-10" pathLength="100" /></svg>`}${saveState === 'saving' ? 'A guardar…' : saveState === 'error' ? 'Não foi possível guardar' : S.isPersistent() ? 'Guardado' : 'Só nesta sessão'}</span>
-        </div>
+        ${mobile ? saveSignal : html`<div class="name-wrap">
+          <input class="name-input" name="project-name" value=${project.name} aria-label="Nome do anúncio (só para si, não aparece na imagem)"
+            title="Nome do anúncio (só para si, não aparece na imagem)"
+            onInput=${(e) => update((p) => { p.name = e.target.value; p.nameAuto = false; }, { coalesce: 'name' })} />
+          ${saveSignal}
+        </div>`}
         </div>
         <div class="tb-center">
           <${PieceSwitch} mode=${mode} onChange=${changeMode} />
@@ -1619,7 +1760,7 @@
         <div class="tb-right">
           ${!mobile && undoRedo}
           ${!mobile && html`<${MoreMenu} items=${menuItems} where="editor" />`}
-          <button class="btn primary" onClick=${() => setExportOpen(true)} title="Exportar (Ctrl+E)"><${Icon} name="download" /> <span>Exportar</span></button>
+          <button class="btn primary" onClick=${() => setExportOpen(true)} title="Exportar (Ctrl+E)" aria-label="Exportar"><${Icon} name="download" /> <span>Exportar</span></button>
         </div>
         ${!conflict && (saveError || !S.isPersistent()) && html`<div class="save-recovery" role="alert">
           <span>${!S.isPersistent() ? 'Este navegador está a guardar apenas nesta sessão. Guarde um ficheiro antes de fechar.' : 'As alterações ainda não estão guardadas. ' + saveError}</span>
@@ -1638,14 +1779,16 @@
             <${Icon} name=${t.icon} size=${20} /><span>${t.label}</span>
           </button>`)}
         </nav>
-        <aside id="editor-panel" key=${`${mode}:${sectionInfo.id}`} class=${'panel' + (videoSection ? ' video-panel' : '')} role="tabpanel" aria-label=${sectionInfo.label}
+        <aside id="editor-panel" key=${`${mode}:${sectionInfo.id}`} ref=${sheetPanel} class=${'panel' + (videoSection ? ' video-panel' : '')} role="tabpanel" aria-label=${sectionInfo.label}
           onInput=${(e) => setLastField(sectionInfo.id === 'estilo' || !e.target || !e.target.id ? null : e.target.id)}
           onClick=${(e) => { if (sectionInfo.id === 'estilo' && e.target.closest && e.target.closest('button')) setLastField(null); }}
-          onfocusin=${(e) => { if (mobile && e.target && e.target.matches && e.target.matches('input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="file"]), textarea')) setSheet('strip'); }}>
-          ${mobile && html`<button class="sheet-handle" aria-label="Mudar o tamanho da pré-visualização" aria-expanded=${sheet === 'half'} aria-controls="editor-preview"
-            onClick=${() => { if (sheetDrag.current && sheetDrag.current.moved) { sheetDrag.current = null; return; } sheetDrag.current = null; setSheet(sheet === 'half' ? 'strip' : 'half'); }}
-            onPointerDown=${(e) => { sheetDrag.current = { y: e.clientY, moved: false }; }}
-            onPointerMove=${(e) => { const d = sheetDrag.current; if (!d || d.moved) return; const dy = e.clientY - d.y; if (Math.abs(dy) > 40) { d.moved = true; setSheet(dy < 0 ? 'strip' : 'half'); } }}><span aria-hidden="true"></span></button>`}
+          onfocusin=${(e) => { if (mobile && e.target && e.target.matches && e.target.matches('input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="file"]), textarea')) setSheet('top'); }}>
+          ${mobile && html`<div class="sheet-head" onPointerDown=${sheetDown} onPointerMove=${sheetMove} onPointerUp=${sheetUp} onPointerCancel=${sheetUp}>
+            <span class="sheet-grip" aria-hidden="true"></span>
+            <h2>${sectionInfo.label}</h2>
+            <button type="button" class=${'icon-btn sheet-toggle' + (sheet === 'top' ? '' : ' up')} aria-label=${SHEET_LABEL[sheet]} title=${SHEET_LABEL[sheet]} aria-controls="editor-preview"
+              onClick=${() => setSheet(RS.phone.next(sheet))}><${Icon} name="chevron-down" /></button>
+          </div>`}
           ${sectionInfo.id === 'oferta' && html`<${TextPanel} ...${panelProps} />`}
           ${sectionInfo.id === 'contactos' && html`<${ContactsPanel} ...${panelProps} />`}
           ${videoSection ? html`<${VideoPanel} project=${project} update=${update} images=${images} photos=${vPhotos} P=${vP} vKey=${vKey}
@@ -1664,12 +1807,12 @@
           onPointerUp=${() => { panelDrag.current = null; }} onPointerCancel=${() => { panelDrag.current = null; }}
           onDblClick=${() => resizePanel(410)} onKeyDown=${(e) => { const next = { ArrowLeft: shownPanelWidth - (e.shiftKey ? 10 : 20), ArrowRight: shownPanelWidth + (e.shiftKey ? 10 : 20), Home: 300, End: panelMax }[e.key]; if (next != null) { e.preventDefault(); resizePanel(next); } }}></div>`}
         <div class="preview-shell">
-          <div id="editor-preview" class="preview-content">
+          <div id="editor-preview" class="preview-content" ref=${sheetPreview}>
         ${(carouselOn ? html`<${CarouselStage} project=${project} update=${update} P=${cP} mobile=${mobile} deal=${!!pieceMove && pieceMove.from === 'image' && pieceMove.to === 'carousel'} topRight=${langs} tools=${stageTools} onField=${(key) => { setTab('sequencia'); setCFocus(carouselFocus(key)); }} />`
-        : video ? html`<${VideoStage} P=${vP} project=${project} format=${vFormat} setFormat=${setVFormat} mobile=${mobile} topRight=${langs} tools=${stageTools} quiet=${exportOpen || productionOpen || reuseOpen || coverAt !== null} onCover=${setCoverAt} coverReady=${!!vFresh} pvLarge=${pvLarge} setPvLarge=${setPvLarge} guides=${guides} setGuides=${setGuides} />`
+        : video ? html`<${VideoStage} P=${vP} project=${project} format=${vFormat} setFormat=${setVFormat} mobile=${mobile} topRight=${langs} tools=${stageTools} quiet=${exportOpen || productionOpen || reuseOpen || coverAt !== null} onCover=${setCoverAt} coverReady=${!!vFresh} onControls=${setChromeOn} full=${playerFull} setFull=${setFull} />`
         : html`<${Workspace} project=${project} images=${images} update=${update} onSelect=${focusField}
           guides=${guides} setGuides=${setGuides} report=${report} onReport=${setReport} busy=${stageBusy} note=${note} topRight=${langs} tools=${stageTools} swapRef=${swapRef} gather=${!!pieceMove && pieceMove.from === 'carousel' && pieceMove.to === 'image'} onCause=${() => setLastField(null)}
-          choosePhoto=${choosePhoto} chooseLogo=${chooseLogo} mobile=${mobile} pvLarge=${pvLarge} setPvLarge=${setPvLarge}
+          choosePhoto=${choosePhoto} chooseLogo=${chooseLogo} mobile=${mobile}
           onConvert=${() => changeMode('video')} onCompare=${() => setComparisonOpen(true)} />`)}
           </div>
         </div>
@@ -1693,7 +1836,8 @@
   // ⋯ of a top bar (the editor's, the home's): items { label, icon, onClick, count?,
   // cls?, title?, disabled? }; the button shows the sum of the counts (what waits
   // for a review). where: 'editor' | 'home' (its classes: .<where>-more, .<where>-menu).
-  function MoreMenu({ items, where }) {
+  // head: what sits above the items (on a phone the editor's ⋯ starts with the ad's name)
+  function MoreMenu({ items, where, head = null }) {
     const [open, setOpen] = useState(false);
     const pop = RS.ui.useLeaving(open, 140);
     const ref = useRef();
@@ -1709,6 +1853,7 @@
     // ↑ ↓ Home End move between the items; Escape closes and gives the focus back to ⋯
     const onKey = (e) => {
       if (e.key === 'Escape') { e.preventDefault(); setOpen(false); const b = ref.current && ref.current.querySelector('.more-btn'); if (b) b.focus(); return; }
+      if (e.target && e.target.matches && e.target.matches('input, textarea')) return; // the arrows move inside a field being written
       const all = [...ref.current.querySelectorAll('.more-menu [role="menuitem"]:not(:disabled)')];
       const i = all.indexOf(document.activeElement);
       const to = { ArrowDown: i + 1, ArrowUp: i - 1, Home: 0, End: all.length - 1 }[e.key];
@@ -1721,6 +1866,7 @@
       <button class=${`icon-btn more-btn ${where}-more`} aria-haspopup="menu" aria-expanded=${open} aria-label=${label} title=${label} onClick=${() => setOpen(!open)}>
         <${Icon} name="ellipsis" />${total > 0 && html`<span class="more-count" aria-hidden="true">${total}</span>`}</button>
       ${pop.mounted && html`<div class=${`menu right pop more-menu ${where}-menu` + (pop.leaving ? ' leaving' : '')} role="menu" aria-label="Mais opções">
+        ${head && html`<div class="menu-head" role="presentation">${head}</div>`}
         ${items.map((it) => html`<button key=${it.key || it.label} role="menuitem" class=${it.cls || ''} disabled=${it.disabled} title=${it.title || ''}
           onClick=${() => {
             // the focus goes back to ⋯ first: a sheet the item opens returns it there when it closes
@@ -2538,7 +2684,7 @@
   }
 
   // ---------------------------------------------------------------- workspace (live preview)
-  function Workspace({ project, images, update, onSelect, guides, setGuides, report, onReport, choosePhoto, chooseLogo, mobile, pvLarge, setPvLarge, busy, onConvert, onCompare, note, topRight, tools, swapRef, gather = false, onCause = () => {} }) {
+  function Workspace({ project, images, update, onSelect, guides, setGuides, report, onReport, choosePhoto, chooseLogo, mobile, busy, onConvert, onCompare, note, topRight, tools, swapRef, gather = false, onCause = () => {} }) {
     const lastFmt = useRef(null);
     // «Balão» (Ilustrativo): a number just completed rings the poster's WhatsApp button and a chat
     // bubble types the start of its message; the button appears with the number, so the ring
@@ -2742,7 +2888,7 @@
         </div>`}
         ${dropping && html`<div class="drop-hint"><${Icon} name="image-plus" size=${22} /> Largue para usar como fotografia (ou sobre o logótipo para o substituir)</div>`}
       </div>
-      ${mobile && html`<div class="stage-tools">${formats}<div class="stage-right">${topRight}${tools}</div></div>`}
+      ${mobile && html`<div class="stage-tools tools-row">${formats}<div class="stage-right">${topRight}${tools}</div></div>`}
       <div class="stage-foot" aria-live="polite">
         ${note && note.field === null && html`<p class="say stage-note">${note.text}</p>`}
         ${report && report.photoUpscale > 1.6 && html`<p class="say stage-note">Fotografia com pouca resolução neste formato.</p>`}
@@ -2756,7 +2902,7 @@
   // sound; a click pauses and resumes it. An edit keeps the time it was at.
   const SOUND_NAMES = { generated: 'música da app', own: 'som próprio', none: 'sem som' };
   // quiet: something else needs the attention (the export dialog): «Ouvir» stops.
-  function VideoStage({ P, project, format, setFormat, mobile, quiet, onCover, coverReady, pvLarge, setPvLarge, guides, setGuides, topRight, tools }) {
+  function VideoStage({ P, project, format, setFormat, mobile, quiet, onCover, coverReady, topRight, tools, onControls, full = false, setFull = () => {} }) {
     const wrapRef = useRef();
     const canvasRef = useRef();
     const at = useRef(0); // the time on screen
@@ -2764,8 +2910,9 @@
     const seekTarget = useRef(null);
     const size = useSize(wrapRef);
     const fmt = M.FORMATS[format];
-    const margin = mobile ? 24 : 72;
-    const k = size.w ? Math.max(0, Math.min((size.w - margin) / fmt.w, (size.h - (mobile ? 16 : 48)) / fmt.h)) : 0;
+    // (⛶ on a phone: the video takes the whole screen, edge to edge)
+    const margin = mobile ? (full ? 0 : 24) : 72;
+    const k = size.w ? Math.max(0, Math.min((size.w - margin) / fmt.w, (size.h - (mobile ? (full ? 0 : 16) : 48)) / fmt.h)) : 0;
     const cssW = Math.round(fmt.w * k), cssH = Math.round(fmt.h * k);
     const vid = project.video || M.DEFAULT_VIDEO;
     const [paused, setPaused] = useState(false);
@@ -2823,12 +2970,84 @@
       return () => cancelAnimationFrame(playbackFrame.current);
     }, [P, k, cssW, cssH, paused, clock, seekTick]);
     const toggle = () => { seekTarget.current = null; if (listening) setListening(false); setPaused((p) => !p); };
+    // the phone (2026-10-29): the video is a player — a tap shows its buttons, a tap on the
+    // picture hides them, and while it plays they hide after RS.phone.HIDE_MS without a
+    // touch; the editor's floating top goes with them (onControls)
+    const [ctl, setCtl] = useState(true);
+    const [poke, setPoke] = useState(0);
+    const wake = () => { setCtl(true); setPoke((n) => n + 1); };
+    const held = useRef(false); // a finger on the player: its buttons stay
+    // (final review: no timer before there is a video to tap; a held finger, a focus inside
+    // or an open menu keep the buttons up)
+    useEffect(() => {
+      if (!mobile || !ctl || paused || !P || !k) return undefined;
+      const t = setTimeout(() => {
+        const pl = wrapRef.current && wrapRef.current.querySelector('.player');
+        if (held.current || (pl && (pl.querySelector('.menu') || pl.contains(document.activeElement)))) { setPoke((n) => n + 1); return; }
+        setCtl(false);
+      }, RS.phone.HIDE_MS);
+      return () => clearTimeout(t);
+    }, [mobile, ctl, paused, poke, P, k]);
+    useEffect(() => { if (onControls) onControls(!mobile || ctl); }, [mobile, ctl]);
+    useEffect(() => () => { if (onControls) onControls(true); }, []);
+    if (mobile) {
+      const tier = RS.phone.tier(cssW);
+      const d = P ? P.timeline.duration : 0;
+      const moments = P ? RS.production.videoMoments(P) : [];
+      const marks = RS.phone.ticks(moments, d);
+      const now = moments.filter((m) => m.time <= position + 0.01).pop();
+      const max = P ? RS.production.frameTime(P, d) : 1;
+      const mmss = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+      // a tap on a control keeps the buttons up; a tap on the picture shows or hides them
+      const onLayer = (e) => {
+        if (e.target.closest && e.target.closest('button, input, select, .locales, .menu')) { wake(); return; }
+        if (ctl) setCtl(false); else wake();
+      };
+      return html`<main class=${'workspace video-stage phone-player' + (paused ? ' paused' : '')}>
+        <div class="stage" ref=${wrapRef}>
+          ${!P && html`<p class="say player-wait" role="status">A preparar o vídeo…</p>`}
+          ${k > 0 && P && html`<div class="poster-wrap" style=${`width:${cssW}px;height:${cssH}px`}>
+            <canvas ref=${canvasRef} class="poster" data-motion=${P.style.id} style=${`width:${cssW}px;height:${cssH}px`}
+              role="img" aria-label=${`Vídeo ${P.style.name}, formato ${fmt.label}.`}></canvas>
+            <div class=${`player tier-${tier}` + (ctl ? ' ctl' : '')} role="group" aria-label="Leitor do vídeo" onClick=${onLayer}
+              onfocusin=${wake} onPointerDown=${() => { held.current = true; if (ctl) setPoke((n) => n + 1); }}
+              onPointerUp=${() => { held.current = false; }} onPointerCancel=${() => { held.current = false; }}>
+              <div class="player-top">
+                ${tier === 'full' && html`<${FormatSwitch} value=${format} compact=${true} onChange=${(f) => transition(() => setFormat(f))} />`}
+                ${tier !== 'minimal' && topRight}
+                <span class="player-gap"></span>
+                ${tier !== 'minimal' && vid.sound !== 'none' && html`<button type="button" class=${'player-btn' + (listening ? ' on' : '')} aria-pressed=${listening}
+                  aria-label=${listening ? 'Parar o som' : 'Ouvir o vídeo'} onClick=${() => { seekTarget.current = null; setListening(!listening); }}><${Icon} name=${listening ? 'square' : 'volume-2'} size=${16} /></button>`}
+              </div>
+              <button type="button" class="player-play" aria-label=${paused ? 'Continuar vídeo' : 'Pausar vídeo'} onClick=${toggle}><${Icon} name=${paused ? 'play' : 'pause'} size=${26} /></button>
+              <div class="player-bottom">
+                ${tier !== 'minimal' && html`<div class="player-times"><span class="player-time">${mmss(Math.min(position, d))} / ${mmss(d)}</span>
+                  ${tier === 'full' && now && html`<span class="player-moment">${now.label.replace(/^\d+\.\s*/, '')}</span>`}</div>`}
+                ${tier !== 'minimal' && html`<div class="player-bar" style=${`--p:${max ? (Math.min(position, max) / max) * 100 : 0}%`}>
+                  <input class="player-seek" type="range" min="0" max=${max} step=${1 / 30} value=${Math.min(position, max)} disabled=${!P}
+                    aria-label="Instante da pré-visualização do vídeo" aria-valuetext=${`${Math.min(position, d).toFixed(1)} de ${d} segundos`}
+                    onInput=${(e) => seek(Number(e.target.value))} />
+                  ${marks.map((m) => html`<i key=${m.at} class="player-tick" style=${`left:${m.at * 100}%`} title=${m.label} aria-hidden="true"></i>`)}
+                </div>`}
+                <div class="player-actions">
+                  ${tier === 'full' && html`<button type="button" class="player-btn player-cover" aria-label="Escolher capa" disabled=${!coverReady}
+                    title=${coverReady ? 'Escolher o fotograma da capa' : 'A preparar as imagens e o vídeo…'} onClick=${() => onCover(at.current)}><${Icon} name="image" size=${15} /><span>Capa</span></button>`}
+                  <span class="player-gap"></span>
+                  ${tier !== 'minimal' && tools}
+                  <button type="button" class="player-btn player-full-btn" aria-label=${full ? 'Sair do ecrã inteiro' : 'Ecrã inteiro'}
+                    onClick=${() => setFull(!full)}><${Icon} name=${full ? 'minimize-2' : 'maximize-2'} size=${16} /></button>
+                </div>
+              </div>
+              <i class="player-progress" aria-hidden="true" style=${`width:${max ? (Math.min(position, max) / max) * 100 : 0}%`}></i>
+            </div>
+          </div>`}
+        </div>
+      </main>`;
+    }
     return html`<main class=${'workspace video-stage' + (paused ? ' paused' : '')}>
       <div class="ws-bar stage-top">
         <${FormatSwitch} value=${format} compact=${mobile} onChange=${(f) => transition(() => setFormat(f))} />
-        ${format === 'story' && html`<button class="btn ghost sm" aria-pressed=${guides} onClick=${() => setGuides(!guides)} aria-label="Mostrar zonas de segurança do vídeo">Zonas</button>`}
         <button class="btn sm ws-pause" onClick=${toggle} aria-label=${paused ? 'Continuar vídeo' : 'Pausar vídeo'} title=${paused ? 'Continuar vídeo' : 'Pausar vídeo'}><${Icon} name=${paused ? 'play' : 'pause'} size=${16} /></button>
-        ${mobile && html`<button class="btn sm ws-pause" aria-label=${pvLarge ? 'Reduzir pré-visualização do vídeo' : 'Ampliar pré-visualização do vídeo'} onClick=${() => setPvLarge(!pvLarge)}><${Icon} name=${pvLarge ? 'minimize-2' : 'maximize-2'} size=${16} /></button>`}
         ${vid.sound !== 'none' && html`<button class=${'btn sm ws-listen' + (listening ? ' on' : '')} aria-pressed=${listening} aria-label=${listening ? 'Parar o som' : 'Ouvir o vídeo'} onClick=${() => { seekTarget.current = null; setListening(!listening); }}
           title=${listening ? 'Parar o som' : 'Ver o vídeo com o som'}>
           <${Icon} name=${listening ? 'square' : 'volume-2'} size=${15} /><span class="hide-sm">${listening ? 'Parar' : 'Ouvir'}</span></button>`}
@@ -2838,9 +3057,8 @@
         ${k > 0 && P && html`<div class="poster-wrap" style=${`width:${cssW}px;height:${cssH}px`}>
           <canvas ref=${canvasRef} class="poster" data-motion=${P.style.id} style=${`width:${cssW}px;height:${cssH}px;cursor:pointer`}
             role="img" aria-label=${`Vídeo ${P.style.name}, formato ${fmt.label}. Clique para ${paused ? 'continuar' : 'pausar'}.`}
-            onPointerDown=${(e) => { if (e.pointerType === 'mouse' && e.button !== 0) return; toggle(); }}></canvas>
+            onClick=${toggle}></canvas>
           ${paused && html`<span class="stage-paused" aria-hidden="true"><${Icon} name="play" size=${30} /></span>`}
-          ${guides && format === 'story' && html`<div class="video-safe-guides" aria-hidden="true" style=${`top:${100 * E.SAFE.top / fmt.h}%;bottom:${100 * E.SAFE.bottom / fmt.h}%`}><span>Zona de segurança</span></div>`}
         </div>`}
       </div>
       <${VideoTimeline} prepared=${P} position=${position} onSeek=${seek} />

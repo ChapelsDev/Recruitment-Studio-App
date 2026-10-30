@@ -34,7 +34,7 @@ test('appearance: saving never throws', () => {
 test('appearance: the bar colours of both themes', () => {
   assert.equal(A.KEY, 'rs-appearance');
   assert.deepEqual(A.DEFAULTS, { theme: 'auto', haptics: true, motion: null });
-  assert.deepEqual(A.THEME_COLOR, { band: '#F25C05', surface: { light: '#FFFFFF', dark: '#292D32' } });
+  assert.deepEqual(A.THEME_COLOR, { band: '#F25C05', surface: { light: '#FFFFFF', dark: '#1F1A16' } });
 });
 
 // «Balão» (2026-10-28): the home's orange band runs under the status bar; the editor's is the surface colour.
@@ -64,7 +64,7 @@ test("appearance: setBar('surface') follows the theme", () => {
     assert.deepEqual(colours(metas), ['#ffffff', '#ffffff']);
     A.set({ theme: 'dark' });
     A.apply(doc, plainWin);
-    assert.deepEqual(colours(metas), ['#292d32', '#292d32']);
+    assert.deepEqual(colours(metas), ['#1f1a16', '#1f1a16']); // «Carvão quente» (2026-10-29)
   } finally { A.set(before); }
 });
 

@@ -12,7 +12,7 @@
     RS.appearance.setBar('surface');
     RS.appearance.set({ theme: 'dark' });
     assertEqual(document.documentElement.dataset.theme, 'dark');
-    assertEqual(document.querySelector('meta[name="theme-color"]').content, '#292D32');
+    assertEqual(document.querySelector('meta[name="theme-color"]').content, '#1F1A16');
     assertEqual(JSON.parse(localStorage.getItem('rs-appearance')).theme, 'dark');
     RS.appearance.set({ theme: 'light' });
     assertEqual(document.documentElement.dataset.theme, 'light');
@@ -45,7 +45,7 @@
   // «Balão»: the poster stands on the page colour (the dark light table is gone)
   test('stage: the poster stands on the page colour in both themes', async () => {
     for await (const s of H.visitScreens(['editor:Imagem/Oferta'])) void s;
-    for (const [theme, want] of [['light', 'rgb(238, 240, 242)'], ['dark', 'rgb(30, 33, 37)']]) {
+    for (const [theme, want] of [['light', 'rgb(238, 240, 242)'], ['dark', 'rgb(19, 16, 14)'] /* «Carvão quente», 2026-10-29 */]) {
       RS.appearance.set({ theme }); await H.settleAnimations();
       assertEqual(getComputedStyle($('.stage')).backgroundColor, want, theme);
     }
@@ -489,12 +489,16 @@
     const off = RS.haptics.install(document, { mode: 'ios' });
     try {
       await H.settle();
-      const chip = await waitFor(() => $$('.panel .preset .tchip').find((c) => c.getAttribute('aria-pressed') === 'false' && c.querySelector('.haptic-switch')), 'a trade chip with its switch');
-      const label = chip.querySelector('.haptic-switch');
-      label.click();
-      await waitFor(() => chip.getAttribute('aria-pressed') === 'true', 'the trade to be chosen');
+      // 2026-10-29: only where no scroll starts (the bars, the player, the sheet's fixed
+      // actions): the ⋯ of the top bar opens its menu once, the panel has none
+      const more = await waitFor(() => { const b = $('.editor .topbar .more-btn'); return b && b.querySelector('.haptic-switch') && b; }, 'the ⋯ with its switch');
+      assertEqual($$('.panel .haptic-switch').length, 0, 'switches inside the panel');
+      more.querySelector('.haptic-switch').click();
+      await waitFor(() => more.getAttribute('aria-expanded') === 'true', 'the menu to open');
       await sleep(150);
-      assertEqual(chip.getAttribute('aria-pressed'), 'true', 'the tap ran twice');
+      assertEqual(more.getAttribute('aria-expanded'), 'true', 'the tap ran twice');
+      more.querySelector('.haptic-switch').click(); // the menu closed again (its items are not in the comparison)
+      await waitFor(() => more.getAttribute('aria-expanded') === 'false' && !$('.editor-menu'), 'the menu to close');
       const switches = $$('.haptic-switch');
       assert(switches.length > 10, `only ${switches.length} switches`);
       for (const sw of switches) {
@@ -506,8 +510,6 @@
       const after = tabOrder();
       assertEqual(after.length, before.length, 'the Tab order changed');
       assert(after.every((e, i) => e === before[i]), 'the Tab order changed');
-      chip.querySelector('.haptic-switch').click(); // the trade back off
-      await waitFor(() => chip.getAttribute('aria-pressed') === 'false', 'the trade to be taken off');
     } finally { off(); }
     assertEqual($$('.haptic-switch').length, 0, 'the switches stay after uninstall');
   });
@@ -783,7 +785,8 @@
     const form = document.createElement('form');
     let sent = 0;
     form.addEventListener('submit', (e) => { e.preventDefault(); sent++; });
-    form.innerHTML = '<input name="n" value="912345678"><button class="btn primary" type="submit">Mostrar QR</button>';
+    // (a big action fixed under a sheet: one of the places that keep a tick)
+    form.innerHTML = '<input name="n" value="912345678"><div class="export-actions"><button class="btn primary" type="submit">Mostrar QR</button></div>';
     document.body.appendChild(form);
     try {
       const sw = await waitFor(() => form.querySelector('button > .haptic-switch input'), 'the switch on the submit button');
@@ -920,7 +923,9 @@
     } finally { RS.install.detect = realDetect; RS.appearance.apply(); }
   });
 
-  test('haptics: on an iPhone a tap anywhere on one of the app\'s switches lands on the switch', async () => {
+  // 2026-10-29: the system switch covers the track only — a native switch takes drags, so
+  // a scroll that starts on the words must not land on it
+  test('haptics: on an iPhone a tap on a switch track lands on the system switch, its words do not', async () => {
     await H.goHome();
     const off = RS.haptics.install(document, { mode: 'ios' });
     try {
@@ -932,7 +937,7 @@
       const words = document.createRange();
       words.selectNodeContents(sw);
       const r = [...words.getClientRects()].pop();
-      assertEqual(document.elementFromPoint(r.right - 4, r.top + r.height / 2), input, 'a tap on «Vibração» misses the switch');
+      assert(document.elementFromPoint(r.right - 4, r.top + r.height / 2) !== input, 'the system switch spreads over «Vibração»');
     } finally {
       off();
       await closeSettings();

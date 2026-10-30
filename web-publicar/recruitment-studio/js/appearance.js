@@ -11,7 +11,7 @@ RS.appearance = (() => {
   const MOTIONS = Object.freeze(['illustrative', 'sober', 'calm']);
   // the browser bar (and the phone's status bar): the home's orange band runs under
   // it; elsewhere it is the surface colour of the theme (setBar)
-  const THEME_COLOR = Object.freeze({ band: '#F25C05', surface: Object.freeze({ light: '#FFFFFF', dark: '#292D32' }) });
+  const THEME_COLOR = Object.freeze({ band: '#F25C05', surface: Object.freeze({ light: '#FFFFFF', dark: '#1F1A16' }) });
   const THEMES = ['auto', 'light', 'dark'];
   // localStorage itself can throw (blocked storage, some private modes)
   const local = () => { try { return window.localStorage || null; } catch { return null; } };

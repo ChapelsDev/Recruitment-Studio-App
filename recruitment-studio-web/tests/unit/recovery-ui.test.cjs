@@ -25,7 +25,7 @@ async function app(t, width = 1280, configure = () => {}) {
   w.document.body.innerHTML = '<div id="app"></div>';
   const load = (f) => w.eval(fs.readFileSync(path.join(__dirname, '../..', f), 'utf8'));
   load('vendor/htm-preact.umd.js');
-  for (const f of ['appearance', 'util', 'trades', 'model', 'contact', 'workflow', 'workflow-ui', 'reuse', 'production', 'production-ui', 'carousel-ui', 'motion-timeline', 'icons', 'install', 'haptics', 'ui-motion']) load(`js/${f}.js`);
+  for (const f of ['appearance', 'util', 'trades', 'model', 'contact', 'workflow', 'workflow-ui', 'reuse', 'production', 'production-ui', 'carousel-ui', 'motion-timeline', 'icons', 'install', 'haptics', 'phone', 'frame-meter', 'ui-motion']) load(`js/${f}.js`);
   const RS = w.RS;
   const report = { shrink: 1, photoUpscale: 0 };
   RS.engine = { SAFE: { top: 200, bottom: 300 }, loadFonts: async () => {}, setFont() {},
@@ -101,20 +101,26 @@ test('UI: common offer is saved once and changed salary prompts review of custom
   await until(async () => RS.model.captionStatus((await RS.store.getProject(p.id)).data, 'pt-PT') === 'current', 'approval persisted');
 });
 
-// «Balão» (2026-10-28): «Recolher pré-visualização» became the sheet's handle (two stops)
+// «Balão» (2026-10-28): «Recolher pré-visualização» became the sheet's handle; 2026-10-29: three stops, a chevron
+// 2026-10-29: on a phone the ad's name lives in the editor's ⋯ (no bar on top)
+async function phoneName($, click) {
+  if (!$('.name-input')) { await click($('.editor-more')); await until(() => $('.editor-menu .name-input'), 'the name in the ⋯'); }
+  return $('.name-input');
+}
+
 test('UI: on a phone the sheet goes up while writing and comes back without changing the ad', async (t) => {
   const { $, click, type, RS, p } = await app(t, 390);
-  await click($('.proj-open')); await until(() => $('.sheet-handle'), 'mobile editor');
+  await click($('.proj-open')); await until(() => $('.sheet-toggle'), 'mobile editor');
   const headline = $('#f-headline').value;
-  assert.equal($('.sheet-handle').getAttribute('aria-expanded'), 'true');
-  await click($('.sheet-handle'));
-  assert.ok($('.editor.sheet-strip'), 'the sheet did not go up'); assert.ok($('.workspace'), 'the poster left the screen');
-  assert.equal($('.sheet-handle').getAttribute('aria-expanded'), 'false');
-  await type($('.name-input'), 'Editado com mais espaço');
+  assert.equal($('.sheet-toggle').getAttribute('aria-label'), 'Painel a meio. Subir.');
+  await click($('.sheet-toggle'));
+  assert.ok($('.editor.sheet-top'), 'the sheet did not go up'); assert.ok($('.workspace'), 'the poster left the screen');
+  assert.equal($('.sheet-toggle').getAttribute('aria-label'), 'Painel em cima. Baixar.');
+  await type(await phoneName($, click), 'Editado com mais espaço');
   await until(async () => (await RS.store.getProject(p.id)).name === 'Editado com mais espaço', 'save with the sheet up');
-  await click($('.sheet-handle'));
-  assert.equal($('.editor.sheet-strip'), null);
-  assert.equal($('#f-headline').value, headline); assert.equal($('.name-input').value, 'Editado com mais espaço');
+  await click($('.sheet-toggle'));
+  assert.equal($('.editor.sheet-top'), null);
+  assert.equal($('#f-headline').value, headline); assert.equal((await phoneName($, click)).value, 'Editado com mais espaço');
   assert.equal($('.preview-toggle'), null);
 });
 
@@ -172,12 +178,12 @@ test('UI: phone save failures stay actionable until retry succeeds; session-only
   await click($('.proj-open')); await until(() => $('.editor'), 'editor');
   const put = RS.store.putProject;
   RS.store.putProject = async () => { throw new Error('Espaço insuficiente'); };
-  await type($('.name-input'), 'Alteração por guardar');
+  await type(await phoneName($, click), 'Alteração por guardar');
   await until(() => $('.save-recovery[role="alert"]'), 'persistent save error');
   assert.match($('.save-recovery').textContent, /Espaço insuficiente/);
   assert.equal($('.save-state').getAttribute('role'), 'status');
   assert.notEqual(w.getComputedStyle($('.save-state')).display, 'none', 'phone CSS must keep saving feedback visible');
-  await type($('.name-input'), 'Outra alteração por guardar');
+  await type(await phoneName($, click), 'Outra alteração por guardar');
   assert.ok($('.save-recovery'), 'editing again must not dismiss a failed save');
   await until(() => $('.save-state.error') && button('.save-recovery button', /Tentar guardar novamente/)?.disabled === false, 'second failed save finished');
   RS.store.putProject = put;
@@ -185,7 +191,7 @@ test('UI: phone save failures stay actionable until retry succeeds; session-only
   await until(() => !$('.save-recovery'), 'successful retry clears warning');
   assert.equal($('.save-state').textContent.trim(), 'Guardado');
   RS.store.isPersistent = () => false;
-  await type($('.name-input'), 'Memória temporária');
+  await type(await phoneName($, click), 'Memória temporária');
   await until(() => $('.save-state').textContent.includes('Só nesta sessão'), 'session-only status');
   assert.match($('.save-recovery').textContent, /antes de fechar/);
   assert.ok(button('.save-recovery button', /Guardar ficheiro de segurança/));

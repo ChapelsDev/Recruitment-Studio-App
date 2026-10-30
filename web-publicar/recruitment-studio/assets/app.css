@@ -58,50 +58,54 @@
   --shadow-poster: 0 18px 40px -18px rgba(0, 0, 0, 0.45);
 }
 /* Dark theme: graphite; the orange stays the same, with black text on it. */
+/* «Carvão quente» (2026-10-29): warm charcoal; panels, cards and dialogs a step up with a thread of
+   light on top; fields darker than their panel; the chosen things a filled orange pill, nothing brown */
 :root[data-theme='dark'] {
   color-scheme: dark;
-  --chrome: #1E2125;
-  --paper: #292D32;
-  --raised: #31363C;
-  --field: #292D32;
-  --ink: #F3F4F5;
-  --ink-2: #E9ECEF;
-  --muted: #A6AEB8;
-  --line: #383D43;
-  --line-2: #474D55;
-  --line-3: #5C636C;
-  --hover: rgba(255, 255, 255, 0.07);
-  --hover-paper: #2F3439;
-  --seg: #383D44;
-  --seg-on: #F3F4F5;
-  --skeleton: #33383E;
-  --icon-subtle: #8D959E;
-  --on-ink: #1E2125;
+  --chrome: #13100E;
+  --paper: #1F1A16;
+  --raised: #2B241F;
+  --field: #181411;
+  --ink: #FAF5F0;
+  --ink-2: #F0E8E1;
+  --muted: #CDBFB3;
+  --line: #372E28;
+  --line-2: #4A3F37;
+  --line-3: #5E5148;
+  --hover: rgba(255, 235, 220, 0.07);
+  --hover-paper: #261F1A;
+  --seg: #2B241F;
+  --seg-on: #F25C05;
+  --skeleton: #2B241F;
+  --icon-subtle: #A89A8E;
+  --on-ink: #13100E;
   --ink-hover: #ffffff;
   --signal: #F25C05;
   --on-signal: #000000;
   --signal-ink: #FF9D5C;
-  --signal-soft: #5A2E12;
+  --signal-soft: #2B241F;
   --signal-line: rgba(242, 92, 5, 0.6);
   --focus: rgba(242, 92, 5, 0.3);
-  --say: #383D44;
-  --say-ink: #E9ECEF;
-  --pill-on: #F3F4F5;
-  --pill-on-ink: #1E2125;
+  --say: #2B241F;
+  --say-ink: #F0E8E1;
+  --pill-on: #F25C05;
+  --pill-on-ink: #000000;
   --done: #3DDC84;
   --wa: #25D366;
   --warn-ink: #ffb27d;
   --warn-text: #ff9d5c;
   --danger: #ff7a6b;
-  --danger-soft: #3a1714;
+  --danger-soft: #3A1A14;
   --on-danger: #1a0705;
   --overlay: rgba(0, 0, 0, 0.66);
   --toast: var(--say);
-  --glass: rgba(41, 45, 50, 0.94);
-  --bar-glass: rgba(41, 45, 50, 0.88);
-  --bar-edge: rgba(255, 255, 255, 0.08);
+  --glass: rgba(31, 26, 22, 0.94);
+  --bar-glass: rgba(38, 31, 27, 0.88);
+  --bar-edge: rgba(255, 235, 220, 0.09);
   --shadow-pop: 0 18px 50px rgba(0, 0, 0, 0.55);
   --shadow-poster: 0 18px 40px -16px rgba(0, 0, 0, 0.8);
+  --elev-hl: inset 0 1px 0 rgba(255, 235, 220, 0.07);
+  --elev-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
 }
 
 * { box-sizing: border-box; }
@@ -657,7 +661,6 @@ body:has(.modal.recovery) .toasts { display: none; }
   .editor-body { grid-template-columns: 1fr; grid-template-rows: auto 70vh auto; }
   .rail { flex-direction: row; justify-content: center; border-right: none; border-bottom: 1px solid var(--line); }
   .rail button.on::before { display: none; }
-  .workspace { grid-row: 2; }
   .panel { grid-row: 3; overflow: visible; }
   .topbar { flex-wrap: wrap; height: auto; padding: 8px; }
   .home-top, .home-main, .gallery { padding-left: 16px; padding-right: 16px; }
@@ -886,51 +889,112 @@ button.show-sm { display: none; }
   .tpl-meta strong { font-size: 18px; }
   .tpl-meta span { display: none; }
 
-  /* the editor fills the screen (100vh where dvh is unknown); the section bar floats over it */
+  /* the editor fills the screen (100vh where dvh is unknown) in layers (2026-10-29): the
+     preview from the top down to the panel, the panel from --sheet-y (its stop, set by
+     js from RS.phone.stops) to the bottom, the section bar floating over both. Nothing
+     of the preview reaches the panel: the preview is clipped at its edge. */
   .editor {
     --bar-gap: 16px; --bar-room: calc(104px + env(safe-area-inset-bottom));
-    height: 100vh; height: 100dvh; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, var(--pv, 56dvh)) minmax(0, 1fr);
+    position: relative; height: 100vh; height: 100dvh; min-height: 0; display: block; overflow: hidden;
   }
-  /* «Balão»: the poster about half the screen; a strip of it while writing (the handle
-     or a field in focus); «Ampliar» in the ⋯ makes it larger */
-  .editor.sheet-strip { --pv: 18dvh; }
-  .editor.pv-large { --pv: 62dvh; }
   .editor-body { display: contents; }
+  .safe-probe { position: absolute; left: 0; top: 0; width: env(safe-area-inset-bottom, 0px); height: var(--safe-top, 0px); visibility: hidden; pointer-events: none; }
+  .preview-shell { position: absolute; left: 0; right: 0; top: 0; height: calc(var(--sheet-y, 56dvh) - 8px); overflow: hidden; }
+  .preview-content.settling, .panel.settling { transition: transform 0.32s var(--ease-spring); }
   /* the top bar: ‹ · the name on two lines · «Exportar»; the pieces as a second row */
-  .topbar { grid-row: 1; height: auto; min-height: 54px; padding: 8px 10px; grid-template-columns: minmax(0, 1fr) auto; row-gap: 8px; column-gap: 8px; }
-  .tb-left { grid-column: 1; grid-row: 1; gap: 8px; }
-  .tb-right { grid-column: 2; grid-row: 1; }
-  .tb-center { grid-column: 1 / -1; grid-row: 2; }
-  .tb-center .seg { width: 100%; }
-  .tb-center .seg button { flex: 1; justify-content: center; }
-  .tb-right .btn.primary { height: 36px; padding: 0 13px; font-size: 13.5px; margin-left: 0; }
-  .name-wrap { flex: 1; min-width: 0; }
-  /* 16 px: an iPhone zooms the page into any smaller field it focuses */
-  .name-input { width: 100%; min-width: 0; font-size: 16px; padding: 0; margin-left: 0; border: none; }
-  textarea.name-input { display: block; height: 2.25em; line-height: 1.1; resize: none; overflow: hidden; white-space: normal; background: transparent; }
+  /* «Sem barra» (2026-10-29): no bar on top — ‹ (with the save dot), the pieces and
+     «Exportar» float over the preview in dark glass, the same in both themes; the taps
+     between them reach the preview */
+  .topbar { position: absolute; left: 0; right: 0; top: 0; z-index: 4; height: auto; min-height: 0; padding: calc(var(--safe-top, 0px) + 8px) 10px 0;
+    grid-template-columns: auto minmax(0, 1fr) auto; row-gap: 8px; column-gap: 8px; background: none; border: none; box-shadow: none; pointer-events: none; }
+  .topbar > * { pointer-events: auto; }
+  .tb-left { grid-column: 1; grid-row: 1; gap: 6px; }
+  .tb-center { grid-column: 2; grid-row: 1; justify-self: center; }
+  .tb-right { grid-column: 3; grid-row: 1; }
+  .topbar .save-recovery, .topbar .editor-conflict { grid-row: 2; }
+  .editor .tb-back.btn.ghost, .editor .topbar .seg, .editor .topbar .save-state {
+    background: rgba(16, 17, 19, 0.55); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); color: #fff; border: none; }
+  .editor .tb-back.btn.ghost { width: 40px; height: 40px; }
+  .editor .topbar .seg button { width: 44px; height: 36px; padding: 0; justify-content: center; color: #fff; }
+  .editor .topbar .seg button.on { background: #fff; color: #111; }
+  .editor .tb-right .btn.primary { width: 40px; height: 40px; padding: 0; gap: 0; margin-left: 0; border-radius: 50%; justify-content: center; }
+  .editor .tb-right .btn.primary span { display: none; }
+  /* the save signal beside ‹: the dot and the ticks; its words are read out, and shown in the ⋯ */
+  .editor .topbar .save-state { height: 28px; padding: 0 9px; border-radius: 14px; gap: 4px; }
+  .editor .topbar .save-words { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  /* the ad's name, in the ⋯ (16 px: an iPhone zooms the page into any smaller field it focuses) */
+  .menu-head { padding: 6px 6px 10px; margin-bottom: 4px; border-bottom: 1px solid var(--line); }
+  .menu-name { display: grid; gap: 4px; color: var(--muted); font-size: 12px; font-weight: 600; }
+  .name-input { width: 100%; min-width: 0; font-size: 16px; margin-left: 0; }
+  .menu-name textarea.name-input { display: block; height: auto; min-height: 2.6em; padding: 8px 10px; border: 1px solid var(--line-2); border-radius: 10px;
+    background: var(--field); color: var(--ink); font-weight: 700; line-height: 1.2; resize: none; overflow: hidden; white-space: normal; }
+  .menu-save { display: block; padding-top: 6px; color: var(--muted); font-size: 12px; }
+  .menu-save.error { color: var(--danger); font-weight: 600; }
+  /* menus opened from inside the preview (which is clipped at the panel) rise over the bar */
+  .preview-shell .menu { position: fixed; left: 8px; right: 8px; top: auto; bottom: calc(var(--bar-room) + 4px); min-width: 0; max-height: 66dvh; overflow-y: auto; z-index: 120; }
   /* the formats, the language, undo, redo and the ⋯ along the poster's bottom edge */
-  .stage-tools { flex: none; display: flex; flex-wrap: nowrap; align-items: center; justify-content: space-between; gap: 6px; padding: 4px 8px 6px; }
+  /* the formats, the language, undo, redo and the ⋯: one glass row floating over the preview's
+     bottom (the poster may sit under it); writing (the panel at the top) hides it */
+  .workspace, .carousel-stage { position: relative; }
+  .stage-tools.tools-row, .carousel-stage .cs-head.tools-row {
+    position: absolute; left: 8px; right: 8px; bottom: 8px; z-index: 4; display: flex; flex-wrap: nowrap; align-items: center; justify-content: space-between; gap: 6px;
+    padding: 4px; border-radius: 24px; color: #fff; isolation: isolate; }
+  /* the glass behind the row, not on it: a backdrop-filter on the row would make it the box
+     its ⋯ menu (fixed) is placed in, and the menu would leave the screen */
+  .tools-row::before { content: ''; position: absolute; inset: 0; z-index: -1; border-radius: inherit;
+    background: rgba(16, 17, 19, 0.55); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+  .tools-row .seg { background: transparent; }
+  .tools-row .seg button { color: #fff; }
+  .tools-row .seg button.on { background: #fff; color: #111; }
+  .tools-row .icon-btn, .tools-row .more-btn { background: rgba(255, 255, 255, 0.14); color: #fff; }
+  .tools-row .icon-btn:disabled { color: rgba(255, 255, 255, 0.45); }
+  .tools-row .stage-left { flex: none; flex-wrap: nowrap; }
+  .tools-row .stage-right { display: flex; align-items: center; gap: 4px; flex-wrap: nowrap; margin-left: auto; min-width: 0; }
+  .tools-row .locales-chips { max-width: 64px; }
+  .carousel-stage .tools-row { gap: 4px; }
+  .carousel-stage .tools-row .cs-formats { padding: 2px; gap: 0; }
+  .carousel-stage .tools-row .cs-formats button { min-width: 0; height: 32px; padding: 0 5px; font-size: 11.5px; }
+  .carousel-stage .tools-row .icon-btn, .carousel-stage .tools-row .more-btn { width: 32px; height: 32px; }
+  .carousel-stage .tools-row .stage-right { gap: 2px; }
+  .carousel-stage .tools-row .locales-chips { max-width: 50px; }
+  .carousel-stage .tools-row .cs-formats button { padding: 0 4px; }
+  /* the carousel's place, on the slide's corner (as Instagram's «1/8») */
+  .cs-count.cs-badge { min-width: 0; }
+  .cs-badge strong { color: inherit; }
+  .cs-badge { position: absolute; z-index: 2; padding: 3px 9px; border-radius: 999px; background: rgba(16, 17, 19, 0.62); color: #fff;
+    font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; pointer-events: none; }
+  .cs-badge:empty { display: none; }
+  /* the panel's chevron: one icon, turned up while the panel can still rise */
+  .sheet-toggle .ico { transition: transform var(--dur-fast) var(--ease-out); }
+  .sheet-toggle.up .ico { transform: rotate(180deg); }
+  .editor.sheet-top .tools-row, .editor.sheet-top .stage-foot { display: none; }
   .stage-tools .stage-left { flex: none; flex-wrap: nowrap; }
   .stage-tools .stage-right { gap: 4px; flex-wrap: nowrap; margin-left: auto; min-width: 0; }
   .stage-tools .locales-chips { max-width: 64px; }
   /* narrower format buttons: two languages, undo, redo and the ⋯ fit a 360 px phone */
   .stage-tools .seg button { padding: 0 9px; gap: 0; }
   .stage-tools .icon-btn, .stage-tools .more-btn { width: 34px; height: 34px; background: var(--paper); }
-  .stage-foot { padding: 2px 10px 6px; }
+  /* what the app says about the poster: one glass pill above the tools row, taking no height */
+  .stage-foot { position: absolute; left: 0; right: 0; bottom: 58px; z-index: 3; padding: 0 12px; pointer-events: none; }
+  .stage-foot .say { background: rgba(16, 17, 19, 0.62); color: #fff; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); pointer-events: auto; }
   /* the poster speaks for itself on a phone, except to say how to add a photo */
   .stage-foot .stage-hint:not(.no-photo) { display: none; }
-  /* the sheet under the poster: a handle to move it, rounded top corners */
-  .sheet-handle { position: sticky; top: 0; z-index: 3; display: flex; justify-content: center; width: 100%; padding: 8px 0 10px; border: none; background: var(--paper); cursor: grab; touch-action: none; }
-  .sheet-handle span { width: 38px; height: 4px; border-radius: 2px; background: var(--line-2); }
+  /* the panel's head: a grip anyone sees, the section's name and a chevron; the whole
+     strip is the drag area (touch-action none: the finger moves the panel, not the page) */
+  .sheet-head { position: sticky; top: 0; z-index: 3; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: 8px;
+    padding: 10px 12px 8px 16px; background: var(--paper); cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
+  .sheet-grip { grid-column: 1 / -1; justify-self: center; width: 52px; height: 6px; margin-bottom: 8px; border-radius: 3px; background: var(--muted); opacity: 0.85; }
+  .sheet-head h2 { margin: 0; font: 800 19px/1.1 var(--display); }
+  .sheet-toggle { width: 36px; height: 36px; border-radius: 50%; background: var(--raised); }
+  .panel .panel-head h2 { display: none; }
   .locales-label { display: none; }
   .locales-chips { max-width: 104px; overflow-x: auto; }
-  .workspace { grid-row: 2; }
   .ws-bar { padding: 8px 8px 0; gap: 10px; }
   .ws-notes { padding: 4px 10px 8px; gap: 6px; }
   .note { height: 26px; font-size: 12px; padding: 0 10px; }
-  .panel { grid-row: 3; overflow-y: auto; overflow-x: hidden; border-right: none; border-radius: var(--r-sheet) var(--r-sheet) 0 0; box-shadow: 0 -8px 22px -14px rgba(0, 0, 0, 0.3); }
+  .panel { position: absolute; left: 0; right: 0; top: var(--sheet-y, 56dvh); bottom: 0; z-index: 2; overflow-y: auto; overflow-x: hidden; border-right: none; border-radius: var(--r-sheet) var(--r-sheet) 0 0; box-shadow: 0 -8px 22px -14px rgba(0, 0, 0, 0.3); }
   /* the panel scrolls under the bar; its end stops above it */
-  .panel-inner { padding: 14px 16px var(--bar-room); }
+  .panel-inner { padding: 4px 16px var(--bar-room); }
   .panel-head h2 { font-size: 19px; }
   .modal h2 { font-size: 19px; }
   /* the section bar: a floating pill over the screen, like Instagram's, a little
@@ -1246,7 +1310,7 @@ html[data-motion='calm'] .save-state.saving .save-dot { animation: feel-cota-cal
 
 /* small phones (360–400 px): the editor's top bar fits without sliding sideways */
 @media (max-width: 400px) {
-  .topbar { padding: 6px 8px; }
+  .topbar { padding-left: 8px; padding-right: 8px; } /* (the top keeps room for the status bar) */
   .mode-switch button { padding: 0 8px; }
   .locales { gap: 4px; }
 }
@@ -1493,7 +1557,9 @@ html[data-motion='calm'] .cs-track > canvas { animation: fade-in 0.25s backwards
    system's tick, and the click goes on to the control */
 /* iPhone: the app's own switches spread their input over the whole control (track
    and words), so a tap anywhere on it lands on the system switch, which ticks */
-html.haptics-ios .switch input { inset: 0; width: 100%; height: 100%; margin: 0; z-index: 1; opacity: 0.001; cursor: inherit; appearance: none; -webkit-appearance: none; }
+/* the system switch over the track only (34 × 20, the label's left): a scroll that
+   starts on the words scrolls, a native switch would take the drag */
+html.haptics-ios .switch input { left: 0; top: 50%; width: 34px; height: 30px; transform: translateY(-50%); margin: 0; z-index: 1; opacity: 0.001; cursor: inherit; appearance: none; -webkit-appearance: none; }
 .haptic-switch { position: absolute; inset: 0; z-index: 3; margin: 0; padding: 0; border-radius: inherit; overflow: hidden; -webkit-tap-highlight-color: transparent; }
 .haptic-switch input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; padding: 0; opacity: 0.001; cursor: inherit; appearance: none; -webkit-appearance: none; }
 :where(:is(.btn, .icon-btn, .chip-main, .tchip, .seg button, .motion-card, .tpl-card, .proj-open, .lengths button, .eye, .add-row, .palette, .vt-remove, .vt-restore):has(> .haptic-switch)) { position: relative; }
@@ -1876,7 +1942,7 @@ html:has(.reuse-dialog, .production-dialog) { overflow: hidden; }
 .slide-photo-controls input[type=range] { width: 100%; }
 /* Shared frame navigation in the video stage and cover editor. */
 .video-timeline { min-width: 0; padding: 14px 16px 12px; border: 1px solid var(--line-2); border-radius: 16px; background: var(--paper); color: var(--ink); }
-.video-stage .video-timeline { margin: 0 16px 8px; --paper: #24282f; --ink: #f2eee8; --muted: #b1b5bd; --line-2: #3d424c; --signal: #ff7b35; --signal-soft: #3d2c24; --signal-ink: #ffb286; --hover: #30353e; --say: #383D44; --pill-on: #f2eee8; --pill-on-ink: #24282f; box-shadow: 0 5px 18px #0002; }
+.video-stage .video-timeline { margin: 0 16px 8px; --paper: #1F1A16; --ink: #FAF5F0; --muted: #CDBFB3; --line-2: #4A3F37; --signal: #F25C05; --signal-soft: #2B241F; --signal-ink: #FF9D5C; --hover: #2B241F; --say: #2B241F; --pill-on: #FAF5F0; --pill-on-ink: #1F1A16; box-shadow: 0 5px 18px #0002; }
 .timeline-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 11px; }
 .timeline-heading > span:first-child { display: flex; gap: 7px; align-items: center; color: var(--muted); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
 .timeline-clock { color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
@@ -1914,9 +1980,7 @@ html:has(.reuse-dialog, .production-dialog) { overflow: hidden; }
 @media (min-width: 861px) {
   .editor-body { grid-template-columns: 78px var(--editor-panel-width, 410px) 12px minmax(0, 1fr); }
 }
-@media (max-width: 860px) {
-  .preview-shell { grid-row: 2; }
-}
+
 /* A single view of the three exports, with keyboard-accessible framing. */
 .modal.format-comparison { width:min(1180px,96vw); }
 .format-comparison > p { padding:0 24px; }
@@ -1930,8 +1994,6 @@ html:has(.reuse-dialog, .production-dialog) { overflow: hidden; }
 .frame-range { display:grid; gap:4px; font-size:12px; margin-bottom:10px; }
 .frame-range input { width:100%; min-height:28px; }
 .format-card .btn { margin:4px 0; }
-.video-safe-guides { pointer-events:none; position:absolute; left:0; right:0; border-top:1px dashed white; border-bottom:1px dashed white; box-shadow:0 -260px 0 0 #0003,0 280px 0 0 #0003; }
-.video-safe-guides span { position:absolute; top:3px; left:5px; font-size:10px; color:white; background:#0009; padding:2px 4px; border-radius:3px; }
 .video-stage .poster-wrap { overflow:hidden; }
 @media(max-width:720px) { .format-grid { grid-template-columns:1fr; } .ws-bar { flex-wrap:wrap; } .format-canvas { max-width:360px; margin:auto; } }
 .phrase-suggestion p { white-space: pre-wrap; }
@@ -2060,7 +2122,6 @@ html:has(.reuse-dialog, .production-dialog) { overflow: hidden; }
 
 .video-stage > .ws-bar, .video-stage > .video-timeline, .video-stage > .ws-notes { flex: none; }
 @media (max-width: 860px) {
-  .editor.video-mode:not(.sheet-strip):not(.pv-large) { --pv: min(54dvh, 460px); }
   .video-stage .ws-bar { gap: 5px; flex-wrap: wrap; padding: 8px 8px 4px; }
   .video-stage .ws-bar .btn.sm { padding: 0 7px; }
   .video-stage .timeline-moments { scrollbar-width: none; }
@@ -2176,3 +2237,158 @@ html:has(.reuse-dialog, .production-dialog) { overflow: hidden; }
 .preflight-fold[open] summary { margin-bottom: 6px; }
 .modal.export .production-entry { border-bottom: none; border-top: 1px solid var(--line); }
 @media (max-width: 860px) { .dest { min-height: 48px; } }
+
+/* ================================================================ the phone's video player (2026-10-29)
+   a tap shows the buttons over the video (shades top and bottom), a tap on the picture or
+   3 s of playing without a touch hides them; then only a thin orange line of progress */
+@media (max-width: 860px) {
+  .phone-player .poster-wrap { position: relative; border-radius: 12px; overflow: hidden; }
+  .player { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: space-between; color: #fff; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .player::before { content: ''; position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity 0.2s ease;
+    background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0) 30%, rgba(0, 0, 0, 0) 56%, rgba(0, 0, 0, 0.66)); }
+  .player.ctl::before { opacity: 1; }
+  .player-top, .player-bottom, .player-play { transition: opacity 0.2s ease; }
+  .player:not(.ctl) .player-top, .player:not(.ctl) .player-bottom, .player:not(.ctl) .player-play { opacity: 0; pointer-events: none; }
+  /* (under the editor's floating top, which shows with them) */
+  .player-top { position: relative; z-index: 1; display: flex; align-items: center; gap: 6px; padding: 54px 8px 0; }
+  .editor.player-full .player-top { padding-top: calc(var(--safe-top, 0px) + 10px); }
+  .player-gap { flex: 1; }
+  .player .seg { background: rgba(255, 255, 255, 0.16); }
+  .player .seg button { width: 30px; padding: 0; justify-content: center; color: #fff; }
+  /* the language on screen only (a language is added from the panel or the image's row) */
+  .player .locales .chip.add { display: none; }
+  .player .locales-chips { max-width: 52px; }
+  .player-top > * { flex: none; }
+  .player-top .player-gap { flex: 1; }
+  .player .seg button.on { background: #fff; color: #111; }
+  .player-btn { display: inline-flex; align-items: center; justify-content: center; gap: 4px; min-width: 36px; height: 36px; padding: 0 10px; border: 0; border-radius: 999px;
+    background: rgba(255, 255, 255, 0.16); color: #fff; font-weight: 700; font-size: 12.5px; }
+  .player-btn:disabled { opacity: 0.45; }
+  .player-btn.on { background: #fff; color: #111; }
+  .player .icon-btn, .player .more-btn { width: 36px; height: 36px; background: rgba(255, 255, 255, 0.16); color: #fff; }
+  .player .icon-btn:disabled { color: rgba(255, 255, 255, 0.45); }
+  .player-play { position: absolute; left: 50%; top: 50%; z-index: 1; display: grid; place-items: center; width: 60px; height: 60px; margin: -30px 0 0 -30px;
+    border: 2px solid rgba(255, 255, 255, 0.8); border-radius: 50%; background: rgba(0, 0, 0, 0.42); color: #fff; }
+  .player.tier-minimal .player-play { width: 40px; height: 40px; margin: -20px 0 0 -20px; }
+  .player-bottom { position: relative; z-index: 1; padding: 0 10px 10px; }
+  .player.tier-minimal .player-bottom { padding: 0 6px 6px; }
+  .player-times { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .player-moment { font-weight: 600; opacity: 0.92; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .player-bar { position: relative; display: flex; align-items: center; height: 26px; }
+  .player-seek { -webkit-appearance: none; appearance: none; width: 100%; height: 26px; margin: 0; background: transparent; cursor: pointer; }
+  .player-seek::-webkit-slider-runnable-track { height: 4px; border-radius: 2px; background: linear-gradient(to right, #fff 0 var(--p), rgba(255, 255, 255, 0.35) var(--p) 100%); }
+  .player-seek::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; margin-top: -6px; border-radius: 50%; background: #fff; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5); }
+  .player-tick { position: absolute; top: 8px; width: 2px; height: 10px; margin-left: -1px; border-radius: 1px; background: rgba(255, 255, 255, 0.8); pointer-events: none; }
+  .player-actions { display: flex; align-items: center; gap: 6px; margin-top: 2px; }
+  .player-progress { position: absolute; left: 0; bottom: 0; height: 3px; background: var(--signal); pointer-events: none; transition: opacity 0.2s ease; }
+  .player.ctl .player-progress { opacity: 0; }
+  /* the editor's floating top goes with the player's buttons */
+  /* (the save warning and the conflict banner stay: only the controls go) */
+  .editor .topbar > :is(.tb-left, .tb-center, .tb-right) { transition: opacity 0.2s ease; }
+  .editor.chrome-off .topbar > :is(.tb-left, .tb-center, .tb-right) { opacity: 0; pointer-events: none; }
+  /* ⛶: the player fills the screen, still vertical */
+  .editor.player-full .preview-shell { position: fixed; inset: 0; height: auto; z-index: 200; background: #000; }
+  .editor.player-full .panel, .editor.player-full .rail, .editor.player-full .topbar > :is(.tb-left, .tb-center, .tb-right) { visibility: hidden; }
+  .editor.player-full .topbar { z-index: 205; }
+  /* a dialog opened from full screen shows over it */
+  .editor.player-full .modal-back { z-index: 210; }
+  .editor.player-full .phone-player .poster-wrap { border-radius: 0; }
+}
+
+/* ================================================================ the iPhone's status bar (2026-10-29)
+   an installed iPhone app draws the page under the status bar (black-translucent: a white
+   clock), so every screen puts orange or a dark shade there and keeps its content below it.
+   --safe-top is that bar's height (0 everywhere else; tests set it to check the layout). */
+:root { --safe-top: env(safe-area-inset-top, 0px); }
+.home-band { padding-top: var(--safe-top); }
+.gallery { padding-top: var(--safe-top); }
+/* the other screens: an orange strip under the clock (the home's band runs there anyway) */
+body::before { content: ''; position: fixed; left: 0; right: 0; top: 0; z-index: 300; height: var(--safe-top); background: var(--signal); pointer-events: none; }
+body:has(.editor)::before { display: none; }
+@media (max-width: 860px) {
+  /* the editor: the preview runs under the clock behind a dark shade; the poster starts below it */
+  .editor::before { content: ''; position: absolute; left: 0; right: 0; top: 0; z-index: 3; height: calc(var(--safe-top) * 1.6); pointer-events: none;
+    background: linear-gradient(rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0)); }
+  .preview-content { padding-top: var(--safe-top); }
+  .editor.player-full .preview-content { padding-top: 0; }
+  /* sheets and dialogs never rise into it */
+  .modal, .modal.export, .modal.settings-sheet, .modal.frame-sheet { max-height: min(94dvh, calc(100dvh - var(--safe-top) - 8px)); }
+}
+
+/* ================================================================ «Carvão quente»: chosen and depth (2026-10-29) */
+/* the open tab and every chosen pill: filled orange, black words and icons */
+:root[data-theme='dark'] .rail button.on, :root[data-theme='dark'] .rail button.on .ico { color: #000; }
+:root[data-theme='dark'] .rail button.on { background: var(--signal); }
+:root[data-theme='dark'] .rail > .glide-pill { background: var(--signal); }
+:root[data-theme='dark'] .rail.has-glide > button.on { background: none; }
+:root[data-theme='dark'] .seg button.on, :root[data-theme='dark'] .glide-pill { background: var(--pill-on); color: var(--pill-on-ink); }
+:root[data-theme='dark'] .texts-locales > .glide-pill { background: var(--signal); }
+:root[data-theme='dark'] .texts-locales .tchip.on { color: #000; }
+/* chosen cards: an orange ring */
+:root[data-theme='dark'] :is(.motion-card.on, .ms-card.on, .dest.on, .dest[aria-checked='true'], .tpl-card.on) { border-color: var(--signal); box-shadow: 0 0 0 1px var(--signal); }
+/* depth: a step up, a thread of light, a soft shadow */
+:root[data-theme='dark'] :is(.panel, .modal, .menu, .tpl-card, .proj-card) { box-shadow: var(--elev-hl), var(--elev-shadow); }
+@media (max-width: 860px) { :root[data-theme='dark'] .panel { box-shadow: var(--elev-hl), 0 -10px 24px -10px rgba(0, 0, 0, 0.6); } }
+/* the glass over the poster or the video keeps its white chosen pill in both themes */
+:root[data-theme='dark'] .editor .topbar .seg button.on, :root[data-theme='dark'] .tools-row .seg button.on, :root[data-theme='dark'] .player .seg button.on { background: #fff; color: #111; }
+@media (min-width: 861px) { :root[data-theme='dark'] .editor .topbar .seg button.on { background: var(--pill-on); color: var(--pill-on-ink); } }
+/* (the language chip on the glass too) */
+:root[data-theme='dark'] :is(.tools-row, .player) .locales .chip.on { background: #fff; color: #111; }
+:root[data-theme='dark'] :is(.tools-row, .player) .locales .chip.on :is(button, .ico) { color: #111; }
+
+/* «Definições»: the version line (five taps: the hidden frame meter, 2026-10-29) */
+.settings-version { margin: 4px 0 0; padding-top: 12px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; user-select: none; -webkit-user-select: none; }
+.frame-meter { position: fixed; left: 8px; top: calc(var(--safe-top, 0px) + 56px); z-index: 400; padding: 4px 8px; border-radius: 8px;
+  background: rgba(0, 0, 0, 0.72); color: #3DDC84; font: 700 12px/1.2 ui-monospace, monospace; pointer-events: none; }
+
+/* phones (2026-10-29): the waiting thumbnails breathe with opacity (a moving gradient repaints every frame) */
+@keyframes shimmer-breathe { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+@media (max-width: 860px) {
+  .poster-thumb:not(.drawn), .lib-skel { animation-name: shimmer-breathe !important; animation-timing-function: ease-in-out !important; }
+}
+/* (2026-10-29) a blur over a video redrawing every frame is costly on an iPhone: solid while it plays */
+@media (max-width: 860px) {
+  .editor:has(.video-stage:not(.paused)) .rail { -webkit-backdrop-filter: none; backdrop-filter: none; background: var(--paper); }
+}
+
+/* final review (2026-10-29) */
+@media (max-width: 860px) {
+  /* the iPhone's hidden switch covers its own button only */
+  .player button:has(> .haptic-switch), .chip-x:has(> .haptic-switch) { position: relative; }
+  /* the player shows the language on screen only */
+  .player .locales .chip:not(.on) { display: none; }
+  /* the tools row's buttons are glass in both themes */
+  .stage-tools.tools-row .icon-btn, .stage-tools.tools-row .more-btn { background: rgba(255, 255, 255, 0.14); color: #fff; }
+  /* a menu open in the player lies over the panel */
+  .player:has(.menu) :is(.player-top, .player-bottom) { z-index: 6; }
+  .editor:has(.player .menu) .preview-shell { z-index: 3; } /* (the poster is its own layer: the whole preview rises over the panel) */
+  .player-wait { margin: auto; }
+}
+@media (max-width: 860px) {
+  /* the pause sits in the room between the top and the bottom rows, never over them (final review) */
+  .player-play, .player.tier-minimal .player-play { position: relative; left: auto; top: auto; margin: 0; align-self: center; flex: none; }
+  .player.tier-minimal .player-top { padding-top: 6px; }
+}
+@media (max-width: 860px) {
+  /* on the glass (over the poster or the video) the chosen thing is white in both themes */
+  :is(.tools-row, .player, .editor .topbar) .glide-pill { background: #fff !important; }
+  :is(.tools-row, .player) .locales .chip.on { background: #fff; color: #111; }
+  :is(.tools-row, .player) .locales .chip.on :is(button, .ico) { color: #111; }
+}
+
+/* deferred minors (2026-10-30) */
+@media (max-width: 860px) {
+  /* dragging down, the growing preview runs into the room the panel leaves (no empty band) */
+  .editor.sheet-dragging .preview-shell { overflow: visible; }
+  /* two languages show whole in the image row; its buttons a little tighter */
+  .stage-tools.tools-row .locales-chips { max-width: 96px; }
+  .stage-tools.tools-row .seg button { padding: 0 7px; }
+  .stage-tools.tools-row :is(.icon-btn, .more-btn) { width: 32px; height: 32px; }
+}
+@media (max-width: 400px) {
+  .stage-tools.tools-row { gap: 4px; }
+  .stage-tools.tools-row .stage-right { gap: 2px; }
+  .stage-tools.tools-row .locales { gap: 2px; }
+  .stage-tools.tools-row .seg button { padding: 0 5px; }
+  .stage-tools.tools-row :is(.icon-btn, .more-btn) { width: 30px; height: 30px; }
+}

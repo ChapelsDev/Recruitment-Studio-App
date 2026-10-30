@@ -11,7 +11,7 @@ async function until(fn, label, ms = 6000) {
   while (Date.now() < end) { const v = await fn(); if (v) return v; await pause(20); }
   throw new Error(`Timed out: ${label}`);
 }
-const SCRIPTS = ['appearance', 'util', 'trades', 'model', 'contact', 'workflow', 'workflow-ui', 'reuse', 'production', 'production-ui', 'carousel-ui', 'motion-timeline', 'slides', 'icons', 'install', 'haptics', 'ui-motion'];
+const SCRIPTS = ['appearance', 'util', 'trades', 'model', 'contact', 'workflow', 'workflow-ui', 'reuse', 'production', 'production-ui', 'carousel-ui', 'motion-timeline', 'slides', 'icons', 'install', 'haptics', 'phone', 'frame-meter', 'ui-motion'];
 async function app(t, width = 1280, configure = () => {}) {
   const { Window } = await import('happy-dom');
   const errors = [];

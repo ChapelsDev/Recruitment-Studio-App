@@ -197,3 +197,14 @@ test('assets: every feel- keyframes is used by an animation', () => {
     assert.ok(new RegExp(`animation(-name)?\\s*:[^;}]*\\b${k.name}(?![\\w-])`).test(css), `@keyframes ${k.name} is never used`);
   }
 });
+
+// 2026-10-29: an installed iPhone app draws the page under its status bar (white clock),
+// so the home's orange band runs up under it; iOS 26 ignores theme-color there
+test('index: the page is drawn under the iPhone status bar', () => {
+  const index = fs.readFileSync(path.join(__dirname, '../../index.html'), 'utf8');
+  assert.match(index, /<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">/);
+  assert.match(index, /<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">/);
+  assert.match(index, /<meta name="theme-color" content="#F25C05" media="\(prefers-color-scheme: light\)">/);
+  const css = fs.readFileSync(path.join(__dirname, '../../assets/app.css'), 'utf8');
+  assert.match(css, /--safe-top:\s*env\(safe-area-inset-top, 0px\)/, 'no --safe-top token');
+});

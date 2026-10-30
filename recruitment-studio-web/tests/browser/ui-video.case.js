@@ -105,14 +105,18 @@
     await ad((d) => d.video.motion === 'tijolo');
   });
 
+  // a click (2026-10-29: not the press, so a finger that only starts a scroll pauses nothing)
   test('video: clicking the stage pauses and resumes it', async () => {
     const c = $('.video-stage canvas[data-motion]');
     c.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+    await sleep(200);
+    assert(!$('.video-stage.paused'), 'a press alone paused the video');
+    c.click();
     await waitFor(() => $('.video-stage.paused'), 'paused');
     const a = c.toDataURL();
     await sleep(300);
     assertEqual(c.toDataURL(), a);
-    c.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+    c.click();
     await waitFor(() => !$('.video-stage.paused'), 'playing again');
   });
 

@@ -62,6 +62,12 @@
     await sleep(350);
   };
 
+  // the panel to one of its stops (2026-10-29: top · middle · bottom) through its chevron
+  const toStop = async (stop) => {
+    for (let i = 0; i < 3 && !$(`.editor.sheet-${stop}`); i++) { $('.sheet-toggle').click(); await sleep(450); }
+    assert($(`.editor.sheet-${stop}`), `the panel did not reach ${stop}`);
+  };
+
   test('home: no ads yet shows the building site and the button', async () => {
     await waitFor(() => $('.home') && idle(), 'home');
     assert(innerWidth <= 380 && $('.home-top').scrollWidth <= innerWidth, `the home is not phone-sized: ${innerWidth} px, its top bar ${$('.home-top').scrollWidth} px`);
@@ -143,16 +149,24 @@
 
   // «Balão» (2026-10-28): row 1 is back, the name (two lines) and «Exportar»; row 2 the pieces;
   // the formats, the language, undo, redo and the ⋯ run along the poster's bottom edge
-  test('mobile: the top bar fits the phone in two rows; the floating bar holds at most six in every piece', async () => {
+  // «Sem barra» (2026-10-29): ‹ (with the save dot), the pieces and «Exportar» float in one row
+  // over the preview, each big enough to touch and on top; the name is in the ⋯
+  test('mobile: the floating top is one row of ‹, the pieces and Exportar; the floating bar holds at most six', async () => {
     for (const p of ['Imagem', 'Carrossel', 'Vídeo']) {
       await piece(p);
-      const back = rect($('.editor .topbar .tb-back')), nameBox = rect($('.editor .topbar .name-wrap')), exp = rect($('.editor .topbar .tb-right .btn.primary'));
-      const row2 = rect($('.editor .topbar .tb-center'));
-      for (const [what, r] of [['back', back], ['the name', nameBox], ['Exportar', exp], ['the second row', row2]]) {
+      assert(!$('.editor .topbar .name-wrap'), `${p}: the name is still on top`);
+      const back = $('.editor .topbar .tb-back'), pieces = $('.editor .topbar [aria-label="Peça"]'), exp = $('.editor .topbar .tb-right .btn.primary');
+      const rb = rect(back), rp = rect(pieces), re = rect(exp);
+      for (const [what, r] of [['back', rb], ['the pieces', rp], ['Exportar', re]]) {
         assert(r.left >= -0.5 && r.right <= innerWidth + 0.5, `${p}: ${what} leaves the screen (${Math.round(r.left)}–${Math.round(r.right)} of ${innerWidth})`);
       }
-      assert(Math.abs(back.top - exp.top) < 16 && nameBox.left >= back.right - 1 && exp.left >= nameBox.right - 1, `${p}: back, the name and Exportar are not one row`);
-      assert(row2.top >= Math.max(back.bottom, exp.bottom) - 1, `${p}: the piece switch is not under the first row`);
+      assert(Math.abs(rb.top - re.top) < 8 && Math.abs((rp.top + rp.bottom) / 2 - (rb.top + rb.bottom) / 2) < 8 && rp.left >= rb.right && re.left >= rp.right, `${p}: back, the pieces and Exportar are not one row`);
+      for (const b of [back, exp, ...pieces.querySelectorAll('[role="radio"]')]) {
+        const q = rect(b);
+        assert(q.width >= 40 && q.height >= 36, `${p}: «${b.getAttribute('aria-label') || name(b)}» is too small to touch (${Math.round(q.width)}×${Math.round(q.height)})`);
+        const hit = document.elementFromPoint(q.left + q.width / 2, q.top + q.height / 2);
+        assert(hit && b.contains(hit), `${p}: «${b.getAttribute('aria-label') || name(b)}» is covered by ${hit ? hit.className || hit.tagName : 'nothing'}`);
+      }
       checkBar();
       assert($$('.editor .rail button').length <= 6, `${p}: ${$$('.editor .rail button').length} buttons on the floating bar`);
     }
@@ -161,7 +175,7 @@
 
   test('mobile: the poster takes about half the screen', async () => {
     await piece('Imagem');
-    if ($('.editor.sheet-strip')) { $('.sheet-handle').click(); await sleep(400); }
+    await toStop('middle');
     await waitFor(() => $('.workspace canvas.poster') && rect($('.workspace canvas.poster')).height > 0, 'the poster');
     await sleep(300);
     const h = rect($('.workspace canvas.poster')).height;
@@ -169,13 +183,24 @@
     assert(h >= 0.4 * innerHeight, `the poster is ${Math.round(h)} px tall on a ${innerHeight} px screen (${parts})`);
   });
 
-  test('mobile: a long name keeps the top bar whole', async () => {
-    const field = $('.editor .topbar .name-input');
+  // the name, in the editor's ⋯ (2026-10-29): opens the ⋯ once and gives the field
+  const nameField = async () => {
+    if ($('.editor.sheet-top')) { document.activeElement && document.activeElement.blur(); await toStop('middle'); } // writing hides the tools row and its ⋯
+    if (!$('.editor-menu .name-input')) { $('.editor .editor-more').click(); await waitFor(() => $('.editor-menu .name-input'), 'the name in the ⋯'); await sleep(250); }
+    return $('.editor-menu .name-input');
+  };
+  const closeMenu = async () => { if ($('.editor-menu')) { $('.editor .editor-more').click(); await waitFor(() => !$('.editor-menu'), 'the ⋯ to close'); } };
+
+  test('mobile: a long name stays in the ⋯ and keeps the top whole', async () => {
+    await piece('Imagem');
+    await toStop('middle');
+    const field = await nameField();
     H.type(field, 'Pedreiros, serventes e mais 1, La Chaux-de-Fonds');
     field.blur();
     await sleep(300);
-    const bar = $('.editor .topbar');
-    assert(bar.scrollWidth <= bar.clientWidth + 0.5, `the top bar scrolls sideways (${bar.scrollWidth} > ${bar.clientWidth})`);
+    const menu = rect($('.editor-menu'));
+    assert(menu.left >= 0 && menu.right <= innerWidth + 0.5 && menu.top >= 0 && menu.bottom <= innerHeight, `the ⋯ leaves the screen (${Math.round(menu.left)}–${Math.round(menu.right)} × ${Math.round(menu.top)}–${Math.round(menu.bottom)})`);
+    await closeMenu();
     const exp = rect($('.editor .topbar .tb-right .btn.primary'));
     assert(exp.left >= 0 && exp.right <= innerWidth + 0.5, `Exportar is cut (${Math.round(exp.left)}–${Math.round(exp.right)} of ${innerWidth})`);
     assert(document.documentElement.scrollWidth <= screen.width, `the page is ${document.documentElement.scrollWidth} px wide`);
@@ -184,7 +209,7 @@
   // (the review found the row 377 px wide with two languages on a 360 px phone, 469 px in Story)
   test('mobile: with two languages, in Retrato and in Story, the stage tools stay on the phone', async () => {
     await piece('Imagem');
-    if ($('.editor.sheet-strip')) { $('.sheet-handle').click(); await sleep(400); }
+    await toStop('middle');
     if ($$('.stage-tools .locales-chips > *').length < 2) {
       $('.stage-tools .locales .chip.add').click();
       (await waitFor(() => $$('.editor .locales .menu [role="menuitem"]').find((b) => /Fran/.test(b.textContent)), 'French in the menu')).click();
@@ -211,7 +236,7 @@
   // deferred minor (2026-10-29): on a phone the tape measure and its size stay on the poster
   test('mobile: Ilustrativo, the tape measure and its size stay on the poster in Story', async () => {
     await piece('Imagem');
-    if ($('.editor.sheet-strip')) { $('.sheet-handle').click(); await sleep(400); }
+    await toStop('middle');
     const before = RS.appearance.get().motion;
     RS.appearance.set({ motion: 'illustrative' });
     try {
@@ -229,21 +254,109 @@
   });
 
   test('mobile: the name field is at least 16 px, so an iPhone does not zoom in', async () => {
-    const f = $('.editor .topbar .name-input');
+    const f = await nameField();
     assert(parseFloat(getComputedStyle(f).fontSize) >= 16, `the name is ${getComputedStyle(f).fontSize}`);
+    await closeMenu();
   });
 
-  test('mobile: the strip stop while writing', async () => {
+  test('mobile: the top stop while writing', async () => {
     await section('Oferta');
     const field = await waitFor(() => $('#f-headline'), 'the headline');
     field.focus();
     await sleep(450);
+    assert($('.editor.sheet-top'), 'writing did not take the panel to the top');
     const h = rect($('.workspace canvas.poster')).height;
-    assert(h <= 0.2 * innerHeight, `the poster stays ${Math.round(h)} px tall while writing on a ${innerHeight} px screen`);
+    assert(h <= 0.22 * innerHeight, `the poster stays ${Math.round(h)} px tall while writing on a ${innerHeight} px screen`);
     field.blur();
-    $('.sheet-handle').click();
+    $('.sheet-toggle').click();
+    await sleep(450);
+    assert(!$('.editor.sheet-top'), 'the chevron did not bring the poster back');
+    await toStop('middle');
+  });
+
+  // 2026-10-29: the preview ends where the panel starts and is clipped there, so nothing
+  // of the stage (timeline, «Escolher capa», notes, chips) is ever drawn over the panel
+  test('mobile: at every stop nothing of the stage reaches the panel', async () => {
+    for (const p of ['Imagem', 'Carrossel', 'Vídeo']) {
+      await piece(p);
+      for (const stop of ['middle', 'top', 'bottom']) {
+        await toStop(stop);
+        await sleep(200);
+        const shell = $('.preview-shell'), panel = $('.editor .panel');
+        const sr = rect(shell), pr = rect(panel);
+        assert(sr.bottom <= pr.top + 0.5, `${p} at ${stop}: the preview ends at ${Math.round(sr.bottom)}, under the panel's top ${Math.round(pr.top)}`);
+        assertEqual(getComputedStyle(shell).overflow, 'hidden', `${p} at ${stop}: the preview is not clipped`);
+        if (p === 'Carrossel' && stop !== 'top') {
+          const count = await waitFor(() => { const c = $('.carousel-stage .cs-track .cs-badge'); return c && /^01 \/ 0\d/.test(c.textContent.trim()) && c; }, 'the counter «01 / 0N» on the slide');
+          const cr = rect(count), sr = rect($('.carousel-stage .cs-main'));
+          assert(cr.left >= sr.left && cr.right <= sr.right + 0.5 && cr.top >= sr.top - 0.5 && cr.bottom <= sr.bottom, 'the counter is off the slide');
+          const row = $('.carousel-stage .tools-row');
+          const rr = rect(row), out = [...row.querySelectorAll('button, .locales')].filter((e) => e.getClientRects().length && (rect(e).right > rr.right + 0.5 || rect(e).left < rr.left - 0.5));
+          assert(rr.right <= innerWidth && !out.length, 'the carousel tools row cuts ' + out.map((e) => e.getAttribute('aria-label') || e.className).join(', '));
+        }
+        const main = $('.preview-shell canvas.poster, .preview-shell .cs-main');
+        if (main && rect(main).height > 0) {
+          const m = rect(main);
+          assert(m.bottom <= pr.top + 0.5, `${p} at ${stop}: the picture runs under the panel (${Math.round(m.bottom)} > ${Math.round(pr.top)})`);
+        }
+      }
+      await toStop('middle');
+    }
+    await piece('Imagem');
+  });
+
+  // 2026-10-29: the video is a player; its buttons fit it at every stop (fewer when it is small)
+  test('mobile: the player fits its tier at every stop', async () => {
+    await piece('Vídeo');
+    for (const stop of ['middle', 'bottom', 'top']) {
+      await toStop(stop);
+      const player = await waitFor(() => $('.video-stage .player'), 'the player');
+      player.click(); // the buttons up
+      await waitFor(() => $('.player.ctl'), 'the buttons');
+      await sleep(300);
+      const c = rect($('.video-stage canvas.poster'));
+      for (const b of $$('.player button, .player input')) {
+        if (!b.getClientRects().length || getComputedStyle(b).visibility === 'hidden') continue;
+        const q = rect(b);
+        assert(q.left >= c.left - 0.5 && q.right <= c.right + 0.5 && q.top >= c.top - 0.5 && q.bottom <= c.bottom + 0.5,
+          `at ${stop} (${[...player.classList].join(' ')}): «${b.getAttribute('aria-label') || name(b)}» leaves the video (${Math.round(q.left)}–${Math.round(q.right)} × ${Math.round(q.top)}–${Math.round(q.bottom)} in ${Math.round(c.left)}–${Math.round(c.right)} × ${Math.round(c.top)}–${Math.round(c.bottom)})`);
+      }
+      if (stop === 'top') assert(!player.classList.contains('tier-full'), 'all the buttons on a strip of video');
+    }
+    await toStop('middle');
+  });
+
+  test('mobile: full screen covers the phone and stays vertical', async () => {
+    await piece('Vídeo');
+    await toStop('middle');
+    $('.video-stage .player').click();
+    (await waitFor(() => $('.player [aria-label="Ecrã inteiro"]'), '⛶')).click();
+    await waitFor(() => $('.editor.player-full'), 'full screen');
     await sleep(400);
-    assert(!$('.editor.sheet-strip'), 'the handle did not bring the poster back');
+    const sh = rect($('.preview-shell')), c = rect($('.video-stage canvas.poster'));
+    assert(sh.top <= 0.5 && sh.left <= 0.5 && sh.right >= innerWidth - 0.5 && sh.bottom >= innerHeight - 0.5, `the player does not cover the phone (${Math.round(sh.left)},${Math.round(sh.top)}–${Math.round(sh.right)},${Math.round(sh.bottom)})`);
+    assert(c.height > c.width && c.height >= innerHeight * 0.85, `the video is ${Math.round(c.width)}×${Math.round(c.height)} in full screen`);
+    const hit = document.elementFromPoint(innerWidth / 2, innerHeight - 30);
+    assert(hit && !hit.closest('.rail, .panel'), 'the bar or the panel shows through');
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    await waitFor(() => !$('.editor.player-full'), 'Escape to leave');
+    await sleep(300);
+    await piece('Imagem');
+  });
+
+  test('mobile: the panel follows the finger and snaps', async () => {
+    await toStop('middle');
+    const head = $('.sheet-head'), panel = $('.editor .panel');
+    const h = rect(head), x = h.left + h.width / 3, y0 = h.top + h.height / 2;
+    const ev = (type, y) => head.dispatchEvent(new PointerEvent(type, { bubbles: true, pointerId: 7, pointerType: 'touch', isPrimary: true, clientX: x, clientY: y, button: 0 }));
+    ev('pointerdown', y0);
+    for (let i = 1; i <= 8; i++) { ev('pointermove', y0 - 25 * i); await sleep(16); }
+    assert(/^translateY\(-/.test(panel.style.transform), `the panel does not follow the finger (${panel.style.transform || 'no transform'})`);
+    ev('pointerup', y0 - 200);
+    await waitFor(() => $('.editor.sheet-top'), 'the panel to snap to the top');
+    await sleep(500);
+    assertEqual(panel.style.transform, '', 'the panel did not settle');
+    await toStop('middle');
   });
 
   test('mobile: the bar steps aside while a text is typed and comes back', async () => {
@@ -259,10 +372,11 @@
     checkBar();
   });
 
-  test('mobile: the ad\'s name stays readable in the editor\'s top bar', async () => {
-    const field = $('.editor .topbar .name-input');
+  test('mobile: the ad\'s name stays readable in the editor\'s ⋯', async () => {
+    const field = await nameField();
     const w = rect(field).width;
-    assert(w >= 48, `the name field is ${Math.round(w)} px wide (top bar: ${[...$('.editor .topbar').children].map((e) => `${e.className || e.tagName} ${Math.round(rect(e).width)}`).join(' | ')})`);
+    assert(w >= 200, `the name field is ${Math.round(w)} px wide`);
+    await closeMenu();
   });
 
   test('mobile: «Definições» is in the editor\'s ⋯ and a sheet of the home, and both fit the phone', async () => {
@@ -329,6 +443,29 @@
     } finally { off(); }
   });
 
+  // 2026-10-29: an iPhone switch answers drags, so none sits where a scroll starts;
+  // the app's own switches keep the system switch over their track only
+  test('mobile: no hidden switch inside a scrolling area (iPhone path)', async () => {
+    const off = RS.haptics.install(document, { mode: 'ios' });
+    try {
+      for (const p of ['Imagem', 'Vídeo']) {
+        await piece(p);
+        for (const label of ['Oferta', 'Estilo']) {
+          await section(label);
+          await sleep(80);
+          assertEqual($$('.panel .haptic-switch').length, 0, `${p} › ${label}: switches inside the panel`);
+          for (const sw of $$('.panel .switch')) {
+            if (!sw.getClientRects().length) continue;
+            const i = rect(sw.querySelector('input')), track = rect(sw.querySelector('.switch-ui'));
+            assert(i.left >= track.left - 2 && i.right <= track.right + 2, `${p} › ${label}: a switch input spreads over its words (${Math.round(i.left)}–${Math.round(i.right)} vs ${Math.round(track.left)}–${Math.round(track.right)})`);
+          }
+        }
+      }
+      assert($$('.editor .rail .haptic-switch').length >= 4, 'the floating bar lost its ticks');
+      await piece('Imagem');
+    } finally { off(); }
+  });
+
   test('mobile: messages show above the bar', async () => {
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 's', ctrlKey: true, bubbles: true }));
     const t = await waitFor(() => $('.toast'), 'the message');
@@ -369,6 +506,261 @@
     assertEqual(cs.borderTopRightRadius, '24px');
     $('.modal.export .modal-head .icon-btn').click();
     await waitFor(() => !$('.modal-back'), 'the sheet to close');
+  });
+
+  // 2026-10-29: an installed iPhone app draws the page under its status bar; --safe-top stands
+  // for env(safe-area-inset-top) (0 in Edge) so the layout can be checked with a 47 px bar
+  test('mobile: with a 47 px status bar the orange runs under it and nothing hides behind it', async () => {
+    const root = document.documentElement;
+    root.style.setProperty('--safe-top', '47px');
+    try {
+      await H.goHome();
+      await sleep(400);
+      const band = rect($('.home-band')), top = rect($('.home-top'));
+      assert(band.top <= 0.5, `the orange band starts at ${Math.round(band.top)}`);
+      assert(top.top >= 47, `the home's top row is under the status bar (${Math.round(top.top)})`);
+      $('.new-ad').click();
+      await waitFor(() => $$('.tpl-card').length && idle(), 'gallery');
+      const strip = getComputedStyle(document.body, '::before');
+      assertEqual(strip.height, '47px', 'the gallery has no strip under the status bar');
+      assertEqual(strip.backgroundColor, 'rgb(242, 92, 5)');
+      assert(rect($('.gal-top')).top >= 47, 'the gallery title is under the status bar');
+      $('.gallery .gal-head .btn.ghost').click();
+      await waitFor(() => $('.home') && idle(), 'home');
+      $('.proj-open').click();
+      await waitFor(() => $('.editor') && idle(), 'the editor');
+      await sleep(400);
+      assertEqual(getComputedStyle(document.body, '::before').display, 'none', 'the orange strip over the editor');
+      for (const b of $$('.editor .topbar button')) if (b.getClientRects().length) assert(rect(b).top >= 47, `«${b.getAttribute('aria-label') || name(b)}» is under the status bar`);
+      $('.editor .topbar .tb-right .btn.primary').click();
+      const sheet = await waitFor(() => $('.modal.export'), 'the export sheet');
+      await sleep(600);
+      assert(rect(sheet).top >= 47, `the sheet rises under the status bar (${Math.round(rect(sheet).top)})`);
+      $('.modal.export .modal-head .icon-btn').click();
+      await waitFor(() => !$('.modal-back'), 'the sheet to close');
+    } finally { root.style.removeProperty('--safe-top'); }
+  });
+
+  // «Carvão quente» (2026-10-29): in the dark the open tab and the chosen pills are filled orange
+  // with black words; the glass over the poster keeps its white pill
+  test('mobile: dark — the open tab and the chosen pills are orange with black words', async () => {
+    const before = RS.appearance.get().theme;
+    RS.appearance.set({ theme: 'dark' });
+    try {
+      await piece('Imagem');
+      await section('Estilo');
+      await H.settleAnimations();
+      const tab = $('.editor .rail button.on');
+      const pill = $('.editor .rail > .glide-pill');
+      const fill = getComputedStyle(pill && pill.getClientRects().length ? pill : tab).backgroundColor;
+      assertEqual(fill, 'rgb(242, 92, 5)', 'the open tab is not orange');
+      assertEqual(getComputedStyle(tab).color, 'rgb(0, 0, 0)', 'the open tab words are not black');
+      const on = $$('.panel .seg button.on').find((b) => b.getClientRects().length);
+      if (on) assertEqual(getComputedStyle(on).color, 'rgb(0, 0, 0)', 'a chosen pill in the panel has no black words');
+      const glass = $('.editor .topbar .seg button.on');
+      assertEqual(getComputedStyle(glass).backgroundColor, 'rgb(255, 255, 255)', 'the piece over the poster lost its white pill');
+      assert(!/rgb\(90, 46, 18\)/.test([...document.querySelectorAll('.editor *')].map((e) => getComputedStyle(e).backgroundColor).join(' ')), 'brown is still painted');
+    } finally { RS.appearance.set({ theme: before }); await H.settleAnimations(); }
+  });
+
+  // 2026-10-29 (measured: «Estilo» scrolled at 10 fps with the video playing — every card on
+  // screen played its own preview at 12 fps): on a phone the style cards are still pictures,
+  // the stage plays the chosen one
+  test('mobile: the style cards stand still on a phone', async () => {
+    await piece('Vídeo');
+    await section('Estilo');
+    await toStop('middle');
+    const stage = $('.video-stage');
+    if (!stage.classList.contains('paused')) { $('.player-play').click(); await waitFor(() => $('.video-stage.paused'), 'the stage paused'); }
+    // (every card first draws its still once, one per task: wait until none is waiting)
+    await waitFor(() => $$('.motion-card canvas').length >= 2 && !$('.motion-card .motion-wait'), 'every card drawn', 30000);
+    await sleep(800);
+    const real = RS.motion.render;
+    let calls = 0;
+    RS.motion.render = function (...a) { calls++; return real.apply(this, a); };
+    try { await sleep(1000); } finally { RS.motion.render = real; }
+    assert(calls <= 2, `the cards drew ${calls} frames in a second with the video paused`);
+    $('.player-play').click();
+    await piece('Imagem');
+  });
+
+  // a blur over a video that redraws every frame is costly on an iPhone: solid while it plays
+  test('mobile: while the video plays the floating bar has no blur', async () => {
+    await piece('Vídeo');
+    if ($('.video-stage.paused')) { $('.player-play').click(); await waitFor(() => !$('.video-stage.paused'), 'playing'); }
+    await sleep(200);
+    assertEqual(getComputedStyle($('.editor .rail')).backdropFilter, 'none');
+    await piece('Imagem');
+    await sleep(200);
+    assert(getComputedStyle($('.editor .rail')).backdropFilter !== 'none', 'the bar lost its glass on the image');
+  });
+
+  // only transform and opacity move on the phone (no layout or paint animations)
+  test('mobile: phone animations move only transform and opacity', async () => {
+    const bad = new Set();
+    const look = () => document.getAnimations().forEach((a) => {
+      const props = (() => { try { return [...new Set(a.effect.getKeyframes().flatMap((k) => Object.keys(k)))]; } catch { return []; } })()
+        .filter((p) => !['offset', 'easing', 'composite', 'computedOffset', 'transform', 'opacity', 'translate', 'scale', 'rotate', 'clipPath', 'clip-path', 'strokeDashoffset', 'stroke-dashoffset'].includes(p));
+      const name = a.animationName || a.transitionProperty || a.id || 'animation';
+      if (props.length && !/^(background-color|color|border-.*|box-shadow|fill|stroke)$/.test(a.transitionProperty || '')) bad.add(`${name} [${props.join(',')}]`);
+    });
+    await toStop('middle');
+    $('.sheet-toggle').click(); await sleep(60); look(); await sleep(450);
+    $('.sheet-toggle').click(); await sleep(60); look(); await sleep(450);
+    await toStop('middle');
+    await piece('Vídeo');
+    $('.video-stage .player').click(); await sleep(60); look(); await sleep(300);
+    await piece('Imagem'); await sleep(60); look();
+    assertEqual([...bad], [], 'layout or paint animations on the phone');
+  });
+
+  // ---------------------------------------------------------------- final review fixes (2026-10-29)
+  // the iPhone's hidden switches sit over their own button only: a tap reaches the button it is on
+  test('mobile: on an iPhone every player button takes its own tap', async () => {
+    const off = RS.haptics.install(document, { mode: 'ios' });
+    try {
+      await piece('Vídeo');
+      await toStop('middle');
+      const pl = await waitFor(() => $('.video-stage .player'), 'the player');
+      if (!pl.classList.contains('ctl')) pl.click(); // (a tap on shown buttons hides them)
+      await waitFor(() => $('.player.ctl'), 'the buttons');
+      await sleep(300);
+      for (const b of $$('.player button')) {
+        if (!b.getClientRects().length || getComputedStyle(b).visibility === 'hidden') continue;
+        const q = rect(b);
+        const hit = document.elementFromPoint(q.left + q.width / 2, q.top + q.height / 2);
+        assert(hit && b.contains(hit), `a tap on «${b.getAttribute('aria-label') || name(b)}» lands on ${hit ? (hit.closest('button') ? hit.closest('button').getAttribute('aria-label') || hit.closest('button').className : hit.className) : 'nothing'}`);
+      }
+    } finally { off(); await piece('Imagem'); }
+  });
+
+  test('mobile: light theme — the tools row is glass, its buttons are not white circles', async () => {
+    const before = RS.appearance.get().theme;
+    RS.appearance.set({ theme: 'light' });
+    try {
+      await piece('Imagem');
+      await toStop('middle');
+      await H.settleAnimations();
+      for (const b of $$('.tools-row .icon-btn, .tools-row .more-btn')) {
+        if (!b.getClientRects().length) continue;
+        assert(getComputedStyle(b).backgroundColor !== 'rgb(255, 255, 255)', `«${b.getAttribute('aria-label')}» is a white circle on the glass`);
+      }
+      // the chosen format's pill is white with a dark icon on the glass
+      const pill = $('.tools-row .glide-pill');
+      if (pill && pill.getClientRects().length) assertEqual(getComputedStyle(pill).backgroundColor, 'rgb(255, 255, 255)', 'the chosen format pill on the glass');
+    } finally { RS.appearance.set({ theme: before }); await H.settleAnimations(); }
+  });
+
+  test('mobile: the video ⋯ menu lies over the panel', async () => {
+    await piece('Vídeo');
+    await toStop('middle');
+    $('.video-stage .player').click();
+    (await waitFor(() => $('.player .editor-more'), 'the ⋯ in the player')).click();
+    const menu = await waitFor(() => $('.player .editor-menu'), 'the menu');
+    await sleep(300);
+    const items = [...menu.querySelectorAll('[role="menuitem"]')];
+    const last = rect(items[items.length - 1]);
+    const hit = document.elementFromPoint(last.left + last.width / 2, last.top + last.height / 2);
+    assert(hit && menu.contains(hit), `the menu's last item is covered by ${hit ? hit.className || hit.tagName : 'nothing'}`);
+    $('.player .editor-more').click();
+    await waitFor(() => !$('.player .editor-menu'), 'the menu to close');
+    await piece('Imagem');
+  });
+
+  test('mobile: a save warning stays on screen while the video plays', async () => {
+    const real = RS.store.putProject;
+    const quick = RS.phone.HIDE_MS;
+    RS.phone.HIDE_MS = 300;
+    RS.store.putProject = async () => { throw new Error('Espaço insuficiente'); };
+    try {
+      await piece('Vídeo');
+      await section('Oferta');
+      const field = await waitFor(() => $('#f-headline'), 'the headline');
+      H.type(field, field.value + ' já');
+      field.blur();
+      const banner = await waitFor(() => $('.topbar .save-recovery'), 'the save warning', 15000);
+      if ($('.video-stage.paused')) $('.player-play').click();
+      await sleep(900);
+      const r = rect(banner), hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      assert(hit && banner.contains(hit) && parseFloat(getComputedStyle(banner.closest('.topbar')).opacity) > 0.5, 'the save warning hid with the floating controls');
+    } finally {
+      RS.store.putProject = real; RS.phone.HIDE_MS = quick;
+      const retry = $('.save-recovery button'); if (retry) retry.click();
+      await waitFor(() => !$('.save-recovery'), 'the warning to clear', 15000);
+      await piece('Imagem');
+    }
+  });
+
+  test('mobile: a dialog opened in full screen shows over it', async () => {
+    await piece('Vídeo');
+    await toStop('middle');
+    $('.video-stage .player').click();
+    (await waitFor(() => $('.player [aria-label="Ecrã inteiro"]'), '⛶')).click();
+    await waitFor(() => $('.editor.player-full'), 'full screen');
+    (await waitFor(() => $('.player .editor-more'), 'the ⋯')).click();
+    (await waitFor(() => byText('.editor-menu [role="menuitem"]', /Definições/), '«Definições»')).click();
+    const sheet = await waitFor(() => $('.modal.settings'), 'the sheet');
+    await sleep(600);
+    const r = rect(sheet), hit = document.elementFromPoint(r.left + r.width / 2, r.top + 60);
+    assert(hit && sheet.contains(hit), `the sheet is behind ${hit ? hit.className || hit.tagName : 'nothing'}`);
+    $('.modal.settings .modal-head .icon-btn').click();
+    await waitFor(() => !$('.modal.settings'), 'the sheet to close');
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    await waitFor(() => !$('.editor.player-full'), 'leave full screen');
+    await piece('Imagem');
+  });
+
+  // ---------------------------------------------------------------- deferred minors (2026-10-30)
+  const dragHead = (y0, ys) => {
+    const head = $('.sheet-head'), h = rect(head), x = h.left + h.width / 3;
+    const ev = (type, y) => head.dispatchEvent(new PointerEvent(type, { bubbles: true, pointerId: 9, pointerType: 'touch', isPrimary: true, clientX: x, clientY: y, button: 0 }));
+    ev('pointerdown', y0);
+    return { move: (y) => ev('pointermove', y), up: (y) => ev('pointerup', y) };
+  };
+  test('mobile: a drag right after a glide is not undone by it', async () => {
+    await piece('Imagem');
+    await toStop('top');
+    $('.sheet-toggle').click(); // top → bottom: a glide starts
+    await sleep(80);
+    const h = rect($('.sheet-head')), y0 = h.top + h.height / 2;
+    const d = dragHead(y0);
+    for (let i = 1; i <= 6; i++) { d.move(y0 - 20 * i); await sleep(16); }
+    await sleep(450); // past the glide's end
+    assert(/^translateY\(-/.test($('.editor .panel').style.transform), `the glide's end undid the drag (${$('.editor .panel').style.transform || 'none'})`);
+    d.up(y0 - 120);
+    await sleep(500);
+    await toStop('middle');
+  });
+  test('mobile: dragging the panel down, the poster follows with no empty band', async () => {
+    await piece('Imagem');
+    await toStop('middle');
+    const h = rect($('.sheet-head')), y0 = h.top + h.height / 2;
+    const d = dragHead(y0);
+    for (let i = 1; i <= 6; i++) { d.move(y0 + 15 * i); await sleep(16); }
+    await sleep(60);
+    const shell = $('.preview-shell'), poster = rect($('.workspace canvas.poster')), panelTop = rect($('.editor .panel')).top;
+    const visible = getComputedStyle(shell).overflow === 'visible' ? poster.bottom : Math.min(poster.bottom, rect(shell).bottom);
+    assert(panelTop - visible < 40, `an empty band of ${Math.round(panelTop - visible)} px opens over the panel`);
+    d.up(y0);
+    await sleep(500);
+    await toStop('middle');
+  });
+  test('mobile: with two languages both chips show in the image row', async () => {
+    await piece('Imagem');
+    await toStop('middle');
+    if ($$('.tools-row .locales-chips > .chip').length < 2) {
+      $('.tools-row .locales .chip.add').click();
+      (await waitFor(() => $$('.editor .locales .menu [role="menuitem"]').find((b) => /Fran/.test(b.textContent)), 'French')).click();
+      await waitFor(() => $$('.tools-row .locales-chips > .chip').length >= 2, 'two languages');
+      await sleep(300);
+    }
+    const box = rect($('.tools-row .locales-chips'));
+    for (const c of $$('.tools-row .locales-chips .chip-main')) {
+      const r = rect(c);
+      assert(r.left >= box.left - 0.5 && r.right <= box.right + 0.5, `«${c.textContent.trim()}» is hidden in the scrolling chips`);
+    }
+    const row = rect($('.tools-row'));
+    for (const b of $$('.tools-row button')) if (b.getClientRects().length) assert(rect(b).right <= row.right + 0.5, `«${b.getAttribute('aria-label') || b.textContent.trim()}» leaves the row`);
   });
 
   // (last: it removes the ad's photo)

@@ -29,14 +29,20 @@ test('light tokens', () => {
   });
 });
 
+// «Carvão quente» (2026-10-29): warm charcoal, a step up for panels and cards, the chosen
+// things a filled orange pill with black text, nothing brown
 test('dark tokens', () => {
-  expectAll(block(":root[data-theme='dark']"), {
-    '--chrome': '#1E2125', '--paper': '#292D32', '--field': '#292D32',
-    '--ink': '#F3F4F5', '--ink-2': '#E9ECEF', '--muted': '#A6AEB8', '--line': '#383D43', '--line-2': '#474D55',
-    '--signal': '#F25C05', '--on-signal': '#000000', '--signal-soft': '#5A2E12',
-    '--say': '#383D44', '--say-ink': '#E9ECEF', '--pill-on': '#F3F4F5', '--pill-on-ink': '#1E2125',
+  const dark = block(":root[data-theme='dark']");
+  expectAll(dark, {
+    '--chrome': '#13100E', '--paper': '#1F1A16', '--raised': '#2B241F', '--field': '#181411',
+    '--ink': '#FAF5F0', '--ink-2': '#F0E8E1', '--muted': '#CDBFB3', '--line': '#372E28', '--line-2': '#4A3F37', '--line-3': '#5E5148',
+    '--signal': '#F25C05', '--on-signal': '#000000', '--signal-soft': '#2B241F',
+    '--say': '#2B241F', '--say-ink': '#F0E8E1', '--pill-on': '#F25C05', '--pill-on-ink': '#000000',
+    '--seg': '#2B241F', '--seg-on': '#F25C05', '--on-ink': '#13100E',
     '--done': '#3DDC84', '--wa': '#25D366',
   });
+  assert.ok(/--elev-hl:/.test(dark) && /--elev-shadow:/.test(dark), 'no depth tokens');
+  assert.ok(!/#5A2E12/i.test(css), 'the brown is still in the stylesheet');
 });
 
 test('the shapes', () => {

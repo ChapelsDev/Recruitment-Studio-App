@@ -103,9 +103,11 @@ test('«Exportar» is the only orange control', async (t) => {
 });
 
 // ---------------------------------------------------------------- the phone (≤ 860 px)
-test('phone top bar: back, name, Exportar; no Exportar in the floating bar; no «Recolher pré-visualização»', async (t) => {
+// 2026-10-29 («Sem barra»): the name is in the ⋯, the save signal stays beside ‹
+test('phone top bar: back, the save signal, Exportar; no Exportar in the floating bar; no «Recolher pré-visualização»', async (t) => {
   const a = await editor(t, 390);
-  assert.ok(a.$('.topbar .tb-left .tb-back') && a.$('.topbar .tb-left .name-wrap'), 'no back or name on the left');
+  assert.ok(a.$('.topbar .tb-left .tb-back') && a.$('.topbar .tb-left .save-state'), 'no back or save signal on the left');
+  assert.ok(!a.$('.topbar .name-wrap'), 'the name is still on top');
   const right = a.$$('.topbar .tb-right button').map(nameOf);
   assert.equal(right.length, 1, right.join(' | '));
   assert.match(right[0], /Exportar/);
@@ -123,17 +125,19 @@ test('phone: the stage tools row', async (t) => {
   assert.ok(names.some((n) => /^Desfazer/.test(n)) && names.some((n) => /^Refazer/.test(n)), names.join(' | '));
   await a.click(row.querySelector('.editor-more'));
   const items = a.$$('.editor-menu [role="menuitem"]').map(text);
-  assert.ok(items.includes('Comparar formatos') && items.includes('Ampliar'), items.join(' | '));
+  assert.ok(items.includes('Comparar formatos'), items.join(' | '));
+  // 2026-10-29: the panel's bottom stop gives the preview its largest size
+  assert.ok(!items.includes('Ampliar') && !items.includes('Reduzir'), items.join(' | '));
 });
 
-test('phone: the handle switches the sheet', async (t) => {
+// 2026-10-29: three stops; the chevron goes up one stop at a time, then back to the bottom
+test('phone: the chevron cycles the panel through its stops', async (t) => {
   const a = await editor(t, 390);
-  const handle = a.$('.sheet-handle');
-  assert.ok(handle, 'no handle on the sheet');
-  await a.click(handle);
-  assert.ok(a.$('.editor.sheet-strip'), 'the sheet did not go up');
-  await a.click(a.$('.sheet-handle'));
-  assert.equal(a.$('.editor.sheet-strip'), null, 'the sheet did not come back down');
+  assert.ok(a.$('.editor.sheet-middle'), 'the panel does not open at the middle');
+  for (const stop of ['top', 'bottom', 'middle']) {
+    await a.click(a.$('.sheet-toggle'));
+    assert.ok(a.$(`.editor.sheet-${stop}`), `the chevron did not go to ${stop}`);
+  }
 });
 
 test('phone: writing moves the sheet up', async (t) => {
@@ -141,7 +145,7 @@ test('phone: writing moves the sheet up', async (t) => {
   const field = a.$('#f-headline');
   field.dispatchEvent(new a.w.FocusEvent('focusin', { bubbles: true }));
   await a.pause(30);
-  assert.ok(a.$('.editor.sheet-strip'), 'writing did not move the sheet up');
+  assert.ok(a.$('.editor.sheet-top'), 'writing did not move the sheet up');
 });
 
 // final review (2026-10-28): choosing a colour or moving a slider needs the poster in view
@@ -152,7 +156,7 @@ test('phone: a colour or a slider keeps the poster in view', async (t) => {
     const el = await a.until(() => a.$(sel), sel);
     el.dispatchEvent(new a.w.FocusEvent('focusin', { bubbles: true }));
     await a.pause(30);
-    assert.ok(!a.$('.editor.sheet-strip'), `${sel} moved the sheet up`); // (a DOM node in an assertion takes minutes to print)
+    assert.ok(!a.$('.editor.sheet-top'), `${sel} moved the sheet up`); // (a DOM node in an assertion takes minutes to print)
   }
 });
 

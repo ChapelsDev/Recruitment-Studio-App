@@ -2,7 +2,9 @@
 <html lang="pt-PT">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <!-- an installed iPhone app draws the page under its status bar (white clock): the home's orange runs up under it (iOS 26 ignores theme-color there; 2026-10-29) -->
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Recruitment Studio</title>
   <meta name="description" content="Anúncios de recrutamento para Facebook e Instagram, feitos neste computador.">
   <!-- «Balão a entrar»: the drawing for small sizes in the tab, PNGs where SVG is not taken -->
@@ -84,6 +86,8 @@
   <script src="js/video.js"></script>
   <script src="js/install.js"></script>
   <script src="js/haptics.js"></script>
+  <script src="js/phone.js"></script>
+  <script src="js/frame-meter.js"></script>
   <script src="js/ui-motion.js"></script>
   <script src="js/workflow-ui.js"></script>
   <script src="js/production-ui.js"></script>
