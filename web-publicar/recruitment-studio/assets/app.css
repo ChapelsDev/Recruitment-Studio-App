@@ -2308,15 +2308,15 @@ html:has(.reuse-dialog, .production-dialog) { overflow: hidden; }
 /* the other screens: an orange strip under the clock (the home's band runs there anyway) */
 body::before { content: ''; position: fixed; left: 0; right: 0; top: 0; z-index: 300; height: var(--safe-top); background: var(--signal); pointer-events: none; }
 body:has(.editor)::before { display: none; }
-/* iOS 26 (owner's iPhone, 2026-10-30): the page can start below the clock and the bar takes its
-   colour from the page: a fixed element touching the top (the start screen: orange) or else the
-   page's own background, the canvas (the home showed the theme's dark/white). On the home both
-   say orange: the canvas is the orange (only <html> takes it; the body still paints the theme's
-   chrome over the whole screen, so nothing changes on it) and the strip under the clock is never
-   thinner than 4 px. */
-html:has(.home-band) { background-color: var(--signal); }
-.home { background: var(--chrome); } /* a long list scrolls past the body's 100 %: the home paints its own */
-body:has(.home-band)::before { height: max(var(--safe-top), 4px); }
+/* iOS 26 (owner's iPhone, 2026-10-30): the page starts below the clock and the bar takes its
+   colour from the page: a full-width fixed element at the top at least 6 px tall (the start
+   screen: orange), else the <body>'s background colour (not <html>'s: tried, the bar stayed
+   dark). On the home both say orange: the body's colour is the orange while the home paints the
+   theme's chrome over the whole screen (nothing changes on it), and the strip under the clock is
+   never thinner than 6 px (a thinner one is not sampled). */
+body:has(.home-band) { background-color: var(--signal); }
+.home { background: var(--chrome); }
+body:has(.home-band)::before { height: max(var(--safe-top), 6px); }
 @media (max-width: 860px) {
   /* the editor: the preview runs under the clock behind a dark shade; the poster starts below it */
   .editor::before { content: ''; position: absolute; left: 0; right: 0; top: 0; z-index: 3; height: calc(var(--safe-top) * 1.6); pointer-events: none;

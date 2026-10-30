@@ -59,7 +59,8 @@
       for await (const screen of H.visitScreens(['home', 'gallery', 'editor:Imagem/Oferta', 'editor:Imagem/Contactos', 'editor:Imagem/Estilo', 'editor:Vídeo/Estilo', 'export'])) {
         const bad = H.contrastIssues(document.body);
         assert(!bad.length, `${theme} ${screen}: ${bad.slice(0, 5).map((b) => `«${b.text}» ${b.selector} ${b.ratio.toFixed(2)} < ${b.need}`).join('; ')}`);
-        seen[`${theme} ${screen}`] = getComputedStyle(document.body).backgroundColor;
+        // the home paints its own background (its body is orange for the iPhone's status bar)
+        seen[`${theme} ${screen}`] = getComputedStyle($('.home') || document.body).backgroundColor;
       }
     }
     RS.appearance.set({ theme: 'auto' });
