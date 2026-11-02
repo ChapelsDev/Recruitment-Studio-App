@@ -654,6 +654,7 @@ RS.templates = (() => {
     },
   });
 
-  const byId = Object.fromEntries(list.map((t) => [t.id, t]));
-  return { list, get: (id) => byId[id] || list[0] };
+  // `define` and `kit` let templates-bold.js add more templates to the same list.
+  const kit = { poly, fillPoly, vGradient, logoOverPhoto, hasContactRow, safeTop, safeBottom };
+  return { list, define, kit, get: (id) => list.find((t) => t.id === id) || list[0] };
 })();

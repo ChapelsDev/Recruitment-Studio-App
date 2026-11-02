@@ -251,9 +251,20 @@ RS.engine = (() => {
     ctx.beginPath();
     ctx.roundRect(x, y, w, h, Math.max(0, Math.min(r, w / 2, h / 2)));
   }
-  function iconBadge(ctx, R, name, cx, cy, d, style) {
-    const th = R.theme;
+  // `color` (optional) recolours this one badge, e.g. multicoloured benefit icons.
+  function iconBadge(ctx, R, name, cx, cy, d, style, color) {
+    const th = color ? { ...R.theme, iconBg: color, iconFg: U.onColor(color) } : R.theme;
     switch (style) {
+      case 'block': {
+        // Square tile with a thick outline and a hard offset shadow (bold posters).
+        const c = th.iconBg, line = th.iconLine || '#000000';
+        const off = d * 0.1, sd = d - off, x0 = cx - d / 2, y0 = cy - d / 2, lw = Math.max(3, d * 0.07);
+        ctx.fillStyle = th.iconShadow || line; ctx.fillRect(x0 + off, y0 + off, sd, sd);
+        ctx.fillStyle = c; ctx.fillRect(x0, y0, sd, sd);
+        ctx.lineWidth = lw; ctx.strokeStyle = line; ctx.strokeRect(x0 + lw / 2, y0 + lw / 2, sd - lw, sd - lw);
+        drawIcon(ctx, name, x0 + sd / 2, y0 + sd / 2, sd * 0.56, th.iconFg, 2.4);
+        break;
+      }
       case 'ring':
         ctx.beginPath(); ctx.arc(cx, cy, d / 2 - d * 0.03, 0, Math.PI * 2);
         ctx.lineWidth = d * 0.06; ctx.strokeStyle = th.iconBg; ctx.stroke();
@@ -663,7 +674,7 @@ RS.engine = (() => {
             const cy = y0 + p.y + p.rh / 2;
             const delay = i * TL.benefit;
             enter(R, TL.benefits, delay, 'pop', { x: x + p.x, y: cy - d / 2, w: d, h: d },
-              () => iconBadge(ctx, R, p.b.icon || 'circle-check', x + p.x + d / 2, cy, d, o.iconStyle));
+              () => iconBadge(ctx, R, p.b.icon || 'circle-check', x + p.x + d / 2, cy, d, o.iconStyle, o.iconColors && o.iconColors[i % o.iconColors.length]));
             enter(R, TL.benefits, delay + 0.06, 'slide', null,
               () => p.L.draw(ctx, x + p.x + d + gx, cy - p.L.vh / 2, o.benefitColor || R.theme.text));
             R.hit(`benefit:${p.b.id}`, x + p.x, y0 + p.y, colW, p.rh);
