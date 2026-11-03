@@ -159,7 +159,7 @@
     const Z = P.Z, topH = P.card.y - 30 - Z.top;
     const L = K.fit(P, headline, { font: P.F.head, upper: P.upper, maxSize: 110, minSize: 48, maxW: P.pw - 100, maxLines: 4, maxH: topH * 0.45, lh: 1.02 });
     const hh = L.vh + 90, hy = P.card.y - 30 - hh, phH = hy - GAP - Z.top;
-    if (phH < 180) return false;
+    if (phH < 300) return false;
     P.kHead = L;
     P.kHeadP = { x: P.x0, y: hy, w: P.pw, h: hh };
     P.kPhoto = { x: P.x0, y: Z.top, w: P.pw, h: phH };
