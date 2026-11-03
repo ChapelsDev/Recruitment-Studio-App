@@ -229,7 +229,8 @@ RS.model = (() => {
   const DEFAULT_CAROUSEL = { v: 2, style: 'ad', cover: 'style', format: 'portrait', colors: 'style', accent: null, font: null, bg: null,
     photos: { mode: 'trades', ids: [], focus: {} }, blocks: { order: null, hidden: [] }, extra: [], texts: {}, show: {} };
   const TEMPLATE_RECIPE = { diagonal: 'apresentacao', divisao: 'apresentacao', editorial: 'contrato', moldura: 'contrato', planta: 'planta', cartao: 'notificacoes',
-    sinal: 'numeros', noite: 'numeros', faixa: 'numeros', estaleiro: 'tijolo', betao: 'tijolo', faisca: 'tijolo' };
+    sinal: 'numeros', noite: 'numeros', faixa: 'numeros', estaleiro: 'tijolo', betao: 'tijolo', faisca: 'tijolo',
+    metade: 'metade', stencil: 'stencil', contraste: 'contraste', bd: 'bd' };
   const V1_CAROUSEL_STYLE = { editorial: 'apresentacao', blueprint: 'planta', signal: 'numeros', workshop: 'tijolo', collage: 'notificacoes', atelier: 'contrato', auto: 'ad' };
   const MAX_CAROUSEL_EXTRA = 10;
   function cleanCarousel(raw, project) {
@@ -322,7 +323,7 @@ RS.model = (() => {
   // poster, whose own style is 'dynamic' | 'soft'; the others are RS.motion
   // styles); colours, background, font and sound of the motion styles.
   // The video recipes (RS.motion, js/recipes/) come first in the gallery.
-  const RECIPES = ['tijolo', 'pixel', 'planta', 'apresentacao', 'colagem', 'numeros', 'partidas', 'notificacoes', 'grua', 'contrato', 'cracha', 'fita', 'esteira'];
+  const RECIPES = ['tijolo', 'pixel', 'planta', 'apresentacao', 'colagem', 'numeros', 'partidas', 'notificacoes', 'grua', 'contrato', 'cracha', 'fita', 'esteira', 'metade', 'stencil', 'contraste', 'bd'];
   const MOTIONS = [...RECIPES, 'poster', 'neon', 'obra', 'limpo', 'cinema', 'impacto', 'curto'];
   // duration: seconds, or 'auto' («Automática»: the time the information needs,
   // 10–30 s). show: the video's eyes (null = follow the image's own eye).
@@ -636,12 +637,16 @@ RS.model = (() => {
   // legacy sample sector.
   function newProject(template, opts = {}) {
     const now = Date.now();
-    let trades = knownTrades(opts.trades || (opts.trade ? [opts.trade] : []));
-    if (!trades.length) trades = knownTrades(template.trade ? [template.trade] : []);
-    const texts = trades.length
-      ? RS.trades.textsFor(trades, 'pt-PT')
-      : { ...(SAMPLES[template.sample] ? SAMPLES[template.sample]() : SAMPLES.construction()), qr: '' };
-    texts.waMessage = '';
+    const asked = knownTrades(opts.trades || (opts.trade ? [opts.trade] : []));
+    const trades = asked.length ? asked : knownTrades(template.trade ? [template.trade] : []);
+    // A template with its own words (the poster designs) starts with them, unless a trade was asked for.
+    const own = !asked.length && typeof template.texts === 'function';
+    const base = own
+      ? { ...template.texts(), qr: '' }
+      : trades.length
+        ? RS.trades.textsFor(trades, 'pt-PT')
+        : { ...(SAMPLES[template.sample] ? SAMPLES[template.sample]() : SAMPLES.construction()), qr: '' };
+    const texts = { ...base, waMessage: '' };
     const d = template.defaults;
     return applyAutoName({
       v: 1,
@@ -666,7 +671,7 @@ RS.model = (() => {
       publication: cleanPublication(),
       translationReview: {},
       show: { ...DEFAULT_SHOW, ...(d.show || {}) },
-      brand: { ...DEFAULT_BRAND },
+      brand: { ...DEFAULT_BRAND, ...(template.brand || {}) },
       style: {
         primary: d.primary, accent: d.accent, bg: d.bg, text: d.text,
         customColors: false,

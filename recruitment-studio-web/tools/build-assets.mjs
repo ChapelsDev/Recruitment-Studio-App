@@ -22,7 +22,7 @@ function pkg(prefix) {
 // ---------------------------------------------------------------- fonts
 const SUBSETS = ['latin', 'latin-ext'];
 const FONTS = [
-  { family: 'Barlow Condensed', pkg: 'fontsource-barlow-condensed', file: 'barlow-condensed', weights: [600, 700, 800] },
+  { family: 'Barlow Condensed', pkg: 'fontsource-barlow-condensed', file: 'barlow-condensed', weights: [600, 700, 800, 900], italics: [800, 900] },
   { family: 'Barlow', pkg: 'fontsource-barlow-5', file: 'barlow', weights: [400, 500, 600, 700] },
   { family: 'Anton', pkg: 'fontsource-anton', file: 'anton', weights: [400] },
   { family: 'DM Sans', pkg: 'fontsource-dm-sans', file: 'dm-sans', weights: [400, 500, 600, 700] },
@@ -30,6 +30,11 @@ const FONTS = [
   { family: 'Montserrat', pkg: 'fontsource-variable-montserrat', file: 'montserrat', variable: true },
   // the interface (2026-10-28, «Balão»); the others are the posters'
   { family: 'Rubik', pkg: 'fontsource-rubik', file: 'rubik', weights: [400, 500, 600, 700, 800] },
+  // the bold posters (Stencil, Contraste, Banda Desenhada, Panfleto Suíça)
+  { family: 'Big Shoulders Stencil Display', pkg: 'fontsource-big-shoulders-stencil-display', file: 'big-shoulders-stencil-display', weights: [900] },
+  { family: 'Archivo Black', pkg: 'fontsource-archivo-black', file: 'archivo-black', weights: [400] },
+  { family: 'Bangers', pkg: 'fontsource-bangers', file: 'bangers', weights: [400] },
+  { family: 'Permanent Marker', pkg: 'fontsource-permanent-marker', file: 'permanent-marker', weights: [400], subsets: ['latin'] },
 ];
 // --only=<file>: rebuild only that family's rules in fonts.css (the other families'
 // bytes stay as they are) and touch no icon or vendor file.
@@ -61,13 +66,17 @@ function fontRules(font) {
     }
     return out;
   }
-  for (const weight of font.weights) {
-    const ranges = unicodeRanges(fs.readFileSync(path.join(dir, `${weight}.css`), 'utf8'));
-    for (const subset of SUBSETS) {
-      const name = `${font.file}-${subset}-${weight}-normal`;
+  const faces = [
+    ...font.weights.map((weight) => ({ weight, style: 'normal' })),
+    ...(font.italics || []).map((weight) => ({ weight, style: 'italic' })),
+  ];
+  for (const { weight, style } of faces) {
+    const ranges = unicodeRanges(fs.readFileSync(path.join(dir, style === 'italic' ? `${weight}-italic.css` : `${weight}.css`), 'utf8'));
+    for (const subset of font.subsets || SUBSETS) {
+      const name = `${font.file}-${subset}-${weight}-${style}`;
       const data = fs.readFileSync(path.join(files, `${name}.woff2`));
       fontBytes += data.length;
-      out += `@font-face{font-family:'${font.family}';font-style:normal;font-display:block;font-weight:${weight};` +
+      out += `@font-face{font-family:'${font.family}';font-style:${style};font-display:block;font-weight:${weight};` +
         `src:url(data:font/woff2;base64,${data.toString('base64')}) format('woff2');unicode-range:${ranges[name]};}\n`;
     }
   }

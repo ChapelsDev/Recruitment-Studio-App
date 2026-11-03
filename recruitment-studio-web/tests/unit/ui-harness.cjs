@@ -35,7 +35,7 @@ async function app(t, width = 1280, configure = () => {}) {
   };
   const context = new Proxy({}, { get: (_, key) => key === 'measureText' ? () => ({ width: 10 }) : key === 'createLinearGradient' ? () => ({ addColorStop() {} }) : () => {} });
   w.HTMLCanvasElement.prototype.getContext = () => context;
-  load('js/templates.js'); load('js/templates-bold.js'); load('js/motion.js'); load('js/store.js'); load('js/backup.js');
+  load('js/templates.js'); load('js/poster-kit.js'); load('js/templates-bold.js'); load('js/templates-flyers.js'); load('js/motion.js'); load('js/store.js'); load('js/backup.js');
   RS.library.index = async () => ({ items: [] });
   RS.video = { support: async () => ({ method: null }) };
   const p = RS.model.addLocale(RS.model.newProject(RS.templates.list[0]), 'fr', 'pt-PT');

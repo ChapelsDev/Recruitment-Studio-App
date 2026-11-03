@@ -11,6 +11,8 @@ const fontsCss = fs.readFileSync(path.join(root, 'assets/fonts.css'), 'utf8');
 const appCss = fs.readFileSync(path.join(root, 'assets/app.css'), 'utf8');
 // assets/fonts.css before Rubik was added (ledger, Task 0): only poster fonts
 const POSTER_FONTS_SHA256 = '779dde8bc8bff6d5658baee7e7cbfb87f83da4d35dbed40e780b512db4c2cfff';
+// Fonts added later for the bold posters (2026-11-03); appended, the older rules untouched
+const BOLD_FONTS = /'(Archivo Black|Bangers|Permanent Marker|Big Shoulders Stencil Display)'|font-style:italic|'Barlow Condensed';font-style:normal;font-display:block;font-weight:900;/;
 
 test('fonts.css carries Rubik 400–800 for latin and latin-ext', () => {
   const rules = fontsCss.split('\n').filter((l) => l.includes("font-family:'Rubik'"));
@@ -22,7 +24,7 @@ test('fonts.css carries Rubik 400–800 for latin and latin-ext', () => {
 });
 
 test('the poster fonts are byte-identical', () => {
-  const without = fontsCss.split('\n').filter((l) => !l.includes("font-family:'Rubik'")).join('\n');
+  const without = fontsCss.split('\n').filter((l) => !l.includes("font-family:'Rubik'") && !BOLD_FONTS.test(l)).join('\n');
   assert.equal(crypto.createHash('sha256').update(without).digest('hex'), POSTER_FONTS_SHA256);
 });
 

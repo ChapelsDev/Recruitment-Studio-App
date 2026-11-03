@@ -3,7 +3,7 @@
 (() => {
   const M = () => RS.model;
   // Recipes whose own file is in place (each recipe task adds its id).
-  const READY = ['tijolo', 'pixel', 'planta', 'apresentacao', 'colagem', 'numeros', 'partidas', 'notificacoes', 'grua', 'contrato', 'cracha', 'fita', 'esteira'];
+  const READY = ['tijolo', 'pixel', 'planta', 'apresentacao', 'colagem', 'numeros', 'partidas', 'notificacoes', 'grua', 'contrato', 'cracha', 'fita', 'esteira', 'metade', 'stencil', 'contraste', 'bd'];
 
   // ---------------------------------------------------------------- fixtures
   const LONG_HEAD = 'Procuramos pedreiros, serventes, cofragistas e armadores de ferro com experiência para obras na Suíça e em Portugal já';
@@ -494,7 +494,7 @@
   // ---------------------------------------------------------------- the checks at 10–30 s (models with pages)
   // Models in READY_V2 show every benefit, highlight and position in pages and
   // last 10–30 s or «Automática» (each recipe task adds its id).
-  const READY_V2 = ['test-pages', 'tijolo', 'pixel', 'planta', 'apresentacao', 'colagem', 'numeros', 'partidas', 'notificacoes', 'grua', 'contrato', 'cracha', 'fita', 'esteira'];
+  const READY_V2 = ['test-pages', 'tijolo', 'pixel', 'planta', 'apresentacao', 'colagem', 'numeros', 'partidas', 'notificacoes', 'grua', 'contrato', 'cracha', 'fita', 'esteira', 'metade', 'stencil', 'contraste', 'bd'];
   const DURS = [10, 20, 30, 'auto'];
   function checkRecipeV2(id) {
     const test = (name, fn) => window.test(name, async () => { assert(RS.motion.styleOf(id).id === id && RS.motion.styleOf(id).recipe && RS.motion.styleOf(id).recipe.pages, `${id} is not a model with pages`); await fn(); });

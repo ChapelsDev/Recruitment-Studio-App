@@ -243,7 +243,7 @@ test('normalize: «Escolher» without photos goes back to the trades\' photos; h
 });
 
 test('model: the recipes are motions, in their order', () => {
-  const ids = ['tijolo', 'pixel', 'planta', 'apresentacao', 'colagem', 'numeros', 'partidas', 'notificacoes', 'grua', 'contrato', 'cracha', 'fita', 'esteira'];
+  const ids = ['tijolo', 'pixel', 'planta', 'apresentacao', 'colagem', 'numeros', 'partidas', 'notificacoes', 'grua', 'contrato', 'cracha', 'fita', 'esteira', 'metade', 'stencil', 'contraste', 'bd'];
   for (const id of ids) assert.ok(M.MOTIONS.includes(id), id);
   assert.deepEqual(M.RECIPES, ids);
 });

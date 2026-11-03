@@ -1,12 +1,13 @@
 // Offline cache, used only when the app is served over http(s) (e.g. installed
 // on a phone). tools/build-web.mjs rewrites CACHE and CORE for each publish, so
 // phones pick up new versions by themselves.
-const CACHE = 'recruitment-studio-v35';
+const CACHE = 'recruitment-studio-v37';
 const CORE = [
   './', './index.html', './manifest.webmanifest',
   './assets/app.css', './assets/fonts.css', './assets/icons/icon-32.png', './assets/icons/icon-64.png', './assets/icons/icon-180.png', './assets/icons/icon-192.png', './assets/icons/icon-512.png',
   './vendor/htm-preact.umd.js', './vendor/qrcode.js', './vendor/mp4-muxer.js',
-  './js/appearance.js', './js/icons.js', './js/util.js', './js/trades.js', './js/model.js', './js/contact.js', './js/workflow.js', './js/workflow-ui.js', './js/motion-timeline.js', './js/engine.js', './js/templates.js', './js/templates-bold.js', './js/motion-kit.js', './js/motion.js', './js/recipes/tijolo.js', './js/recipes/pixel.js', './js/recipes/planta.js', './js/recipes/apresentacao.js', './js/recipes/colagem.js', './js/recipes/numeros.js', './js/recipes/partidas.js', './js/recipes/notificacoes.js', './js/recipes/grua.js', './js/recipes/contrato.js', './js/recipes/cracha.js', './js/recipes/fita.js', './js/recipes/esteira.js', './js/slides.js', './js/sound.js', './js/store.js', './js/video.js', './js/install.js', './js/haptics.js', './js/phone.js', './js/frame-meter.js', './js/ui-motion.js', './js/reuse.js', './js/production.js', './js/production-ui.js', './js/carousel-ui.js', './js/app.js',
+  './js/appearance.js', './js/icons.js', './js/util.js', './js/trades.js', './js/model.js', './js/contact.js', './js/workflow.js', './js/workflow-ui.js', './js/motion-timeline.js', './js/engine.js', './js/templates.js', './js/poster-kit.js', './js/templates-bold.js', './js/templates-flyers.js', './js/motion-kit.js', './js/motion.js', './js/recipes/tijolo.js', './js/recipes/pixel.js', './js/recipes/planta.js', './js/recipes/apresentacao.js', './js/recipes/colagem.js', './js/recipes/numeros.js', './js/recipes/partidas.js', './js/recipes/notificacoes.js', './js/recipes/grua.js', './js/recipes/contrato.js', './js/recipes/cracha.js', './js/recipes/fita.js', './js/recipes/esteira.js', './js/recipes/bold-kit.js', './js/recipes/metade.js', './js/recipes/stencil.js', './js/recipes/contraste.js',
+  './js/recipes/bd.js', './js/slides.js', './js/sound.js', './js/store.js', './js/video.js', './js/install.js', './js/haptics.js', './js/phone.js', './js/frame-meter.js', './js/ui-motion.js', './js/reuse.js', './js/production.js', './js/production-ui.js', './js/carousel-ui.js', './js/app.js',
   './photos/library.js', './js/backup.js', './js/carousel-art.js',
 ];
 

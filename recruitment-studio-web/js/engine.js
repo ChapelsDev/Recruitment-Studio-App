@@ -1058,7 +1058,9 @@ RS.engine = (() => {
       if (adj.b && adj.b !== 1) fx.push(`brightness(${adj.b})`);
       if (adj.c && adj.c !== 1) fx.push(`contrast(${adj.c})`);
       if (adj.s && adj.s !== 1) fx.push(`saturate(${adj.s})`);
-      if (fx.length) ctx.filter = fx.join(' ');
+      // the person's adjustments go after a filter the template set (black and white…)
+      const set = ctx.filter && ctx.filter !== 'none' ? [ctx.filter] : [];
+      if (fx.length) ctx.filter = [...set, ...fx].join(' ');
       if (p.flip) {
         ctx.translate(dx + dw, dy); ctx.scale(-1, 1);
         ctx.drawImage(img, 0, 0, dw, dh);
@@ -1218,6 +1220,6 @@ RS.engine = (() => {
 
   return {
     SAFE, loadFonts, render, renderToCanvas, animState, plan, contactsRow, badge, photo, logoAt, drawIcon, roundRect, drawQR, qrText, setFont,
-    textLayout, fitHeadline, baseTheme, BASE, iconPath, analyseLogo, logoSource, qrModules,
+    textLayout, fitHeadline, baseTheme, BASE, iconPath, analyseLogo, logoSource, qrModules, enter, pulse, TL,
   };
 })();

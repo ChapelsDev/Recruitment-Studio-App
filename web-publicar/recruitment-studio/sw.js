@@ -1,7 +1,7 @@
 // Offline cache, used only when the app is served over http(s) (e.g. installed
 // on a phone). tools/build-web.mjs rewrites CACHE and CORE for each publish, so
 // phones pick up new versions by themselves.
-const CACHE = 'recruitment-studio-aaa91861f9';
+const CACHE = 'recruitment-studio-fc02735572';
 const CORE = [
   "./",
   "./assets/app.css",
@@ -40,26 +40,33 @@ const CORE = [
   "./js/motion-timeline.js",
   "./js/motion.js",
   "./js/phone.js",
+  "./js/poster-kit.js",
   "./js/production-ui.js",
   "./js/production.js",
   "./js/recipes/apresentacao.js",
+  "./js/recipes/bd.js",
+  "./js/recipes/bold-kit.js",
   "./js/recipes/colagem.js",
+  "./js/recipes/contraste.js",
   "./js/recipes/contrato.js",
   "./js/recipes/cracha.js",
   "./js/recipes/esteira.js",
   "./js/recipes/fita.js",
   "./js/recipes/grua.js",
+  "./js/recipes/metade.js",
   "./js/recipes/notificacoes.js",
   "./js/recipes/numeros.js",
   "./js/recipes/partidas.js",
   "./js/recipes/pixel.js",
   "./js/recipes/planta.js",
+  "./js/recipes/stencil.js",
   "./js/recipes/tijolo.js",
   "./js/reuse.js",
   "./js/slides.js",
   "./js/sound.js",
   "./js/store.js",
   "./js/templates-bold.js",
+  "./js/templates-flyers.js",
   "./js/templates.js",
   "./js/trades.js",
   "./js/ui-motion.js",
